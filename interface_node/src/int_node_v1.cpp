@@ -63,7 +63,7 @@ namespace pi3hat_node
                     // create substriber 
                     // create timer
                   
-                    timer_ = this->create_wall_timer(1ms,std::bind(&Pi3Hat_int::timer_callback, this));
+                    timer_ = this->create_wall_timer(100us,std::bind(&Pi3Hat_int::timer_callback, this));
                     sub_ = this->create_subscription<CmdMsg>("MJbot_prova",10,std::bind(&Pi3Hat_int::sub_callback,this,_1));
                     RCLCPP_INFO(this->get_logger(),"Completed the node creation");
                 }
@@ -179,11 +179,20 @@ namespace pi3hat_node
                                 const auto rcv_out = can_rcvd_.get();
                                 if(rcv_out.query_result_size > 0)
                                 {
+                                    if(rcv_out.query_result_size > 1)
+                                    {
+                                        count_dup_ ++;
+                                        RCLCPP_WARN(this->get_logger(),"count is %d",count_dup_);
+                                    }
+                                    RCLCPP_WARN(this->get_logger(),"Data correctly managed by the interface");
                                     const auto read_res = this->Get(mot_read_,id_,bus_);
 
                                     // update internal structure 
                                     mot_pos_ = read_res.position;
                                     mot_vel_ = read_res.velocity;
+                                    // RCLCPP_INFO(this->get_logger(),
+                                    // "the read value of the second ecoder is %f",read_res.sec_enc_pos);
+                                    
                                 //    RCLCPP_INFO(this->get_logger(),
                                 //     "the readed position and velocity are %f and %f",mot_pos_,mot_vel_);
                                 }
@@ -191,7 +200,7 @@ namespace pi3hat_node
                                 else
                                 // roswarining and go to the next cycle
                                     RCLCPP_WARN(this->get_logger(),
-                                    "Driver measure are not arrived");
+                                    "Driver measure are not arrived and count is %d",++ n_a_rsp_);
                             }
 
                         }
@@ -199,8 +208,8 @@ namespace pi3hat_node
                         Fill_Command(1);
                         
                         auto a = data_.commands[0];
-                        if(a.mode == moteus::Mode::kPosition)
-                            RCLCPP_INFO(this->get_logger(),"command position %d",count_);
+                        // if(a.mode == moteus::Mode::kPosition)
+                        //     RCLCPP_INFO(this->get_logger(),"command position %d",count_);
                      
                         const auto promise = std::make_shared<std::promise<Output>>();
                         //send position command message with cycle 
@@ -218,7 +227,7 @@ namespace pi3hat_node
                     count_ ++;
                     
                 }
-                moteus::QueryResult Get(const std::vector<MoteusInterface::ServoReply>& replies, int id, int bus) 
+                moteus::QueryResultV2 Get(const std::vector<MoteusInterface::ServoReply>& replies, int id, int bus) 
                 {
                     for (const auto& item : replies) 
                     {
@@ -233,7 +242,7 @@ namespace pi3hat_node
                 int bus_;
 
                 double mot_pos_,mot_vel_,mot_pos_cmd_,mot_vel_cmd_,k_p_scale_,k_d_scale_;
-                int count_;
+                int count_,n_a_rsp_ = 0, count_dup_ = 0;
                 std::future<MoteusInterface::Output> can_res;
                 std::vector<Reply> mot_read_;
                 std::vector<Command> mot_comd_;

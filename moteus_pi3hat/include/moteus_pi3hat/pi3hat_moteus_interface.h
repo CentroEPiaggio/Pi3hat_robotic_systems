@@ -66,13 +66,13 @@ class Pi3HatMoteusInterface {
     moteus::PositionCommand position;
     moteus::PositionResolution resolution;
 
-    moteus::QueryCommand query;
+    moteus::QueryCommandV2 query;
   };
 
   struct ServoReply {
     int id = 0;
     int bus = 0;
-    moteus::QueryResult result;
+    moteus::QueryResultV2 result;
   };
 
   // This describes what you would like to do in a given control cycle
@@ -165,7 +165,7 @@ class Pi3HatMoteusInterface {
           throw std::logic_error("unsupported mode");
         }
       }
-      moteus::EmitQueryCommand(&write_frame, cmd.query);
+      moteus::EmitQueryCommandV2(&write_frame, cmd.query);
     }
 
     rx_can_.resize(data_.commands.size() * 2);
@@ -182,7 +182,7 @@ class Pi3HatMoteusInterface {
 
       data_.replies[i].id = (can.id & 0x7f00) >> 8;
       data_.replies[i].bus = can.bus;
-      data_.replies[i].result = moteus::ParseQueryResult(can.data, can.size);
+      data_.replies[i].result = moteus::ParseQueryResultV2(can.data, can.size);
       result.query_result_size = i + 1;
     }
 
