@@ -3,32 +3,32 @@ import asyncio
 import moteus
 import moteus_pi3hat
 import time
-
+import csv
 
 async def main():
 ######################################################################################################################################################################################
 #                                                                              CONFIGURATION VARIABLES                                                                                  #
 ######################################################################################################################################################################################    
     can_bus = 1
-    motor_id = 12
+    motor_id = 1
     sup_pos_limit = 1
     inf_pos_limit = -1
     MAXVEL = 1
     MAXPOW = 450
     MAXCUR = 40 
-    KP = 16
-    KD = 0.08
+    KP = 3
+    KD = 0.05
     KI = 0
     FBV = 27.5
     RID = 9
-    Period = 10 #[s]
-    Revolutions = 2
+    Period = 5 #[s]
+    Revolutions = 1
     no_resp_count = 0
 
     cmd_positions = []
     msr_positions = []
     times = []
-
+    filtered_msr_pos = []
 
 ######################################################################################################################################################################################
 #                                                                              SERVOS CONFIGURATION                                                                                  #
@@ -40,7 +40,14 @@ async def main():
     )
 
     qr = moteus.QueryResolution()
-    qr.q_current = moteus.F32
+    qr._extra[moteus.Register.ENCODER_1_POSITION] = moteus.F32
+    qr._extra[moteus.Register.ENCODER_1_VELOCITY] = moteus.F32
+
+    # if(qr._extra[moteus.Register.ENCODER_0_POSITION]==moteus.F32):
+    #     print("correct")
+    # else:
+    #     print("incorrect")
+
 
  
     controller = moteus.Controller(id=motor_id, transport=transport, query_resolution = qr)
@@ -73,11 +80,11 @@ async def main():
         vel = math.cos(2*math.pi*t/Period)
 
         
-
+        # print(f"pos {pos} vel {vel}")
         command = controller.make_position(
             position= pos,
             velocity= vel,
-            feedforward_torque= 0.0,
+            
             query= True
         )
 
@@ -86,6 +93,8 @@ async def main():
             times.append(t)
             cmd_positions.append(pos)
             msr_positions.append(result[0].values[moteus.Register.POSITION])
+            filtered_msr_pos.append(result[0].values[moteus.Register.ENCODER_1_POSITION])
+            
         else:
             no_resp_count = no_resp_count + 1
 
@@ -94,18 +103,25 @@ async def main():
     
     await transport.cycle([controller.make_stop()])
     print("Revolutions Complete")
-    if len(msr_positions)!= len(cmd_positions) and len(cmd_positions) != len(times) and len(times) != len(msr_positions):
+    print(len(msr_positions),len(cmd_positions),len(times))
+    if len(msr_positions)== len(cmd_positions) and len(cmd_positions) == len(times) and len(times) == len(msr_positions):
         dim = len(msr_positions)
-        data = open('Revolution_Results',"w")
+        data = open('Rev_res.csv',"w+")
+        writer = csv.writer(data)
+        #writer.writerow(["time","cmd_pos","msr_pos"])
 
         print(" the csv data has time/command_position/measured_position")
 
         for i in range(dim):
-            data.write("".join(
+            positions = [times[i],cmd_positions[i],msr_positions[i],filtered_msr_pos[i]]
+           
+            writer.writerow(positions)
+            # data.write("".join(
                   
-                  f"{times[i]}, "+
-                  f"{cmd_positions[i]}, " +
-                  f"{msr_positions[i]}\n " )) 
+            #       f"{times[i]}, "+
+            #       f"{cmd_positions[i]}, " +
+            #       f"{msr_positions[i]}\n " )) 
+        data.close()
     
     print(f"the not received messages are {no_resp_count}")
     
