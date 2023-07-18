@@ -60,7 +60,7 @@ enum Multiplex : uint32_t {
   kClientToServer = 0x40,
   kServerToClient = 0x41,
   kClientPollServer = 0x42,
-
+ 
   kNop = 0x50,
 };
 
@@ -106,6 +106,12 @@ enum Register : uint32_t {
   kPositionKd = 0x032,
   kPositionFeedforward = 0x033,
   kPositionCommand = 0x034,
+
+  // Encoder Register
+  kEncoder0Pos = 0x050,
+  kEncoder0Vel = 0x051,
+  kEncoder1Pos = 0x052,
+  kEncoder1Vel = 0x053,
 
   kRegisterMapVersion = 0x102,
   kSerialNumber = 0x120,
@@ -623,6 +629,38 @@ struct QueryCommand {
   }
 };
 
+// struct added to send query request also for second encoder position and velocity 
+struct QueryCommandV2 {
+  Resolution mode = Resolution::kIgnore;
+  Resolution position = Resolution::kInt16;
+  Resolution velocity = Resolution::kInt16;
+  Resolution torque = Resolution::kInt16;
+  Resolution q_current = Resolution::kIgnore;
+  Resolution d_current = Resolution::kIgnore;
+  Resolution rezero_state = Resolution::kIgnore;
+  Resolution voltage = Resolution::kIgnore;
+  Resolution temperature = Resolution::kInt8;
+  Resolution fault = Resolution::kInt8;
+  Resolution sec_enc_pos = Resolution::kInt16;
+  Resolution sec_enc_vel = Resolution::kInt16;
+
+  bool any_set() const {
+    return mode != Resolution::kIgnore ||
+        position != Resolution::kIgnore ||
+        velocity != Resolution::kIgnore ||
+        torque != Resolution::kIgnore ||
+        q_current != Resolution::kIgnore ||
+        d_current != Resolution::kIgnore ||
+        rezero_state != Resolution::kIgnore ||
+        voltage != Resolution::kIgnore ||
+        temperature != Resolution::kIgnore ||
+        fault != Resolution::kIgnore ||
+        sec_enc_pos != Resolution::kIgnore ||
+        sec_enc_vel != Resolution::kIgnore;
+  }
+};
+
+
 inline void EmitQueryCommand(
     WriteCanFrame* frame,
     const QueryCommand& command) {
@@ -647,6 +685,43 @@ inline void EmitQueryCommand(
             command.fault});
     for (int i = 0; i < 4; i++) {
       combiner.MaybeWrite();
+    }
+  }
+}
+
+inline void EmitQueryCommandV2(
+    WriteCanFrame* frame,
+    const QueryCommandV2& command) {
+  {
+    WriteCombiner<6> combiner(frame, 0x10, Register::kMode, {
+        command.mode,
+            command.position,
+            command.velocity,
+            command.torque,
+            command.q_current,
+            command.d_current,
+            });
+    for (int i = 0; i < 6; i++) {
+      combiner.MaybeWrite();
+    }
+  }
+  {
+    WriteCombiner<4> combiner(frame, 0x10, Register::kRezeroState, {
+        command.rezero_state,
+            command.voltage,
+            command.temperature,
+            command.fault});
+    for (int i = 0; i < 4; i++) {
+      combiner.MaybeWrite();
+    }
+  }
+  {
+    WriteCombiner<2> combiner(frame, 0x10, Register::kEncoder1Pos,{
+      command.sec_enc_pos,
+      command.sec_enc_vel});
+    for(int i = 0; i < 2; i++)
+    {
+     combiner.MaybeWrite();
     }
   }
 }
@@ -711,6 +786,92 @@ inline QueryResult ParseQueryResult(const uint8_t* data, size_t size) {
       }
       case Register::kFault: {
         result.fault = parser.ReadInt(res);
+        break;
+      }
+      default: {
+        parser.Ignore(res);
+      }
+    }
+  }
+
+  return result;
+}
+
+
+// query results and parser to adapt to second encoder query command
+
+struct QueryResultV2 {
+  Mode mode = Mode::kStopped;
+  double position = std::numeric_limits<double>::quiet_NaN();
+  double velocity = std::numeric_limits<double>::quiet_NaN();
+  double torque = std::numeric_limits<double>::quiet_NaN();
+  double q_current = std::numeric_limits<double>::quiet_NaN();
+  double d_current = std::numeric_limits<double>::quiet_NaN();
+  bool rezero_state = false;
+  double voltage = std::numeric_limits<double>::quiet_NaN();
+  double temperature = std::numeric_limits<double>::quiet_NaN();
+  double sec_enc_pos = std::numeric_limits<double>::quiet_NaN();
+  double sec_enc_vel = std::numeric_limits<double>::quiet_NaN();
+  int fault = 0;
+};
+
+inline QueryResultV2 ParseQueryResultV2(const uint8_t* data, size_t size) {
+  MultiplexParser parser(data, size);
+
+  QueryResultV2 result;
+  while (true) {
+    auto entry = parser.next();
+    if (!std::get<0>(entry)) { break; }
+    const auto res = std::get<2>(entry);
+    switch (static_cast<Register>(std::get<1>(entry))) {
+      case Register::kMode: {
+        result.mode = static_cast<Mode>(parser.ReadInt(res));
+        break;
+      }
+      case Register::kPosition: {
+        result.position = parser.ReadPosition(res);
+        break;
+      }
+      case Register::kVelocity: {
+        result.velocity = parser.ReadVelocity(res);
+        break;
+      }
+      case Register::kTorque: {
+        result.torque = parser.ReadTorque(res);
+        break;
+      }
+      case Register::kQCurrent: {
+        result.q_current = parser.ReadCurrent(res);
+        break;
+      }
+      case Register::kDCurrent: {
+        result.d_current = parser.ReadCurrent(res);
+        break;
+      }
+      case Register::kRezeroState: {
+        result.rezero_state = parser.ReadInt(res) != 0;
+        break;
+      }
+      case Register::kVoltage: {
+        result.voltage = parser.ReadVoltage(res);
+        break;
+      }
+      case Register::kTemperature: {
+        result.temperature = parser.ReadTemperature(res);
+        break;
+      }
+      case Register::kFault: {
+        result.fault = parser.ReadInt(res);
+        break;
+      }
+      case Register::kEncoder1Pos:
+      {
+        result.sec_enc_pos = parser.ReadPosition(res);
+        break;
+      }
+      case Register::kEncoder1Vel:
+      {
+        result.sec_enc_vel = parser.ReadVelocity(res);
         break;
       }
       default: {
