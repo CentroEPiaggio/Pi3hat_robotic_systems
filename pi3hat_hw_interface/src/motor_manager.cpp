@@ -6,6 +6,14 @@ namespace pi3hat_hw_interface
 {
     namespace motor_manager
     {
+        uint8_t Motor_Manager::get_id()
+        {
+            return id_;
+        }
+        uint8_t Motor_Manager::get_bus()
+        {
+            return bus_;
+        }
         moteus::QueryCommandV2 Motor_Manager::get_qry_res()
         {
             return qry_res_;
@@ -40,6 +48,8 @@ namespace pi3hat_hw_interface
             cmd_data_ -> position.feedforward_torque = * cmd_trq_;
             cmd_data_ -> position.kd_scale = * cmd_kd_scale_;
             cmd_data_ -> position.kp_scale = * cmd_kp_scale_;
+            cmd_data_ -> query = qry_res_;
+            cmd_data_ -> resolution = cmd_res_;
             pol_callback_(msg_valid_,msg_complete_);
             
             
@@ -52,7 +62,7 @@ namespace pi3hat_hw_interface
         {
             cmd_data_ -> id = id_;
             cmd_data_ -> bus = bus_;
-            cmd_data_ -> mode = moteus::Mode::kPosition;
+            cmd_data_ -> mode = moteus::Mode::kStopped;
         }
         void Motor_Manager::drop_torque()
         {

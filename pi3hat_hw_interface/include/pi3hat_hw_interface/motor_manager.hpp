@@ -76,7 +76,7 @@ namespace pi3hat_hw_interface
                     msr_vel_ = mem_str.msr_vel;
                     msr_trq_ = mem_str.msr_trq;
                     msr_tmp_ = mem_str.msr_tmp;
-                    cmd_kp_scale_ = mem_str.kd_scale;
+                    cmd_kp_scale_ = mem_str.kp_scale;
                     cmd_kd_scale_ = mem_str.kd_scale;
                     cmd_data_ = mem_str.cmd_data;
                     cmd_pos_ = mem_str.cmd_pos;
@@ -118,6 +118,9 @@ namespace pi3hat_hw_interface
 
                 // get the readed value into state_vars and set flag to decide 
                 int get_motor_state();
+
+                uint8_t get_id();
+                uint8_t get_bus();
 
                 
 

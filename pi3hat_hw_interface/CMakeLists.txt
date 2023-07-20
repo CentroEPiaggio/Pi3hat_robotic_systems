@@ -35,15 +35,15 @@ ament_target_dependencies(
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   find_package(ament_cmake_gtest REQUIRED)
-  ament_add_gtest(${PROJECT_NAME}_test1 test/motor_manager_test.cpp)
-  target_include_directories(${PROJECT_NAME}_test1 PUBLIC
+  ament_add_gtest(${PROJECT_NAME}_test test/motor_manager_test.cpp)
+  target_include_directories(${PROJECT_NAME}_test PUBLIC
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<INSTALL_INTERFACE:include>
     )
-    ament_target_dependencies(${PROJECT_NAME}_test1
+    ament_target_dependencies(${PROJECT_NAME}_test
       std_msgs
     )
-    target_link_libraries(${PROJECT_NAME}_test1 ${PROJECT_NAME})
+    target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
 
     # the following line skips the linter which checks for copyrights
     # comment the line when a copyright and license is added to all source files
