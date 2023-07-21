@@ -1,0 +1,11 @@
+<library path="pi3hat_hw_interface">
+    <class 
+        name="pi3hat_hw_interface/MoteusPi3Hat_Interface"
+        type="pi3hat_hw_interface::moteus_pi3hat_interface::MoteusPi3Hat_Interface"
+        base_class_type="hardware_interface::SystemInterface">
+
+        <description>
+           hardware interface to use pi3hat and moteus based robotic system
+        </description>  
+    </class>
+</library>

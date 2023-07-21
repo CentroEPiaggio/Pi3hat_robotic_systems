@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<robot name="solo"  xmlns:xacro="http://ros.org/wiki/xacro">
+    <ros2_control name="MoteusPi3Hat_Interface" type="system">
+        <hardware>
+            <plugin>pi3hat_hw_interface/MoteusPi3Hat_Interface</plugin>
+            <param name="timeout" >100</param>
+            <param name="command_type" >0</param>
+            <param name="Kp" >10.0</param>
+            <param name="Kv" >0.0</param>
+            <param name="I_saturation" >10.0</param>
+        </hardware>
+    </ros2_control>
+</robot>

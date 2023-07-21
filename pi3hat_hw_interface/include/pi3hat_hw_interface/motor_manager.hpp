@@ -1,3 +1,5 @@
+#ifndef MOTOR_MANAGER_HPP
+#define MOTOR_MANAGER_HPP
 #include "moteus_pi3hat/moteus_protocol.h"
 #include "moteus_pi3hat/realtime.h"
 #include "moteus_pi3hat/pi3hat_moteus_interface.h"
@@ -162,3 +164,4 @@ namespace pi3hat_hw_interface
         };
     }
 }
+#endif

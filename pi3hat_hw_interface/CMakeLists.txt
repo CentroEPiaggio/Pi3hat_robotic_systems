@@ -16,6 +16,7 @@ add_library(
   ${PROJECT_NAME}
   SHARED
   src/motor_manager.cpp
+  src/moteus_pi3hat_interface.cpp
 )
 
 target_include_directories(
@@ -31,6 +32,8 @@ ament_target_dependencies(
   rclcpp_lifecycle
   moteus_pi3hat
 )
+
+pluginlib_export_plugin_description_file(hardware_interface moteus_pi3hat_interface.xml)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -74,5 +77,18 @@ ament_export_include_directories(
 )
 ament_export_libraries(
   ${PROJECT_NAME}
+)
+
+ament_export_dependencies(
+  hardware_interface
+  pluginlib
+  rclcpp
+  rclcpp_lifecycle
+  moteus_pi3hat
+)
+
+install(
+  DIRECTORY launch urdf 
+  DESTINATION share/${PROJECT_NAME}
 )
 ament_package()
