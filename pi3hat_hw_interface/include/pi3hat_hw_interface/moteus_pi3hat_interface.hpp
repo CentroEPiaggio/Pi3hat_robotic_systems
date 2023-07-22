@@ -52,9 +52,8 @@ namespace pi3hat_hw_interface
                 hardware_interface::return_type read(const rclcpp::Time & , const rclcpp::Duration & ) override;
                 hardware_interface::return_type write(const rclcpp::Time & , const rclcpp::Duration & ) override;
             private:
-             std::vector<int> a_;
-             std::pair<int,int> b_;
-             std::vector<std::pair<int,int>> c_;
+                
+                double a,b;
         };
     }
 }

@@ -9,5 +9,23 @@
             <param name="Kv" >0.0</param>
             <param name="I_saturation" >10.0</param>
         </hardware>
+        <joint name="joint1">
+            <command_interface name="position">
+            <param name="min">-1</param>
+            <param name="max">1</param>
+            </command_interface>
+            <state_interface name="position"/>
+            <param name="ID">2</param>
+            <param name="BUS">1</param>
+        </joint>
+         <joint name="joint2">
+            <command_interface name="position">
+            <param name="min">-1</param>
+            <param name="max">1</param>
+            </command_interface>
+            <state_interface name="position"/>
+            <param name="ID">1</param>
+            <param name="BUS">1</param>
+        </joint>
     </ros2_control>
 </robot>

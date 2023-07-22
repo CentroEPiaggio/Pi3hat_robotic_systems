@@ -15,6 +15,7 @@
 #pragma once
 
 #include <sched.h>
+#include <stdexcept>
 
 namespace mjbots {
 namespace moteus {

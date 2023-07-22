@@ -16,9 +16,12 @@
 
 
 
+
 using namespace mjbots;
 using namespace std::chrono_literals;
 using std::placeholders::_1;
+
+
 using MoteusInterface = moteus::Pi3HatMoteusInterface;
 using Command = moteus::Pi3HatMoteusInterface::ServoCommand;
 using Reply = moteus::Pi3HatMoteusInterface::ServoReply;
@@ -50,7 +53,7 @@ namespace pi3hat_node
                 {
                     
                     // setup command and query resolution 
-                    mot_read_.resize(1);
+                    mot_read_.resize(5);
                     mot_comd_.resize(1);
 
                     Initialize();

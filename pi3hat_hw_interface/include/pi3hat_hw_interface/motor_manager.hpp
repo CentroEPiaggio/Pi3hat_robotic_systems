@@ -3,24 +3,34 @@
 #include "moteus_pi3hat/moteus_protocol.h"
 #include "moteus_pi3hat/realtime.h"
 #include "moteus_pi3hat/pi3hat_moteus_interface.h"
+#include "hardware_interface/types/hardware_interface_type_values.hpp"
+#include "hardware_interface/handle.hpp"
 #include <string>
 #include <cstdint>
 #include <vector>
 #include <functional>
+#include <tuple>
 // #define NULL __null
 
 using namespace mjbots;
 using namespace std;
+using interface_tpl = std::tuple<std::string,const char*,double*>;
 using std::placeholders::_1;
 using std::placeholders::_2;
 using std::placeholders::_3;
 using MoteusInterface = moteus::Pi3HatMoteusInterface;
 using Command = moteus::Pi3HatMoteusInterface::ServoCommand;
 using Reply = moteus::Pi3HatMoteusInterface::ServoReply;
-using Get_Function = std::function<moteus::QueryResultV2 ( std::vector<Reply>& replies, int bus, int id, int opt,int& err)>;
-using Policy_Function = std::function<void(bool msg_valid, bool msg_coplete, Command* cmd_d)>;
+using Get_Function = std::function<moteus::QueryResultV2 ( std::vector<Reply>& replies, int bus, int id, int opt,int& err,int provided_msg)>;
+using Policy_Function = std::function<void( bool msg_valid, bool msg_coplete, Command* cmd_d)>;
 using Bind_Pol_Function = std::function<void(bool msg_valid, bool msg_coplete)>;
+namespace hardware_interface
+{
+    constexpr char HW_IF_TEMPERATURE[] = "temperature";
+    constexpr char HW_IF_KP_SCALE[] = "kp_scale_value";
+    constexpr char HW_IF_KD_SCALE[] = "kd_scale_value";
 
+}
 namespace pi3hat_hw_interface
 {
     namespace motor_manager
@@ -40,20 +50,35 @@ namespace pi3hat_hw_interface
 
         struct motor_mem
         {
-            double* msr_pos = NULL;
-            double* msr_vel = NULL;
-            double* msr_trq = NULL;
-            double* msr_tmp = NULL;
-            double* msr_enc_pos = NULL;
-            double* msr_enc_vel = NULL;
-            double* cmd_pos = NULL;
-            double* cmd_vel = NULL;
-            double* cmd_trq = NULL;
-            double* kp_scale = NULL;
-            double* kd_scale = NULL;
+            double msr_pos = 0.0;
+            double msr_vel = 0.0;
+            double msr_trq = 0.0;
+            double msr_tmp = 0.0;
+            double msr_enc_pos = 0.0;
+            double msr_enc_vel = 0.0;
+            double cmd_pos = 0.0;
+            double cmd_vel = 0.0;
+            double cmd_trq = 0.0;
+            double kp_scale = 0.0;
+            double kd_scale = 0.0;
             Command* cmd_data = NULL;
             std::vector<Reply>* replies = NULL;
-            
+            bool operator=(motor_mem a)
+            {
+                return(
+                    msr_pos == a.msr_pos &&
+                    msr_vel == a.msr_vel &&
+                    msr_trq == a.msr_trq &&
+                    msr_tmp == a.msr_tmp &&
+                    msr_enc_pos == a.msr_enc_pos &&
+                    msr_enc_vel == a.msr_enc_vel &&
+                    cmd_pos == a.cmd_pos &&
+                    cmd_vel == a.cmd_vel &&
+                    cmd_trq == a.cmd_trq &&
+                    kp_scale == a.kp_scale &&
+                    kd_scale == a.kd_scale
+                    );
+            };
 
         };
 
@@ -64,51 +89,82 @@ namespace pi3hat_hw_interface
         {
             public:
                 Motor_Manager(
-                    motor_mem mem_str, 
-                    bool second_enc, 
+                    std::string name,
+                    Command * cmd_data,
+                    std::vector<Reply>* replies, 
+                    double motor_trans,
+                    double second_trans, 
                     uint8_t id, 
                     uint8_t bus, 
                     Policy_Function pl_fun,
                     Get_Function gt_fun):
-                second_enc_(second_enc),
                 id_(id),
-                bus_(bus)
+                bus_(bus),
+                motor_trans_(motor_trans),
+                sec_enc_trans_(second_trans),
+                name_(name)
                 {
-                    msr_pos_ = mem_str.msr_pos;
-                    msr_vel_ = mem_str.msr_vel;
-                    msr_trq_ = mem_str.msr_trq;
-                    msr_tmp_ = mem_str.msr_tmp;
-                    cmd_kp_scale_ = mem_str.kp_scale;
-                    cmd_kd_scale_ = mem_str.kd_scale;
-                    cmd_data_ = mem_str.cmd_data;
-                    cmd_pos_ = mem_str.cmd_pos;
-                    cmd_vel_ = mem_str.cmd_vel;
-                    cmd_trq_ = mem_str.cmd_trq;
-                    replies_ = mem_str.replies;
-                    if(second_enc)
-                    {
-                        msr_enc_pos_ = mem_str.msr_enc_pos;
-                        msr_enc_vel_ = mem_str.msr_enc_vel;
-                    }
-                    // std::function<void(int,int,int)> F([](int a, int b, int c){
-                        
-                    //     b--;
-                    //     c = a;
-                    //     a++;
-                    // });
                     pol_callback_ = std::bind(pl_fun,_1,_2,this->cmd_data_);
                     get_callback_ = gt_fun;
+                    cmd_data_ = cmd_data;
+                    replies_ = replies;
+                    inter_type_cmd_ = {
+                            hardware_interface::HW_IF_POSITION,
+                            hardware_interface::HW_IF_VELOCITY,
+                            hardware_interface::HW_IF_EFFORT,
+                            hardware_interface::HW_IF_KP_SCALE,
+                            hardware_interface::HW_IF_KD_SCALE
+                        };
+                    if(second_trans == 0.0)
+                    {
+                        
+                        inter_type_stt_ = {
+                            hardware_interface::HW_IF_POSITION,
+                            hardware_interface::HW_IF_VELOCITY,
+                            hardware_interface::HW_IF_EFFORT,
+                            hardware_interface::HW_IF_TEMPERATURE
+                        
+                        };
+                    }
+                    else
+                    {
+                        inter_type_stt_ = {
+                            hardware_interface::HW_IF_POSITION,
+                            hardware_interface::HW_IF_VELOCITY,
+                            hardware_interface::HW_IF_EFFORT,
+                            hardware_interface::HW_IF_TEMPERATURE,
+                            hardware_interface::HW_IF_POSITION,
+                            hardware_interface::HW_IF_VELOCITY
+                        };
+                    }
                     //std::function<void(bool,bool,Command&)> a = bind(&pl_fun,this, _1,_2,_3);
                 };
                 ~Motor_Manager()
                 {};
-                // set the current message resolution as res in cmd_data_
+                // set and get the current command resolution
                 void set_command_resolution(moteus::PositionResolution res);
-
                 moteus::QueryCommandV2 get_qry_res();
-                moteus::PositionResolution get_cmd_res();
 
+                // set and get the current query resolution
                 void set_query_resolution(moteus::QueryCommandV2 res);
+                moteus::PositionResolution get_cmd_res();
+                
+                // get the command location variable
+                double* get_cmd_interface(std::string type);
+
+                
+
+                // get the state location variable
+                double* get_stt_interface(std::string type, bool sensor);
+
+                std::vector<std::string> get_command_type(){
+                    return inter_type_cmd_;
+                };
+
+                std::vector<std::string> get_state_type()
+                {
+                    return inter_type_stt_;
+                };
 
                 // set the command position into the data structure
                 void make_position();
@@ -118,11 +174,79 @@ namespace pi3hat_hw_interface
 
                 void drop_torque();
 
+                void set_cmd(double val, int i)
+                {
+                    if(i==0)
+                        cmd_pos_ = val;
+                    else if(i==1)
+                        cmd_vel_ = val;
+                    else if(i == 2)
+                        cmd_trq_ = val;
+                    else if(i == 3)
+                        cmd_kp_scale_ = val;
+                    else if(i == 4)
+                        cmd_kd_scale_ = val;
+                    else
+                        throw std::logic_error("Pass index of command pos with wrong value");
+                };
+                 double get_cmd( int i)
+                {
+                    if(i==0)
+                        return cmd_pos_;
+                    else if(i==1)
+                        return cmd_vel_;
+                    else if(i == 2)
+                        return cmd_trq_;
+                    else if(i == 3)
+                        return cmd_kp_scale_;
+                    else if(i == 4)
+                        return cmd_kd_scale_;
+                    else
+                        throw std::logic_error("Pass index of command pos with wrong value");
+                };  
+
+                void set_stt(double val, int i)
+                {
+                    if(i==0)
+                        msr_pos_ = val;
+                    else if(i==1)
+                        msr_vel_ = val;
+                    else if(i == 2)
+                        msr_trq_ = val;
+                    else if(i == 3)
+                        msr_tmp_ = val;
+                    else if(i == 4)
+                        msr_enc_pos_ = val;
+                    else if(i == 5)
+                        msr_enc_vel_ = val;
+                    else
+                        throw std::logic_error("Pass index of command pos with wrong value");
+                };
+                 double get_stt( int i)
+                {
+                    if(i==0)
+                        return msr_pos_;
+                    else if(i==1)
+                        return msr_vel_;
+                    else if(i == 2)
+                        return msr_trq_;
+                    else if(i == 3)
+                        return msr_tmp_;
+                    else if(i == 4)
+                        return msr_enc_pos_;
+                    else if(i == 5)
+                        return msr_enc_vel_;
+                    else
+                        throw std::logic_error("Pass index of command pos with wrong value");
+                };
+
+
                 // get the readed value into state_vars and set flag to decide 
-                int get_motor_state();
+                int get_motor_state(int prov_msg);
 
                 uint8_t get_id();
                 uint8_t get_bus();
+                std::string get_name(bool sensor);
 
                 
 
@@ -142,21 +266,28 @@ namespace pi3hat_hw_interface
                 Bind_Pol_Function pol_callback_;
 
 
-                double* msr_pos_;
-                double* msr_vel_;
-                double* msr_trq_;
-                double* msr_tmp_;
-                double* msr_enc_pos_;
-                double* msr_enc_vel_;
-                double* cmd_kp_scale_;
-                double* cmd_kd_scale_;
-                double* cmd_pos_;
-                double* cmd_vel_;
-                double* cmd_trq_;
+                double msr_pos_;
+                double msr_vel_;
+                double msr_trq_;
+                double msr_tmp_;
+                double msr_enc_pos_;
+                double msr_enc_vel_;
+                double cmd_kp_scale_;
+                double cmd_kd_scale_;
+                double cmd_pos_;
+                double cmd_vel_;
+                double cmd_trq_;
                 Command* cmd_data_;
-                bool second_enc_;
+                
                 uint8_t id_;
                 uint8_t bus_;
+                double mot_red_ = 0.0,sens_red_=0.0, motor_trans_,sec_enc_trans_;
+                std::string name_;
+                std::vector<std::string> inter_type_stt_; 
+                std::vector<std::string> inter_type_cmd_; 
+                int packet_loss_ = 0, count_ = 0, count_perc_loss_ = 0;
+                double perc_loss_ = 0.0;
+                
 
                 
 

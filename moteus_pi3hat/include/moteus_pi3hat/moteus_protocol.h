@@ -21,6 +21,7 @@
 #include <cstring>
 #include <limits>
 #include <tuple>
+#include <stdexcept>
 
 /// @file
 ///
@@ -548,6 +549,21 @@ struct PositionResolution {
   Resolution maximum_torque = Resolution::kIgnore;
   Resolution stop_position = Resolution::kFloat;
   Resolution watchdog_timeout = Resolution::kFloat;
+
+  bool operator==(const PositionResolution a)
+  {
+    return(
+      position == a.position &&
+      velocity == a.velocity &&
+      feedforward_torque == a.velocity &&
+      kp_scale == a.kp_scale &&
+      kd_scale == a.kp_scale &&
+      maximum_torque == a.maximum_torque &&
+      stop_position == a.stop_position &&
+      watchdog_timeout == a.watchdog_timeout
+
+    );
+  };
 };
 
 inline void EmitStopCommand(WriteCanFrame* frame) {
@@ -641,8 +657,8 @@ struct QueryCommandV2 {
   Resolution voltage = Resolution::kIgnore;
   Resolution temperature = Resolution::kInt8;
   Resolution fault = Resolution::kInt8;
-  Resolution sec_enc_pos = Resolution::kInt16;
-  Resolution sec_enc_vel = Resolution::kInt16;
+  Resolution sec_enc_pos = Resolution::kIgnore;
+  Resolution sec_enc_vel = Resolution::kIgnore;
 
   bool any_set() const {
     return mode != Resolution::kIgnore ||
@@ -658,6 +674,22 @@ struct QueryCommandV2 {
         sec_enc_pos != Resolution::kIgnore ||
         sec_enc_vel != Resolution::kIgnore;
   }
+  bool operator==(const QueryCommandV2 a)
+  {
+    return(
+        mode == a.mode &&
+        position == a.position &&
+        velocity == a.velocity &&
+        torque == a.torque &&
+        q_current == a.q_current && 
+        d_current == a.d_current &&
+        rezero_state == a.rezero_state &&
+        voltage == a.voltage &&
+        temperature == a.temperature &&
+        sec_enc_pos == a.sec_enc_pos &&
+        sec_enc_vel == a.sec_enc_vel
+    );
+  };
 };
 
 
