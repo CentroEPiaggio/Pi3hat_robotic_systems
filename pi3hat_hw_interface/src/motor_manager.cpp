@@ -114,9 +114,9 @@ namespace pi3hat_hw_interface
                 cmd_data_ -> bus = bus_;
                 cmd_data_ -> mode = moteus::Mode::kPosition;
 
-                cmd_data_ -> position.position = cmd_pos_;
-                cmd_data_ -> position.velocity =  cmd_vel_;
-                cmd_data_ -> position.feedforward_torque = cmd_trq_;
+                cmd_data_ -> position.position = cmd_pos_ * motor_trans_;
+                cmd_data_ -> position.velocity =  cmd_vel_ * motor_trans_;
+                cmd_data_ -> position.feedforward_torque = cmd_trq_ / motor_trans_;
                 cmd_data_ -> position.kd_scale = cmd_kd_scale_;
                 cmd_data_ -> position.kp_scale = cmd_kp_scale_;
                 cmd_data_ -> query = qry_res_;
@@ -172,14 +172,14 @@ namespace pi3hat_hw_interface
                 std::printf("valid\n");
                 msg_valid_ = true;
                 msg_complete_ = true;
-                msr_pos_ = res.position;
-                msr_vel_ = res.velocity;
-                msr_trq_ = res.torque;
+                msr_pos_ = res.position/motor_trans_;
+                msr_vel_ = res.velocity/motor_trans_;
+                msr_trq_ = res.torque*motor_trans_;
                 msr_tmp_ = res.temperature;
-                if(sec_enc_trans_ == 0.0)
+                if(sec_enc_trans_ != 0.0)
                 {
-                    msr_enc_pos_ = res.sec_enc_pos;
-                    msr_enc_vel_ = res.sec_enc_vel;
+                    msr_enc_pos_ = res.sec_enc_pos/sec_enc_trans_;
+                    msr_enc_vel_ = res.sec_enc_vel/sec_enc_trans_;
                 }
 
                 return res.fault;

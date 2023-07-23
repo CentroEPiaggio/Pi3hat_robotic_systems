@@ -3,29 +3,19 @@
     <ros2_control name="MoteusPi3Hat_Interface" type="system">
         <hardware>
             <plugin>pi3hat_hw_interface/MoteusPi3Hat_Interface</plugin>
-            <param name="timeout" >100</param>
-            <param name="command_type" >0</param>
-            <param name="Kp" >10.0</param>
-            <param name="Kv" >0.0</param>
-            <param name="I_saturation" >10.0</param>
+
         </hardware>
         <joint name="joint1">
-            <command_interface name="position">
-            <param name="min">-1</param>
-            <param name="max">1</param>
-            </command_interface>
-            <state_interface name="position"/>
-            <param name="ID">2</param>
-            <param name="BUS">1</param>
+            <param name="id">2</param>
+            <param name="bus">1</param>
+            <param name="motor_transmission"> 1.0</param>
+            <param name="sec_enc_transmission"> 0.0</param>
         </joint>
          <joint name="joint2">
-            <command_interface name="position">
-            <param name="min">-1</param>
-            <param name="max">1</param>
-            </command_interface>
-            <state_interface name="position"/>
-            <param name="ID">1</param>
-            <param name="BUS">1</param>
+            <param name="id">1</param>
+            <param name="bus">1</param>
+            <param name="motor_transmission"> 1.0</param>
+            <param name="sec_enc_transmission"> 0.0</param>
         </joint>
     </ros2_control>
 </robot>

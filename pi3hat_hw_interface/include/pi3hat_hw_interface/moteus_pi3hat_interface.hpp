@@ -15,6 +15,10 @@
 #include <vector>
 #include <utility>
 #include <chrono>
+#include <future>
+#include <functional>
+#include <stdio.h>
+
 
 #include "rclcpp/macros.hpp"
 #include "rclcpp/logger.hpp"
@@ -26,8 +30,26 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "rclcpp_lifecycle/lifecycle_publisher.hpp"
+#include "pi3hat_hw_interface/motor_manager.hpp"
+
+#define NUM_STOP 10
+
 
 using namespace mjbots;
+using pi3hat_hw_interface::motor_manager::Motor_Manager;
+using MoteusInterface = moteus::Pi3HatMoteusInterface;
+using Command = moteus::Pi3HatMoteusInterface::ServoCommand;
+using Reply = moteus::Pi3HatMoteusInterface::ServoReply;
+using Options = moteus::Pi3HatMoteusInterface::Options;
+using Data = moteus::Pi3HatMoteusInterface::Data;
+using Output = moteus::Pi3HatMoteusInterface::Output;
+using namespace std::chrono_literals;
+
+#define SLEEP_FOR_10MS 10000000ns
+
+using Get_Function = std::function<moteus::QueryResultV2 ( std::vector<Reply>& replies, int bus, int id, int opt,int& err,int provided_msg)>;
+using Policy_Function = std::function<void( bool msg_valid, bool msg_coplete, Command* cmd_d)>;
+
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
 namespace pi3hat_hw_interface
@@ -51,9 +73,35 @@ namespace pi3hat_hw_interface
 
                 hardware_interface::return_type read(const rclcpp::Time & , const rclcpp::Duration & ) override;
                 hardware_interface::return_type write(const rclcpp::Time & , const rclcpp::Duration & ) override;
+
+                void cycle()
+                {
+                    auto promise = make_shared<std::promise<Output>>();
+                    // communication_thread_.Cycle(
+                    //         data_,
+                    //         [promise](const Output& out)
+                    //         {
+                    //             promise->set_value(out);
+                    //         }
+                    //     );
+                    // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call");
+                    can_recvd_ = promise->get_future();
+
+                };
             private:
                 
-                double a,b;
+                std::vector<Motor_Manager> motors_;
+                std::vector<Command> cmd_data_;
+                std::vector<Reply> msr_data_;
+                Options opt_;
+                // MoteusInterface communication_thread_;
+                Get_Function gets_;
+                Policy_Function poly_;
+                Data data_;
+                Output out_;
+                Options opt_thread_;
+                std::future<Output> can_recvd_;
+
         };
     }
 }

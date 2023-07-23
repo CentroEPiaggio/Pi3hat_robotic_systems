@@ -1,56 +1,18 @@
 controller_manager:
   ros__parameters:
-    update_rate: 1000  
+    update_rate: 10  
 
+    pd_joint_state:
+      type: rbt_pd_cnt/Real_PD_Cnt
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
-    
-    wb_forward_position_controller:
-      type: position_controllers/JointGroupPositionController
-    
-    wb_pid_controller:
-      type: ros2_pid_controller/PID_Controller
-    solo12_broadcast:
-      type: solo12_plot_broadcaster/SOLO12_Plot_broadcaster
 
-wb_forward_position_controller:
-  ros__parameters:
-    joints: 
-      - LF_HAA
-      - LF_HFE
-      - LF_KFE 
-      - RF_HAA
-      - RF_HFE
-      - RF_KFE
-      - LH_HAA
-      - LH_HFE
-      - LH_KFE 
-      - RH_HAA
-      - RH_HFE
-      - RH_KFE 
-    
-    
-
-wb_pid_controller:
+pd_joint_state:
   ros__parameters:
     joint: 
-      - LF_HAA
-      - LF_HFE
-      - LF_KFE 
-      - RF_KAA
-      - RF_HFE
-      - RF_KFE
-      - LH_KAA
-      - LH_HFE
-      - LH_KFE 
-      - RH_HAA
-      - RH_HFE
-      - RH_KFE 
-    interface_name: position
-    K_i: 0.0
-    K_d: 0.00001
-    K_p: 0.01
-    start_command: 
-    - 0.0
-    - 0.0 
-    - 0.0
+      - joint1
+      - joint2
+    init_pos:
+      - 0.0
+      - 0.0
+    

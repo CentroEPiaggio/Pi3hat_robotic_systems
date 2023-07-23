@@ -40,6 +40,12 @@ class Pi3HatMoteusInterface {
  public:
   struct Options {
     int cpu = -1;
+    Options set_cpu(int i)
+    {
+      Options a;
+      a.cpu = i;
+      return a;
+    }
   };
 
   Pi3HatMoteusInterface(const Options& options)

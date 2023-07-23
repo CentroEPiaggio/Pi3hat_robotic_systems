@@ -89,15 +89,15 @@ namespace pi3hat_hw_interface
         {
             public:
                 Motor_Manager(
-                    std::string name,
-                    Command * cmd_data,
-                    std::vector<Reply>* replies, 
-                    double motor_trans,
-                    double second_trans, 
-                    uint8_t id, 
-                    uint8_t bus, 
-                    Policy_Function pl_fun,
-                    Get_Function gt_fun):
+                    std::string name = "std",
+                    Command * cmd_data = nullptr,
+                    std::vector<Reply>* replies = nullptr, 
+                    double motor_trans = 0.0,
+                    double second_trans = 0.0, 
+                    uint8_t id =0, 
+                    uint8_t bus = 0, 
+                    Policy_Function pl_fun = nullptr,
+                    Get_Function gt_fun = nullptr):
                 id_(id),
                 bus_(bus),
                 motor_trans_(motor_trans),
@@ -141,6 +141,29 @@ namespace pi3hat_hw_interface
                 };
                 ~Motor_Manager()
                 {};
+
+                void set_all(
+                    std::string name,
+                    Command * cmd_data,
+                    std::vector<Reply>* replies, 
+                    double motor_trans,
+                    double second_trans, 
+                    uint8_t id, 
+                    uint8_t bus, 
+                    Policy_Function pl_fun,
+                    Get_Function gt_fun)
+                    {
+                        name_ = name;
+                        cmd_data_ = cmd_data;
+                        replies_ = replies;
+                        motor_trans_ = motor_trans;
+                        sec_enc_trans_ = second_trans;
+                        id_ = id;
+                        bus_ = bus;
+                        get_callback_ = gt_fun;
+                        pol_callback_ = std::bind(pl_fun,_1,_2,this->cmd_data_);
+
+                    };
                 // set and get the current command resolution
                 void set_command_resolution(moteus::PositionResolution res);
                 moteus::QueryCommandV2 get_qry_res();
@@ -152,8 +175,20 @@ namespace pi3hat_hw_interface
                 // get the command location variable
                 double* get_cmd_interface(std::string type);
 
-                
+                void set_msg_valid(bool val)
+                {
+                    msg_valid_ = val;
+                };
 
+                
+                double get_transmission(){
+                    return motor_trans_;
+                };
+
+                double get_sec_transmission()
+                {
+                    return sec_enc_trans_;
+                };
                 // get the state location variable
                 double* get_stt_interface(std::string type, bool sensor);
 
@@ -248,6 +283,9 @@ namespace pi3hat_hw_interface
                 uint8_t get_bus();
                 std::string get_name(bool sensor);
 
+                // Motor_Maneger(const Motor_Manager & other) = default;
+                // Motor_Maneger(Motor_Manager && other) = default;
+
                 
 
             private:
@@ -266,17 +304,17 @@ namespace pi3hat_hw_interface
                 Bind_Pol_Function pol_callback_;
 
 
-                double msr_pos_;
-                double msr_vel_;
-                double msr_trq_;
-                double msr_tmp_;
-                double msr_enc_pos_;
-                double msr_enc_vel_;
-                double cmd_kp_scale_;
-                double cmd_kd_scale_;
-                double cmd_pos_;
-                double cmd_vel_;
-                double cmd_trq_;
+                double msr_pos_ = 0.0;
+                double msr_vel_= 0.0;
+                double msr_trq_= 0.0;
+                double msr_tmp_ = 0.0;
+                double msr_enc_pos_ = 0.0;
+                double msr_enc_vel_ = 0.0;
+                double cmd_kp_scale_ = 1.0;
+                double cmd_kd_scale_ = 1.0;
+                double cmd_pos_ = 0.0;
+                double cmd_vel_ = 0.0;
+                double cmd_trq_ = 0.0;
                 Command* cmd_data_;
                 
                 uint8_t id_;
