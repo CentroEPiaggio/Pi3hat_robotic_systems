@@ -9,10 +9,15 @@ from launch.event_handlers import OnProcessExit
 from launch.substitutions import Command,LaunchConfiguration,PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
-
+import subprocess
 def generate_launch_description():
 
     #get solo12 urdf with system HW interface 
+
+    subprocess.run(["sudo",
+                    "/home/jacopocioni/mul_env/bin/python3",
+                    "/home/jacopocioni/mulinex_ws/src/interface_node/launch/prova_set.py"])
+    print("i' have executed the configuration process")
     moteus_pi3hat_path = get_package_share_path("pi3hat_hw_interface")
     moteus_pi3hat_path = os.path.join(moteus_pi3hat_path,"urdf/test_int.urdf.xacro") 
     moteus_pi3hat_model = DeclareLaunchArgument(

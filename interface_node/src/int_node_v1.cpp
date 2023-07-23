@@ -224,6 +224,7 @@ namespace pi3hat_node
                             }
                         );
                         can_rcvd_ = promise->get_future();
+                        RCLCPP_INFO(this->get_logger(),"valid output %d",can_rcvd_.valid());
                          
                         
                     }

@@ -77,15 +77,16 @@ namespace pi3hat_hw_interface
                 void cycle()
                 {
                     auto promise = make_shared<std::promise<Output>>();
-                    // communication_thread_.Cycle(
-                    //         data_,
-                    //         [promise](const Output& out)
-                    //         {
-                    //             promise->set_value(out);
-                    //         }
-                    //     );
-                    // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call");
+                    communication_thread_.Cycle(
+                            data_,
+                            [promise](const Output& out)
+                            {
+                                promise->set_value(out);
+                            }
+                        );
                     can_recvd_ = promise->get_future();
+                    //RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call valid %d", can_recvd_.valid());
+                    // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call gets %d", can_recvd_.get().query_result_size);
 
                 };
             private:
@@ -94,7 +95,7 @@ namespace pi3hat_hw_interface
                 std::vector<Command> cmd_data_;
                 std::vector<Reply> msr_data_;
                 Options opt_;
-                // MoteusInterface communication_thread_;
+                MoteusInterface communication_thread_;
                 Get_Function gets_;
                 Policy_Function poly_;
                 Data data_;

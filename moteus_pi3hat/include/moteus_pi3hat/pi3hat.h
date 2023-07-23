@@ -202,7 +202,7 @@ class Pi3Hat {
     /// This is not super precise, as the writing process has various
     /// queues, so it will need to encompass some amount of the time
     /// spend writing as well.
-    uint32_t timeout_ns = 0;
+    uint32_t timeout_ns = 1000000;
 
     /// When waiting for CAN replies, guarantee to wait for at least
     /// this many nanoseconds after the final transmission is sent

@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 10  
+    update_rate: 500  
 
     pd_joint_state:
       type: rbt_pd_cnt/Real_PD_Cnt

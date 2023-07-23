@@ -1,6 +1,8 @@
 #include "pi3hat_hw_interface/motor_manager.hpp"
 #include "moteus_pi3hat/moteus_protocol.h"
 #include "moteus_pi3hat/pi3hat.h"
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/macros.hpp"
 #define MAX_COUNT 10000
 #include <stdio.h>
 #include <cstdio>
@@ -129,7 +131,9 @@ namespace pi3hat_hw_interface
 
         void Motor_Manager::make_stop()
         {
+            RCLCPP_INFO(rclcpp::get_logger("pinO"),"IL VALORE DI ID prima DEL MK_STP E\' %d",cmd_data_->id);
             cmd_data_ -> id = id_;
+            RCLCPP_INFO(rclcpp::get_logger("pinO"),"IL VALORE DI ID dopo DEL MK_STP E\' %d",cmd_data_->id);
             cmd_data_ -> bus = bus_;
             cmd_data_ -> mode = moteus::Mode::kStopped;
             cmd_data_ ->query = qry_res_;
