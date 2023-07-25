@@ -3,7 +3,7 @@
 #include "moteus_pi3hat/pi3hat.h"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/macros.hpp"
-#define MAX_COUNT 10000
+
 #include <stdio.h>
 #include <cstdio>
 
@@ -125,20 +125,23 @@ namespace pi3hat_hw_interface
                 cmd_data_ -> resolution = cmd_res_;
                 pol_callback_(msg_valid_,msg_complete_);
             }
+            else
+                RCLCPP_WARN(rclcpp::get_logger("pp"),"Occio non passa nell\'iff");
                 
             
         }
 
         void Motor_Manager::make_stop()
         {
-            RCLCPP_INFO(rclcpp::get_logger("pinO"),"IL VALORE DI ID prima DEL MK_STP E\' %d",cmd_data_->id);
+            //RCLCPP_INFO(rclcpp::get_logger("pinO"),"IL VALORE DI ID prima DEL MK_STP E\' %d",cmd_data_->id);
             cmd_data_ -> id = id_;
-            RCLCPP_INFO(rclcpp::get_logger("pinO"),"IL VALORE DI ID dopo DEL MK_STP E\' %d",cmd_data_->id);
+            //RCLCPP_INFO(rclcpp::get_logger("pinO"),"IL VALORE DI ID dopo DEL MK_STP E\' %d",cmd_data_->id);
             cmd_data_ -> bus = bus_;
             cmd_data_ -> mode = moteus::Mode::kStopped;
             cmd_data_ ->query = qry_res_;
             cmd_data_ -> resolution = cmd_res_;
         }
+        
 
         void Motor_Manager::drop_torque()
         {
@@ -148,32 +151,39 @@ namespace pi3hat_hw_interface
         int Motor_Manager::get_motor_state(int prov_msg)
         {
             int error;
-            std::printf("reply nums %d\n",replies_->size());
+            count_++;
+            if(count_ % MAX_COUNT == 0)
+            {
+                RCLCPP_WARN(rclcpp::get_logger("LOGGER_NAME"), "arrived msg percentage of motor ID::%d is %lf",id_, ((float)packet_loss_)/(float)count_);
+
+                count_ = 0;
+                packet_loss_ = 0;
+
+            }
+            
+            //std::printf("reply nums %d\n",replies_->size());
             moteus::QueryResultV2 res = get_callback_(*replies_,bus_,id_,msg_complete_,error,prov_msg);
             if(error == 1)
             {
-                std::printf("ERR1\n");
+                //std::printf("ERR1\n");
                 msg_valid_ = false;
                 msg_complete_ = false;
                 return 1;
             }
             else if( error == 2)
             {
-                std::printf("ERR2\n");
+                //std::printf("ERR2\n");
+                packet_loss_ ++;
                 msg_valid_ = true;
                 msg_complete_ = false;
                 packet_loss_ ++;
-                if(++count_ ==  MAX_COUNT)
-                {
-                    perc_loss_ = (perc_loss_*count_perc_loss_ + packet_loss_/count_)/++count_perc_loss_;
-                    count_ = 0;
-                }
+               
                 
                 return 2;
             }
             else
             {
-                std::printf("valid\n");
+                // RCLCPP_ERROR(rclcpp::get_logger("PP"),"the read is ok");
                 msg_valid_ = true;
                 msg_complete_ = true;
                 msr_pos_ = res.position/motor_trans_;

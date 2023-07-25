@@ -10,7 +10,7 @@ async def main():
 #                                                                              CONFIGURATION VARIABLES                                                                                  #
 ######################################################################################################################################################################################    
     can_bus = 1
-    motor_id = 1
+    motor_id = 4
     sup_pos_limit = 1
     inf_pos_limit = -1
     MAXVEL = 1
@@ -22,7 +22,7 @@ async def main():
     FBV = 27.5
     RID = 9
     Period = 5 #[s]
-    Revolutions = 1
+    Revolutions = 10
     no_resp_count = 0
 
     cmd_positions = []
@@ -93,7 +93,7 @@ async def main():
             times.append(t)
             cmd_positions.append(pos)
             msr_positions.append(result[0].values[moteus.Register.POSITION])
-            filtered_msr_pos.append(result[0].values[moteus.Register.ENCODER_1_POSITION])
+            #filtered_msr_pos.append(result[0].values[moteus.Register.ENCODER_1_POSITION])
             
         else:
             no_resp_count = no_resp_count + 1

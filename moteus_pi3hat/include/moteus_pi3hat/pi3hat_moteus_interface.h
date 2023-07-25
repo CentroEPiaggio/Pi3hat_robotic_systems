@@ -26,6 +26,10 @@
 #include "moteus_pi3hat/pi3hat.h"
 #include "moteus_pi3hat/moteus_protocol.h"
 #include "moteus_pi3hat/realtime.h"
+#include "rclcpp/macros.hpp"
+#include "rclcpp/rclcpp.hpp"
+
+#include <iostream>
 
 
 
@@ -120,7 +124,6 @@ class Pi3HatMoteusInterface {
     ConfigureRealtime(options_.cpu);
 
     pi3hat_.reset(new pi3hat::Pi3Hat({}));
-
     while (true) {
       {
         std::unique_lock<std::mutex> lock(mutex_);

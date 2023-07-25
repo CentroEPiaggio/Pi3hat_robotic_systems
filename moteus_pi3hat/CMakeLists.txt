@@ -7,6 +7,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -14,9 +15,12 @@ find_package(ament_cmake REQUIRED)
 
 add_library(
       moteus_pi3hat
-      src/pi3hat.cc
-      src/pi3hat_tool.cc )
+      src/pi3hat.cc)
 
+add_executable(
+  moteus_pi3hat_tool
+  src/pi3hat_tool.cc 
+)
 
 target_include_directories(moteus_pi3hat
 PUBLIC
@@ -27,6 +31,10 @@ $<INSTALL_INTERFACE:include>)
 
 target_link_libraries(moteus_pi3hat
   bcm_host
+)
+
+target_link_libraries(moteus_pi3hat_tool
+  moteus_pi3hat
 )
       
 install(
@@ -42,7 +50,9 @@ install(
   RUNTIME DESTINATION bin
   INCLUDES DESTINATION include
 )
-
+install(TARGETS
+  moteus_pi3hat_tool 
+  DESTINATION lib/${PROJECT_NAME})
 
 ament_export_targets(export_moteus_pi3hat HAS_LIBRARY_TARGET)
 

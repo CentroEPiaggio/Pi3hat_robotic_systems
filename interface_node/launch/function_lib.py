@@ -37,8 +37,8 @@ class MActPar:
     MAXVEL = 1
     MAXPOW = 450
     MAXCUR = 40 
-    KP = 1.0
-    KD = 0.01
+    KP = 10.0
+    KD = 0.1
     KI = 0
     FBV = 27.5
     RID = 9

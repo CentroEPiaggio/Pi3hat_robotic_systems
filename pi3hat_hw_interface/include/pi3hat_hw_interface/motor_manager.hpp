@@ -12,6 +12,8 @@
 #include <tuple>
 // #define NULL __null
 
+#define MAX_COUNT 10000
+
 using namespace mjbots;
 using namespace std;
 using interface_tpl = std::tuple<std::string,const char*,double*>;
@@ -29,6 +31,8 @@ namespace hardware_interface
     constexpr char HW_IF_TEMPERATURE[] = "temperature";
     constexpr char HW_IF_KP_SCALE[] = "kp_scale_value";
     constexpr char HW_IF_KD_SCALE[] = "kd_scale_value";
+    constexpr char HW_IF_PACKAGE_PASS[] = "package_pass";
+
 
 }
 namespace pi3hat_hw_interface
@@ -177,6 +181,7 @@ namespace pi3hat_hw_interface
 
                 void set_msg_valid(bool val)
                 {
+                    //RCLCPP_WARN(rclcpp::get_logger("SET_VALID"),"valid is set %d",val);
                     msg_valid_ = val;
                 };
 
@@ -283,6 +288,11 @@ namespace pi3hat_hw_interface
                 uint8_t get_bus();
                 std::string get_name(bool sensor);
 
+                // double get_pkg_loss()
+                // {
+                //     return perc_loss_;
+                // };
+
                 // Motor_Maneger(const Motor_Manager & other) = default;
                 // Motor_Maneger(Motor_Manager && other) = default;
 
@@ -297,8 +307,8 @@ namespace pi3hat_hw_interface
 
                 std::vector<Reply>* replies_;
 
-                bool msg_valid_;
-                bool msg_complete_;
+                bool msg_valid_ = true;
+                bool msg_complete_ = true;
 
                 Get_Function get_callback_;
                 Bind_Pol_Function pol_callback_;
@@ -323,9 +333,7 @@ namespace pi3hat_hw_interface
                 std::string name_;
                 std::vector<std::string> inter_type_stt_; 
                 std::vector<std::string> inter_type_cmd_; 
-                int packet_loss_ = 0, count_ = 0, count_perc_loss_ = 0;
-                double perc_loss_ = 0.0;
-                
+                int packet_loss_ = 0, count_ = 0;
 
                 
 

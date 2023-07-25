@@ -1,8 +1,10 @@
 #include "pi3hat_hw_interface/moteus_pi3hat_interface.hpp"
 #include "pluginlib/class_list_macros.hpp"
+#include <cmath>
 #define LOGGER_NAME "MoteusPi3Hat_Interface"
 #define CPU 1
 using namespace rclcpp;
+#define MAX_COUNTER 10000
 namespace pi3hat_hw_interface
 {
     namespace moteus_pi3hat_interface
@@ -23,11 +25,11 @@ namespace pi3hat_hw_interface
                 if(i>prov_msg)
                     break;
                 if (item.id == id && item.bus == bus)
-                { 
+                    { 
                     err = 0;
                     return item.result; 
                     std::printf("FOUND: %d,%d",item.id,item.bus);
-                }
+                    }
                 }
                 std::printf("NOT FOUND");
                 err = 1;
@@ -39,10 +41,34 @@ namespace pi3hat_hw_interface
 
 
             };
+            
         };
         MoteusPi3Hat_Interface::~MoteusPi3Hat_Interface()
         {
+            auto a = std::chrono::nanoseconds(10000000);
+            for(int i = 0; i < NUM_STOP; i++)
+            {
 
+                while(!can_recvd_.valid())
+                {
+                    rclcpp::sleep_for(a);
+                }
+                
+                for(auto motor : motors_)
+                {
+                    motor.make_stop();
+                }  
+                
+                // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Stop command %d",i);
+
+                // rclcpp::sleep_for(a);
+                // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Stop command %d",i);
+
+                cycle();
+                
+                // eventually check fault
+            }
+            communication_thread_.~Pi3HatMoteusInterface();
         };
 
         CallbackReturn MoteusPi3Hat_Interface::on_init(const hardware_interface::HardwareInfo & info)
@@ -165,6 +191,7 @@ namespace pi3hat_hw_interface
                 //     RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "%d the id and bus data are %d and %d",i,cmd_data_[i].id,cmd_data_[i].bus);
                 //     RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "%d the kp_scale and kd_scale data are %lf and %lf",i,cmd_data_[i].position.kp_scale,cmd_data_[i].position.kd_scale);
                 // }
+                rclcpp::sleep_for(a);
                 try
                 {
                     cycle();
@@ -218,7 +245,7 @@ namespace pi3hat_hw_interface
         
         CallbackReturn MoteusPi3Hat_Interface::on_shutdown(const rclcpp_lifecycle::State&)
         {
-            // communication_thread_->~Pi3HatMoteusInterface();
+            communication_thread_.~Pi3HatMoteusInterface();
             return CallbackReturn::SUCCESS;
         };
 
@@ -286,40 +313,90 @@ namespace pi3hat_hw_interface
         hardware_interface::return_type MoteusPi3Hat_Interface::read(const rclcpp::Time & , const rclcpp::Duration & ) 
         {
             Output out;
+            
+            int i = 0;
+            count_ ++;
+            // if( count_ %1 00 == 0)
+            //     RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "100");
+            if(count_ % MAX_COUNT == 0)
+            {
+
+                not_val_cycle_ ++;
+                //RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "Not valid msg percentage is %d/ %d",not_val_cycle_,count_);
+                double perc = static_cast<double>(not_val_cycle_)/static_cast<double>(count_);
+                RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "Not valid msg percentage is %lf",perc);
+                count_ = 0;
+                not_val_cycle_ = 0;
+            }
             if(!can_recvd_.valid())
             {
+                not_val_cycle_++;
+                
                 for(auto motor: motors_)
                     motor.set_msg_valid(false);
+                   
+               
                 RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "Not valid msg");
             }
             else
             {
+                // for(auto rep : msr_data_)
+                // {
+                //     RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "The %d-th repies belong to ID: %d and bus %d the measured pos is %lf, vel is %lf, trq is %lf and temperature is %lf",i,rep.id,rep.bus, rep.result.position,
+                //     rep.result.velocity, rep.result.torque, rep.result.temperature);
+                //     i++;
+                // }
+                
                 out = can_recvd_.get();
-                RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "the output num is  %ld",out.query_result_size);
+                //RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "the output num is  %ld",out.query_result_size);
                 // out.query_result_size = msr_data_.size();
                 for(auto motor : motors_)
                 {
                     motor.set_msg_valid(true);
-                    motor.get_motor_state(out.query_result_size);
+                    i = motor.get_motor_state(out.query_result_size);
+                    if(i > 10)
+                    {
+                        RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Raised error %d",i);
+                        return hardware_interface::return_type::ERROR;
+                    }
                 }
 
+            }
+            for(auto &rep : msr_data_)
+            {
+                rep.result.position = std::nan("1");
+                rep.result.velocity = std::nan("2");
+                rep.result.torque = std::nan("3");
+                rep.result.temperature = std::nan("4");
+                rep.result.sec_enc_pos = std::nan("1");
+                rep.result.sec_enc_vel = std::nan("2");
             }
             return hardware_interface::return_type::OK;
         };
 
         hardware_interface::return_type MoteusPi3Hat_Interface::write(const rclcpp::Time & , const rclcpp::Duration & ) 
         {
+
             for(auto motor : motors_)
             {
                 motor.make_position();
                 // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "the motor ID is %d",motor.get_id());
 
             }
+            int i  = 0;
+            for(auto cmd : cmd_data_)
+            {
+                
+                //RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "The %d-th command belong to ID: %d and bus %d the commanded pos is %lf, vel is %lf, trq is %lf and kp,kd  is %lf,%lf",i,cmd.id,cmd.bus, cmd.position.position,
+                //cmd.position.velocity, cmd.position.feedforward_torque, cmd.position.kp_scale,cmd.position.kd_scale);
+                //i++;
+                //RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"the mode is %d",cmd.mode==moteus::Mode::kPosition?true:false);
+            }
             try
             {
                 cycle();
             }
-            catch(std::logic_error)
+            catch(std::logic_error err)
             {
                 RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Pi3Hat cycle error has rised");
             }

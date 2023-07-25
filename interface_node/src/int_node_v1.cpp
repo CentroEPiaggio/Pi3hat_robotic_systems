@@ -224,6 +224,7 @@ namespace pi3hat_node
                             }
                         );
                         can_rcvd_ = promise->get_future();
+                        
                         RCLCPP_INFO(this->get_logger(),"valid output %d",can_rcvd_.valid());
                          
                         
@@ -273,7 +274,7 @@ int main(int argc, char * argv[])
   std::shared_ptr<pi3hat_node::Pi3Hat_int> node;
   Options pi3hat_opt;
   pi3hat_opt.cpu = 1;
-  node = std::make_shared<pi3hat_node::Pi3Hat_int>(1,1,10,10,pi3hat_opt);
+  node = std::make_shared<pi3hat_node::Pi3Hat_int>(4,1,10,10,pi3hat_opt);
   exec.add_node(node);
   exec.spin();
   rclcpp::shutdown();
