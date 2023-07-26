@@ -112,6 +112,7 @@ namespace pi3hat_hw_interface
                     get_callback_ = gt_fun;
                     cmd_data_ = cmd_data;
                     replies_ = replies;
+                    packet_loss_ = 0;
                     inter_type_cmd_ = {
                             hardware_interface::HW_IF_POSITION,
                             hardware_interface::HW_IF_VELOCITY,
@@ -288,11 +289,29 @@ namespace pi3hat_hw_interface
                 uint8_t get_bus();
                 std::string get_name(bool sensor);
 
-                // double get_pkg_loss()
-                // {
-                //     return perc_loss_;
-                // };
-
+                int get_pkg_loss()
+                {
+                    RCLCPP_WARN(
+                        rclcpp::get_logger("PP"),
+                        "motor %d pkg loss at get is %d"
+                        ,id_,packet_loss_);
+                    return packet_loss_;
+                };
+                int reset_pkg_loss()
+                {
+                    packet_loss_ = 0;
+                };
+                bool get_msg_arrived()
+                {
+                    return msg_complete_;
+                };
+                void print_pl()
+                {
+                   RCLCPP_WARN(
+                        rclcpp::get_logger("PP"),
+                        "motor %d pkg loss at get is %d"
+                        ,id_,packet_loss_); 
+                };
                 // Motor_Maneger(const Motor_Manager & other) = default;
                 // Motor_Maneger(Motor_Manager && other) = default;
 
@@ -333,8 +352,7 @@ namespace pi3hat_hw_interface
                 std::string name_;
                 std::vector<std::string> inter_type_stt_; 
                 std::vector<std::string> inter_type_cmd_; 
-                int packet_loss_ = 0, count_ = 0;
-
+                int packet_loss_;
                 
 
 

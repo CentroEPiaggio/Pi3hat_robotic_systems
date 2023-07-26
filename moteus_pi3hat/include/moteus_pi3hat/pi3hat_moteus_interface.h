@@ -28,6 +28,7 @@
 #include "moteus_pi3hat/realtime.h"
 #include "rclcpp/macros.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp/macros.hpp"
 
 #include <iostream>
 
@@ -142,6 +143,7 @@ class Pi3HatMoteusInterface {
         active_ = false;
         std::swap(callback_copy, callback_);
       }
+     // RCLCPP_INFO(rclcpp::get_logger("Child_run"),"CALL CALLBACK");
       callback_copy(output);
     }
   }

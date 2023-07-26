@@ -19,22 +19,36 @@ namespace pi3hat_hw_interface
             gets_ = [] (std::vector<Reply>& replies,int bus,int id,int opt,int& err, int prov_msg ) -> moteus::QueryResultV2
             {
                 int i = 0;
+                bool discard = prov_msg == 1 ? false:true;
+                // RCLCPP_WARN(
+                //         rclcpp::get_logger(LOGGER_NAME),
+                //         "The message will be discarad %d"
+                //         ,discard);
                 for (const auto& item : replies) 
                 {
-                i++;
-                if(i>prov_msg)
-                    break;
-                if (item.id == id && item.bus == bus)
-                    { 
-                    err = 0;
-                    return item.result; 
-                    std::printf("FOUND: %d,%d",item.id,item.bus);
+                    if(item.id != std::nan("1") && item.bus != std::nan("1"))
+                    {
+
+                        if (item.id == id && item.bus == bus )
+                        { 
+                            if(discard)
+                            {
+                                discard = false;
+                            }
+                            else
+                            {
+                                err = 0;
+                                // RCLCPP_INFO(rclcpp::get_logger("AA"),"the motor id %d and bus %d has pkt index %d",id,bus,i);
+                                return item.result; 
+                                //std::printf("FOUND: %d,%d",item.id,item.bus);
+                            }
+                        }
                     }
                 }
-                std::printf("NOT FOUND");
+                //std::printf("NOT FOUND");
                 err = 1;
                 return {};
-            } ;
+            };
 
             poly_ = [](bool msg_valid, bool msg_complete,Command* cmd_d)
             {
@@ -79,6 +93,7 @@ namespace pi3hat_hw_interface
                 n_jnt);
             cmd_data_.resize(n_jnt);
             msr_data_.resize(2*n_jnt);
+            pkt_loss_.resize(n_jnt);
             motors_.resize(0);
             Command prova;
             uint8_t bus,id;
@@ -313,30 +328,20 @@ namespace pi3hat_hw_interface
         hardware_interface::return_type MoteusPi3Hat_Interface::read(const rclcpp::Time & , const rclcpp::Duration & ) 
         {
             Output out;
-            
+            double perc;
             int i = 0;
             count_ ++;
             // if( count_ %1 00 == 0)
             //     RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "100");
-            if(count_ % MAX_COUNT == 0)
-            {
-
-                not_val_cycle_ ++;
-                //RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "Not valid msg percentage is %d/ %d",not_val_cycle_,count_);
-                double perc = static_cast<double>(not_val_cycle_)/static_cast<double>(count_);
-                RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "Not valid msg percentage is %lf",perc);
-                count_ = 0;
-                not_val_cycle_ = 0;
-            }
-            if(!can_recvd_.valid())
+            
+            if(can_recvd_.wait_for(100us) != std::future_status::ready)
             {
                 not_val_cycle_++;
                 
                 for(auto motor: motors_)
                     motor.set_msg_valid(false);
-                   
-               
-                RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "Not valid msg");
+                // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "Not valid msg");
+                valid_ = false;
             }
             else
             {
@@ -346,59 +351,100 @@ namespace pi3hat_hw_interface
                 //     rep.result.velocity, rep.result.torque, rep.result.temperature);
                 //     i++;
                 // }
+                valid_ = true;
                 
-                out = can_recvd_.get();
-                //RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "the output num is  %ld",out.query_result_size);
+                //RCLCPP_INFO(rclcpp::get_logger(LOGGER_Nout = can_recvd_.get();AME), "the output num is  %ld",out.query_result_size);
                 // out.query_result_size = msr_data_.size();
-                for(auto motor : motors_)
+                for(auto &motor : motors_)
                 {
                     motor.set_msg_valid(true);
-                    i = motor.get_motor_state(out.query_result_size);
+                    // RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "not complete msg motor %d is  %d",motor.get_id(),motor.get_msg_arrived());
+                    i = motor.get_motor_state(motor.get_msg_arrived());
                     if(i > 10)
                     {
                         RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Raised error %d",i);
                         return hardware_interface::return_type::ERROR;
                     }
+                    // motor.print_pl();
                 }
 
             }
-            for(auto &rep : msr_data_)
+            
+            if(count_ % MAX_COUNT == 0)
             {
-                rep.result.position = std::nan("1");
-                rep.result.velocity = std::nan("2");
-                rep.result.torque = std::nan("3");
-                rep.result.temperature = std::nan("4");
-                rep.result.sec_enc_pos = std::nan("1");
-                rep.result.sec_enc_vel = std::nan("2");
+                int lost_pkt ;
+                for(size_t j = 0; j < pkt_loss_.size(); j++)
+                {
+
+                    perc = pkt_loss_.at(j) * MAX_COUNT * epoch_count_;
+                    // RCLCPP_WARN(
+                    //     rclcpp::get_logger(LOGGER_NAME),
+                    //     "motor %d has percentage of %lf"
+                    //     ,motors_[j].get_id(),perc);
+                    epoch_count_++;
+                    lost_pkt = motors_[j].get_pkg_loss();
+                    motors_[j].reset_pkg_loss();
+
+                    // RCLCPP_WARN(
+                    //     rclcpp::get_logger(LOGGER_NAME),
+                    //     "motor %d has no cpmpleted %d  msgs "
+                    //     ,motors_[j].get_id(),a)
+                    
+                    pkt_loss_.at(j) = static_cast<double>(perc +lost_pkt)/static_cast<double>(MAX_COUNT*epoch_count_);
+                    // RCLCPP_WARN(
+                    //     rclcpp::get_logger(LOGGER_NAME),
+                    //     "motor %d has percentage of %lf after update"
+                    //     ,motors_[j].get_id(),perc);
+                }
+                //RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "Not valid msg percentage is %d/ %d",not_val_cycle_,count_);
+                
+                perc = valid_loss_ * MAX_COUNT * (epoch_count_ -1);
+
+                valid_loss_ =  (perc + static_cast<double>(not_val_cycle_))/static_cast<double>(epoch_count_*MAX_COUNT);
+                
+               // RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "Not valid msg count is %d",not_val_cycle_);
+                count_ = 0;
+                not_val_cycle_ = 0;
+                RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"the validity loss is %lf",valid_loss_);
+                i = 0;
+                for(auto d : pkt_loss_)
+                {
+                    RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"the package loss  of motor %d is %lf",motors_[i].get_id(),d);
+                    i++;
+                }
             }
             return hardware_interface::return_type::OK;
         };
 
         hardware_interface::return_type MoteusPi3Hat_Interface::write(const rclcpp::Time & , const rclcpp::Duration & ) 
         {
-
-            for(auto motor : motors_)
+            if(valid_)
             {
-                motor.make_position();
-                // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "the motor ID is %d",motor.get_id());
+                for(auto &motor : motors_)
+                {
+                    motor.make_position();
+                    // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "the motor ID is %d",motor.get_id());
 
-            }
-            int i  = 0;
-            for(auto cmd : cmd_data_)
-            {
+                }
+
+                // int i  = 0;
+                // for(auto cmd : cmd_data_)
+                // {
+                    
+                //     //RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "The %d-th command belong to ID: %d and bus %d the commanded pos is %lf, vel is %lf, trq is %lf and kp,kd  is %lf,%lf",i,cmd.id,cmd.bus, cmd.position.position,
+                //     //cmd.position.velocity, cmd.position.feedforward_torque, cmd.position.kp_scale,cmd.position.kd_scale);
+                //     //i++;
+                   // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"the mode is ");
+                // }
                 
-                //RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "The %d-th command belong to ID: %d and bus %d the commanded pos is %lf, vel is %lf, trq is %lf and kp,kd  is %lf,%lf",i,cmd.id,cmd.bus, cmd.position.position,
-                //cmd.position.velocity, cmd.position.feedforward_torque, cmd.position.kp_scale,cmd.position.kd_scale);
-                //i++;
-                //RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"the mode is %d",cmd.mode==moteus::Mode::kPosition?true:false);
-            }
-            try
-            {
-                cycle();
-            }
-            catch(std::logic_error err)
-            {
-                RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Pi3Hat cycle error has rised");
+                try
+                {
+                    cycle();
+                }
+                catch(std::logic_error err)
+                {
+                    RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Pi3Hat cycle error has rised");
+                }
             }
             return hardware_interface::return_type::OK;
         };

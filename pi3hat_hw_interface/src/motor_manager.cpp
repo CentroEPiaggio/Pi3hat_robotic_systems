@@ -151,40 +151,38 @@ namespace pi3hat_hw_interface
         int Motor_Manager::get_motor_state(int prov_msg)
         {
             int error;
-            count_++;
-            if(count_ % MAX_COUNT == 0)
-            {
-                RCLCPP_WARN(rclcpp::get_logger("LOGGER_NAME"), "arrived msg percentage of motor ID::%d is %lf",id_, ((float)packet_loss_)/(float)count_);
+            // count_++;
+            // if(count_ % MAX_COUNT == 0)
+            // {
+            //     RCLCPP_WARN(rclcpp::get_logger("LOGGER_NAME"), "arrived msg percentage of motor ID::%d is %lf",id_, ((float)packet_loss_)/(float)count_);
 
-                count_ = 0;
-                packet_loss_ = 0;
+            //     count_ = 0;
+            //     packet_loss_ = 0;
 
-            }
+            // }
             
             //std::printf("reply nums %d\n",replies_->size());
             moteus::QueryResultV2 res = get_callback_(*replies_,bus_,id_,msg_complete_,error,prov_msg);
+           
             if(error == 1)
             {
-                //std::printf("ERR1\n");
-                msg_valid_ = false;
+                // assert(false);
                 msg_complete_ = false;
+                this->packet_loss_ ++;
+                msr_pos_ = std::nan("1");
+                msr_vel_ = std::nan("1");
+                msr_trq_ = std::nan("1");
+                msr_tmp_ = std::nan("1");
+                if(sec_enc_trans_ != 0.0)
+                {
+                    msr_enc_pos_ = std::nan("1");
+                    msr_enc_vel_ = std::nan("1");
+                }
                 return 1;
-            }
-            else if( error == 2)
-            {
-                //std::printf("ERR2\n");
-                packet_loss_ ++;
-                msg_valid_ = true;
-                msg_complete_ = false;
-                packet_loss_ ++;
-               
-                
-                return 2;
             }
             else
             {
                 // RCLCPP_ERROR(rclcpp::get_logger("PP"),"the read is ok");
-                msg_valid_ = true;
                 msg_complete_ = true;
                 msr_pos_ = res.position/motor_trans_;
                 msr_vel_ = res.velocity/motor_trans_;

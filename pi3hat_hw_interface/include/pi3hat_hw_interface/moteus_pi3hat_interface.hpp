@@ -77,21 +77,34 @@ namespace pi3hat_hw_interface
 
                 void cycle()
                 {
-                    auto promise = make_shared<std::promise<Output>>();
-                    data_.commands = {cmd_data_.data(),cmd_data_.size()};
-                    data_.replies = {msr_data_.data(),msr_data_.size()};
-                    communication_thread_.Cycle(
-                            data_,
-                            [promise](const Output& out)
-                            {
-                                promise->set_value(out);
-                                // RCLCPP_WARN(rclcpp::get_logger("PINO"),"CALL Communication Callback with out %ld",out.query_result_size);
-                            }
-                        );
-                    can_recvd_ = promise->get_future();
-                    // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call valid %d", can_recvd_.valid());
-                    // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call gets %d", can_recvd_.get().query_result_size);
-
+                    if(valid_)
+                    {
+                        auto promise = make_shared<std::promise<Output>>();
+                        for(auto &rep : msr_data_)
+                        {
+                            rep.result.position = std::nan("1");
+                            rep.result.velocity = std::nan("2");
+                            rep.result.torque = std::nan("3");
+                            rep.result.temperature = std::nan("4");
+                            rep.result.sec_enc_pos = std::nan("1");
+                            rep.result.sec_enc_vel = std::nan("2");
+                        }
+                        data_.commands = {cmd_data_.data(),cmd_data_.size()};
+                        data_.replies  = {msr_data_.data(),msr_data_.size()};
+                        communication_thread_.Cycle(
+                                data_,
+                                [promise](const Output& out)
+                                {
+                                    promise->set_value(out);
+                                    // if(out.query_result_size < 2)
+                                        RCLCPP_WARN(rclcpp::get_logger("PINO"),"CALL Communication Callback with out %ld",out.query_result_size);
+                                }
+                            );
+                            
+                        can_recvd_ = promise->get_future();
+                        //RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call valid %d", can_recvd_.valid());
+                        // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call gets %d", can_recvd_.get().query_result_size);
+                    }
                 };
             private:
                 
@@ -107,7 +120,10 @@ namespace pi3hat_hw_interface
                 Options opt_thread_;
                 std::future<Output> can_recvd_;
                 int count_ = 0 ;
-                int not_val_cycle_ = 0;
+                int not_val_cycle_ = 0,epoch_count_=0;
+                std::vector<double> pkt_loss_;
+                double valid_loss_ = 0.0;
+                bool valid_ = true;
         };
     }
 }
