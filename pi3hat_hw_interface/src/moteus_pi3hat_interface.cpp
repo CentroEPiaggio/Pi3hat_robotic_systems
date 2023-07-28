@@ -47,6 +47,12 @@ namespace pi3hat_hw_interface
                 }
                 //std::printf("NOT FOUND");
                 err = 1;
+                for(auto rep : replies)
+                {
+                    RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "The %d-th repies belong to ID: %d and bus %d the measured pos is %lf, vel is %lf, trq is %lf and temperature is %lf",i,rep.id,rep.bus, rep.result.position,
+                    rep.result.velocity, rep.result.torque, rep.result.temperature);
+                    i++;
+                }
                 return {};
             };
 
@@ -334,7 +340,7 @@ namespace pi3hat_hw_interface
             // if( count_ %1 00 == 0)
             //     RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "100");
             
-            if(can_recvd_.wait_for(100us) != std::future_status::ready)
+            if(can_recvd_.wait_for(10us) != std::future_status::ready)
             {
                 not_val_cycle_++;
                 
@@ -345,11 +351,15 @@ namespace pi3hat_hw_interface
             }
             else
             {
-                // for(auto rep : msr_data_)
+                out = can_recvd_.get();
+                // if(out.query_result_size < 2)
                 // {
-                //     RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "The %d-th repies belong to ID: %d and bus %d the measured pos is %lf, vel is %lf, trq is %lf and temperature is %lf",i,rep.id,rep.bus, rep.result.position,
-                //     rep.result.velocity, rep.result.torque, rep.result.temperature);
-                //     i++;
+                //     for(auto rep : msr_data_)
+                //     {
+                //         RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "The %d-th repies belong to ID: %d and bus %d the measured pos is %lf, vel is %lf, trq is %lf and temperature is %lf",i,rep.id,rep.bus, rep.result.position,
+                //         rep.result.velocity, rep.result.torque, rep.result.temperature);
+                //         i++;
+                //     }
                 // }
                 valid_ = true;
                 
@@ -444,6 +454,7 @@ namespace pi3hat_hw_interface
                 catch(std::logic_error err)
                 {
                     RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Pi3Hat cycle error has rised");
+                    assert(false);
                 }
             }
             return hardware_interface::return_type::OK;

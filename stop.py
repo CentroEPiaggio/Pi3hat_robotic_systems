@@ -10,13 +10,14 @@ async def main():
 #                                                                              CONFIGURATION VARIABLES                                                                                  #
 ######################################################################################################################################################################################    
     can_bus = 1
-    ids = [4,1]
+    ids = [2,4]
     sup_pos_limit = 1
     inf_pos_limit = -1
     MAXVEL = 1
     MAXPOW = 450
     MAXCUR = 40 
     KP = 4
+    
     KD = 0.01
     KI = 0
     FBV = 27.5
@@ -46,6 +47,8 @@ async def main():
     controllers = { id :moteus.Controller(id=id, transport=transport, query_resolution = qr) for id in ids}
     for id in ids:
         s = moteus.Stream(controllers[id], verbose=True)
+        await s.command(b'tel stop')
+        time.sleep(1)
         max_velocity = await s.command(b'conf set servo.max_velocity ' + str( MAXVEL).encode('utf-8'))
         max_power = await s.command(b'conf set servo.max_power_W ' + str( MAXPOW).encode('utf-8'))
         max_current = await s.command(b'conf set servo.max_current_A ' + str( MAXCUR).encode('utf-8'))

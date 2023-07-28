@@ -96,7 +96,7 @@ namespace pi3hat_hw_interface
                                 [promise](const Output& out)
                                 {
                                     promise->set_value(out);
-                                    // if(out.query_result_size < 2)
+                                    if(out.query_result_size < 2)
                                         RCLCPP_WARN(rclcpp::get_logger("PINO"),"CALL Communication Callback with out %ld",out.query_result_size);
                                 }
                             );

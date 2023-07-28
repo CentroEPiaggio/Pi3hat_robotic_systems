@@ -20,8 +20,6 @@
 using namespace mjbots;
 using namespace std::chrono_literals;
 using std::placeholders::_1;
-
-
 using MoteusInterface = moteus::Pi3HatMoteusInterface;
 using Command = moteus::Pi3HatMoteusInterface::ServoCommand;
 using Reply = moteus::Pi3HatMoteusInterface::ServoReply;
@@ -65,7 +63,6 @@ namespace pi3hat_node
                     RCLCPP_INFO(this->get_logger(),"the length are %f,%f",a.position.position,a.position.velocity);
                     // create substriber 
                     // create timer
-                  
                     timer_ = this->create_wall_timer(100us,std::bind(&Pi3Hat_int::timer_callback, this));
                     sub_ = this->create_subscription<CmdMsg>("MJbot_prova",10,std::bind(&Pi3Hat_int::sub_callback,this,_1));
                     RCLCPP_INFO(this->get_logger(),"Completed the node creation");
