@@ -5,18 +5,31 @@
             <plugin>pi3hat_hw_interface/MoteusPi3Hat_Interface</plugin>
 
         </hardware>
-        <joint name="joint1">
+         <joint name="joint1">
             <param name="id">2</param>
             <param name="bus">1</param>
             <param name="motor_transmission"> 1.0</param>
             <param name="sec_enc_transmission"> 0.0</param>
         </joint>
-
         <joint name="joint2">
+            <param name="id">1</param>
+            <param name="bus">1</param>
+            <param name="motor_transmission"> 1.0</param>
+            <param name="sec_enc_transmission"> 0.0</param>
+        </joint> 
+        <joint name="joint3">
+            <param name="id">3</param>
+            <param name="bus">1</param>
+            <param name="motor_transmission"> 1.0</param>
+            <param name="sec_enc_transmission"> 0.0</param>
+        </joint>
+        <joint name="joint4">
             <param name="id">4</param>
             <param name="bus">1</param>
             <param name="motor_transmission"> 1.0</param>
             <param name="sec_enc_transmission"> 0.0</param>
         </joint>
+         
+  
     </ros2_control>
 </robot>

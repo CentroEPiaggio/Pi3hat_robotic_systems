@@ -53,9 +53,10 @@ class Pi3HatMoteusInterface {
     }
   };
 
-  Pi3HatMoteusInterface(const Options& options)
+  Pi3HatMoteusInterface(const Options& options, const uint32_t m_tmout = 100000)
       : options_(options),
-        thread_(std::bind(&Pi3HatMoteusInterface::CHILD_Run, this)) {
+        thread_(std::bind(&Pi3HatMoteusInterface::CHILD_Run, this)),
+        main_timeout_(m_tmout) {
   }
 
   ~Pi3HatMoteusInterface() {
@@ -184,6 +185,7 @@ class Pi3HatMoteusInterface {
     pi3hat::Pi3Hat::Input input;
     input.tx_can = { tx_can_.data(), tx_can_.size() };
     input.rx_can = { rx_can_.data(), rx_can_.size() };
+    input.timeout_ns = main_timeout_; 
 
     Output result;
 
@@ -212,6 +214,8 @@ class Pi3HatMoteusInterface {
   Data data_;
 
   std::thread thread_;
+  uint32_t main_timeout_;
+  uint32_t tx_timeout_;
 
 
   /// All further variables are only used from within the child thread.

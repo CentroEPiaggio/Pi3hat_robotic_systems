@@ -148,7 +148,7 @@ class Pi3Hat {
     int fast_bitrate = 5000000;
     bool fdcan_frame = true;
     bool bitrate_switch = true;
-    bool automatic_retransmission = true;
+    bool automatic_retransmission = false;
     bool restricted_mode = false;
     bool bus_monitor = false;
 
@@ -165,7 +165,7 @@ class Pi3Hat {
     // Only a fixed set of rates are achievable.  Valid values are
     // 100, 200, 400, 1000.  Selecting a higher rate than you need to
     // sample at will result in more noise.
-    uint32_t attitude_rate_hz = 400;
+    uint32_t attitude_rate_hz = 1000;
 
     // RF communication will be with a transmitter having this ID.
     uint32_t rf_id = 5678;
@@ -202,12 +202,12 @@ class Pi3Hat {
     /// This is not super precise, as the writing process has various
     /// queues, so it will need to encompass some amount of the time
     /// spend writing as well.
-    uint32_t timeout_ns = 100000;
+    uint32_t timeout_ns = 500000;
 
     /// When waiting for CAN replies, guarantee to wait for at least
     /// this many nanoseconds after the final transmission is sent
     /// over SPI (not necessarily over the CAN bus).
-    uint32_t min_tx_wait_ns = 200000;
+    uint32_t min_tx_wait_ns = 2000000;
 
     /// After each successful receipt, wait this much longer for more.
     uint32_t rx_extra_wait_ns = 40000;

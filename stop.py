@@ -10,7 +10,7 @@ async def main():
 #                                                                              CONFIGURATION VARIABLES                                                                                  #
 ######################################################################################################################################################################################    
     can_bus = 1
-    ids = [2,4]
+    ids = [2,3,4,1]
     sup_pos_limit = 1
     inf_pos_limit = -1
     MAXVEL = 1
@@ -46,6 +46,7 @@ async def main():
  
     controllers = { id :moteus.Controller(id=id, transport=transport, query_resolution = qr) for id in ids}
     for id in ids:
+        print(f"execute stop id {id}")
         s = moteus.Stream(controllers[id], verbose=True)
         await s.command(b'tel stop')
         time.sleep(1)

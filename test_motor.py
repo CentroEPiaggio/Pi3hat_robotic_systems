@@ -10,7 +10,7 @@ async def main():
 #                                                                              CONFIGURATION VARIABLES                                                                                  #
 ######################################################################################################################################################################################    
     can_bus = 1
-    motor_id = 4
+    motor_ids = [4,3,2,1]
     sup_pos_limit = 1
     inf_pos_limit = -1
     MAXVEL = 1
@@ -35,7 +35,7 @@ async def main():
 ######################################################################################################################################################################################    
     transport = moteus_pi3hat.Pi3HatRouter(
         servo_bus_map = {
-            can_bus:[motor_id]           
+            can_bus:[motor_ids]           
         },
     )
 
@@ -50,23 +50,27 @@ async def main():
 
 
  
-    controller = moteus.Controller(id=motor_id, transport=transport, query_resolution = qr)
-    s = moteus.Stream(controller, verbose=True)
-    max_velocity = await s.command(b'conf set servo.max_velocity ' + str( MAXVEL).encode('utf-8'))
-    max_power = await s.command(b'conf set servo.max_power_W ' + str( MAXPOW).encode('utf-8'))
-    max_current = await s.command(b'conf set servo.max_current_A ' + str( MAXCUR).encode('utf-8'))
-    kp = await s.command(b'conf set servo.pid_position.kp ' + str( KP).encode('utf-8'))
-    kd = await s.command(b'conf set servo.pid_position.kd ' + str( KD).encode('utf-8')) 
-    ilimit = await s.command(b'conf set servo.pid_position.ilimit 0')
-    ki = await s.command(b'conf set servo.pid_position.ki ' + str( KI).encode('utf-8'))
-    flux_brake_voltage = await s.command(b'conf set servo.flux_brake_min_voltage ' + str( FBV).encode('utf-8'))
-    pos_inf_lim = await s.command(b'conf set servopos.position_min ' + str( inf_pos_limit).encode('utf-8'))
-    pos_sup_lim = await s.command(b'conf set servopos.position_max ' + str( sup_pos_limit).encode('utf-8'))
+    controllers = { id :moteus.Controller(id=id, transport=transport, query_resolution = qr) for id in motor_ids}
+    for id in motor_ids:
+        print(id)
+        s = moteus.Stream(controllers[id], verbose=True)
+        max_velocity = await s.command(b'conf set servo.max_velocity ' + str( MAXVEL).encode('utf-8'))
+        max_power = await s.command(b'conf set servo.max_power_W ' + str( MAXPOW).encode('utf-8'))
+        max_current = await s.command(b'conf set servo.max_current_A ' + str( MAXCUR).encode('utf-8'))
+        kp = await s.command(b'conf set servo.pid_position.kp ' + str( KP).encode('utf-8'))
+        kd = await s.command(b'conf set servo.pid_position.kd ' + str( KD).encode('utf-8')) 
+        ilimit = await s.command(b'conf set servo.pid_position.ilimit 0')
+        ki = await s.command(b'conf set servo.pid_position.ki ' + str( KI).encode('utf-8'))
+        flux_brake_voltage = await s.command(b'conf set servo.flux_brake_min_voltage ' + str( FBV).encode('utf-8'))
+        pos_inf_lim = await s.command(b'conf set servopos.position_min ' + str( inf_pos_limit).encode('utf-8'))
+        pos_sup_lim = await s.command(b'conf set servopos.position_max ' + str( sup_pos_limit).encode('utf-8'))
 
-    await s.command(b'd index 0.0')
+        await s.command(b'd index 0.0')
 
-
-    await transport.cycle([controller.make_stop()])
+    command = []
+    for id in motor_ids:
+        command.append(controllers[id].make_stop())
+    await transport.cycle(command)
 
     print("Revolution Starts")
     start = time.time()
@@ -81,14 +85,16 @@ async def main():
 
         
         # print(f"pos {pos} vel {vel}")
-        command = controller.make_position(
+        command = []
+        for id in motor_ids:
+            command.append(controllers[id].make_position(
             position= pos,
             velocity= vel,
             
             query= True
-        )
-
-        result = await transport.cycle([command])
+        ) )
+            
+        result = await transport.cycle(command)
         if len(result) != 0:
             times.append(t)
             cmd_positions.append(pos)
@@ -101,7 +107,7 @@ async def main():
         if t > Period*Revolutions:
             break
     
-    await transport.cycle([controller.make_stop()])
+    await transport.cycle([controllers[id].make_stop() for id in motor_ids])
     print("Revolutions Complete")
     print(len(msr_positions),len(cmd_positions),len(times))
     if len(msr_positions)== len(cmd_positions) and len(cmd_positions) == len(times) and len(times) == len(msr_positions):
@@ -134,7 +140,7 @@ async def main():
 ######################################################################################################################################################################################
 #                                                                                   STOP ALL MOTORS                                                                                  #
 ######################################################################################################################################################################################    
-    await transport.cycle([controller.make_stop()])
+    await transport.cycle([controllers[id].make_stop() for id in motor_ids])
 
 ######################################################################################################################################################################################
 #                                                                                        RUN                                                                                         #

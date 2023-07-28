@@ -11,7 +11,7 @@ async def main():
 ######################################################################################################################################################################################
 #                                                                              SERVOS CONFIGURATION                                                                                  #
 ######################################################################################################################################################################################    
-    ids = [4,2]
+    ids = [2,1,3,4]
     transport = moteus_pi3hat.Pi3HatRouter(
         servo_bus_map = {
             1:ids          
@@ -26,6 +26,7 @@ async def main():
       
     
     for id in ids:
+        print(f"execute stop id {id}")
         s = moteus.Stream(servos[id],verbose=True)
         #conf = await s.command(b'conf enumerate\n')
         max_velocity = await s.command(b'conf set servo.max_velocity ' + str(MActPar.MAXVEL).encode('utf-8'))
@@ -35,8 +36,10 @@ async def main():
         kd = await s.command(b'conf set servo.pid_position.kd ' + str(MActPar.KD).encode('utf-8')) 
         ilimit = await s.command(b'conf set servo.pid_position.ilimit 0')
         ki = await s.command(b'conf set servo.pid_position.ki ' + str(MActPar.KI).encode('utf-8'))
+
         flux_brake_voltage = await s.command(b'conf set servo.flux_brake_min_voltage ' + str(MActPar.FBV).encode('utf-8'))
         await s.command(b'd index 0.0')
+        await s.command(b'conf set servo.default_timeout_s ' + str(10).encode('utf-8'))
     
         
 ######################################################################################################################################################################################

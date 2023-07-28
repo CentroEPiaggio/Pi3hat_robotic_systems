@@ -12,7 +12,7 @@
 #include <tuple>
 // #define NULL __null
 
-#define MAX_COUNT 10000
+#define MAX_COUNT 1000
 
 using namespace mjbots;
 using namespace std;

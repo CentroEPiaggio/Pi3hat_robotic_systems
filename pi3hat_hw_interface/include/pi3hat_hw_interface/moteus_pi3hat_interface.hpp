@@ -33,6 +33,8 @@
 #include "pi3hat_hw_interface/motor_manager.hpp"
 #include "pi3hat_moteus_int_msgs/msg/packet_pass.hpp"
 #define NUM_STOP 10
+#define MAIN_TIMEOUT 100000
+#define MIN_TX_TIMEOUT 200000
 
 
 using namespace mjbots;
@@ -47,6 +49,7 @@ using PerData = pi3hat_moteus_int_msgs::msg::PacketPass;
 using namespace std::chrono_literals;
 
 #define SLEEP_FOR_10MS 10000000ns
+
 
 using Get_Function = std::function<moteus::QueryResultV2 ( std::vector<Reply>& replies, int bus, int id, int opt,int& err,int provided_msg)>;
 using Policy_Function = std::function<void( bool msg_valid, bool msg_coplete, Command* cmd_d)>;
@@ -82,6 +85,8 @@ namespace pi3hat_hw_interface
                         auto promise = make_shared<std::promise<Output>>();
                         for(auto &rep : msr_data_)
                         {
+                            rep.id = 0;
+                            rep.bus = 0;
                             rep.result.position = std::nan("1");
                             rep.result.velocity = std::nan("2");
                             rep.result.torque = std::nan("3");
@@ -94,10 +99,10 @@ namespace pi3hat_hw_interface
                         communication_thread_.Cycle(
                                 data_,
                                 [promise](const Output& out)
-                                {
+                                { 
                                     promise->set_value(out);
-                                    if(out.query_result_size < 2)
-                                        RCLCPP_WARN(rclcpp::get_logger("PINO"),"CALL Communication Callback with out %ld",out.query_result_size);
+                                    // if(out.query_result_size <4 || out.query_result_size >4)
+                                    //     RCLCPP_WARN(rclcpp::get_logger("PINO"),"CALL Communication Callback with out %ld",out.query_result_size);
                                 }
                             );
                             

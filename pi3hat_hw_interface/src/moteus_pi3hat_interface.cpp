@@ -4,7 +4,6 @@
 #define LOGGER_NAME "MoteusPi3Hat_Interface"
 #define CPU 1
 using namespace rclcpp;
-#define MAX_COUNTER 10000
 namespace pi3hat_hw_interface
 {
     namespace moteus_pi3hat_interface
@@ -12,21 +11,31 @@ namespace pi3hat_hw_interface
 
          
         MoteusPi3Hat_Interface::MoteusPi3Hat_Interface():
-        communication_thread_(opt_thread_.set_cpu(CPU))
+        communication_thread_(opt_thread_.set_cpu(CPU),MAIN_TIMEOUT)
         {
             // create the comunnication thread_
             //communication_thread_ = new MoteusInterface(opt);
             gets_ = [] (std::vector<Reply>& replies,int bus,int id,int opt,int& err, int prov_msg ) -> moteus::QueryResultV2
             {
                 int i = 0;
-                bool discard = prov_msg == 1 ? false:true;
+                bool discard = false;
+                // if(id == 2)
+                // {
+                //     for(auto rep : replies)
+                //     {
+                            
+                //         RCLCPP_INFO(rclcpp::get_logger("AA"), "The %d-th repies belong to ID: %d and bus %d the measured pos is %lf, vel is %lf, trq is %lf and temperature is %lf",i,rep.id,rep.bus, rep.result.position,
+                //         rep.result.velocity, rep.result.torque, rep.result.temperature);
+                //         i++;
+                //     }
+                // }
                 // RCLCPP_WARN(
                 //         rclcpp::get_logger(LOGGER_NAME),
                 //         "The message will be discarad %d"
                 //         ,discard);
                 for (const auto& item : replies) 
                 {
-                    if(item.id != std::nan("1") && item.bus != std::nan("1"))
+                    if(item.id != 0 && item.bus != 0)
                     {
 
                         if (item.id == id && item.bus == bus )
@@ -38,7 +47,8 @@ namespace pi3hat_hw_interface
                             else
                             {
                                 err = 0;
-                                // RCLCPP_INFO(rclcpp::get_logger("AA"),"the motor id %d and bus %d has pkt index %d",id,bus,i);
+
+                                
                                 return item.result; 
                                 //std::printf("FOUND: %d,%d",item.id,item.bus);
                             }
@@ -47,12 +57,14 @@ namespace pi3hat_hw_interface
                 }
                 //std::printf("NOT FOUND");
                 err = 1;
-                for(auto rep : replies)
-                {
-                    RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "The %d-th repies belong to ID: %d and bus %d the measured pos is %lf, vel is %lf, trq is %lf and temperature is %lf",i,rep.id,rep.bus, rep.result.position,
-                    rep.result.velocity, rep.result.torque, rep.result.temperature);
-                    i++;
-                }
+                // RCLCPP_INFO(rclcpp::get_logger("AA"),"NOT FOUND MESSG ID %d BUS %d",id,bus);
+                // for(auto rep : replies)
+                // {
+                        
+                //     RCLCPP_INFO(rclcpp::get_logger("AA"), "The %d-th repies belong to ID: %d and bus %d the measured pos is %lf, vel is %lf, trq is %lf and temperature is %lf",i,rep.id,rep.bus, rep.result.position,
+                //     rep.result.velocity, rep.result.torque, rep.result.temperature);
+                //     i++;
+                // }
                 return {};
             };
 
@@ -340,7 +352,7 @@ namespace pi3hat_hw_interface
             // if( count_ %1 00 == 0)
             //     RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "100");
             
-            if(can_recvd_.wait_for(10us) != std::future_status::ready)
+            if(can_recvd_.wait_for(1us) != std::future_status::ready)
             {
                 not_val_cycle_++;
                 
@@ -441,10 +453,10 @@ namespace pi3hat_hw_interface
                 // for(auto cmd : cmd_data_)
                 // {
                     
-                //     //RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "The %d-th command belong to ID: %d and bus %d the commanded pos is %lf, vel is %lf, trq is %lf and kp,kd  is %lf,%lf",i,cmd.id,cmd.bus, cmd.position.position,
-                //     //cmd.position.velocity, cmd.position.feedforward_torque, cmd.position.kp_scale,cmd.position.kd_scale);
-                //     //i++;
-                   // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"the mode is ");
+                //     // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "The %d-th command belong to ID: %d and bus %d the commanded pos is %lf, vel is %lf, trq is %lf and kp,kd  is %lf,%lf",i,cmd.id,cmd.bus, cmd.position.position,
+                //     // cmd.position.velocity, cmd.position.feedforward_torque, cmd.position.kp_scale,cmd.position.kd_scale);
+                //     // i++;
+                // //    RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"the mode is ");
                 // }
                 
                 try
