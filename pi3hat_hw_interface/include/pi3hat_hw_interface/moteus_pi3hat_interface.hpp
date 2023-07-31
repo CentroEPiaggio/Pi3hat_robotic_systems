@@ -8,8 +8,6 @@
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "hardware_interface/types/hardware_interface_return_values.hpp"
 #include "pi3hat_hw_interface/motor_manager.hpp"
-
-
 #include <memory>
 #include <string>
 #include <vector>
@@ -33,7 +31,7 @@
 #include "pi3hat_hw_interface/motor_manager.hpp"
 #include "pi3hat_moteus_int_msgs/msg/packet_pass.hpp"
 #define NUM_STOP 10
-#define MAIN_TIMEOUT 100000
+#define MAIN_TIMEOUT 2000000
 #define MIN_TX_TIMEOUT 200000
 
 

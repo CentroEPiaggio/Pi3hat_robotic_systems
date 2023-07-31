@@ -75,7 +75,9 @@ namespace pi3hat_hw_interface
                     return &msr_trq_;
                 else if(type == hardware_interface::HW_IF_TEMPERATURE)
                     return &msr_tmp_;
-               else
+                else if(type == hardware_interface::HW_IF_PACKAGE_LOSS)
+                    return &loss_var_;
+                else
                     throw std::invalid_argument("The passsed interface command type has not the correct type");
             }
             if(sensor && sec_enc_trans_!= 0.0)

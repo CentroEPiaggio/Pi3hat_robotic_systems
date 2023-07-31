@@ -13,6 +13,7 @@
 // #define NULL __null
 
 #define MAX_COUNT 1000
+#define MIN_STT_INT 5
 
 using namespace mjbots;
 using namespace std;
@@ -31,7 +32,8 @@ namespace hardware_interface
     constexpr char HW_IF_TEMPERATURE[] = "temperature";
     constexpr char HW_IF_KP_SCALE[] = "kp_scale_value";
     constexpr char HW_IF_KD_SCALE[] = "kd_scale_value";
-    constexpr char HW_IF_PACKAGE_PASS[] = "package_pass";
+    constexpr char HW_IF_VALIDITY_LOSS[] = "validity_loss";
+    constexpr char HW_IF_PACKAGE_LOSS[] = "package_loss";
 
 
 }
@@ -127,7 +129,8 @@ namespace pi3hat_hw_interface
                             hardware_interface::HW_IF_POSITION,
                             hardware_interface::HW_IF_VELOCITY,
                             hardware_interface::HW_IF_EFFORT,
-                            hardware_interface::HW_IF_TEMPERATURE
+                            hardware_interface::HW_IF_TEMPERATURE,
+                            hardware_interface::HW_IF_PACKAGE_LOSS
                         
                         };
                     }
@@ -138,6 +141,7 @@ namespace pi3hat_hw_interface
                             hardware_interface::HW_IF_VELOCITY,
                             hardware_interface::HW_IF_EFFORT,
                             hardware_interface::HW_IF_TEMPERATURE,
+                            hardware_interface::HW_IF_PACKAGE_LOSS,
                             hardware_interface::HW_IF_POSITION,
                             hardware_interface::HW_IF_VELOCITY
                         };
@@ -291,14 +295,13 @@ namespace pi3hat_hw_interface
 
                 int get_pkg_loss()
                 {
-                    RCLCPP_WARN(
-                        rclcpp::get_logger("PP"),
-                        "motor %d pkg loss at get is %d"
-                        ,id_,packet_loss_);
-                    return packet_loss_;
+                   
+                    return loss_var_;
                 };
-                int reset_pkg_loss()
+                void reset_pkg_loss(int cnt_lim, int ep_cnt)
                 {
+                    loss_var_ = static_cast<double>(loss_var_ * cnt_lim * ep_cnt + packet_loss_ ) / 
+                    static_cast<double>(cnt_lim * (ep_cnt + 1));
                     packet_loss_ = 0;
                 };
                 bool get_msg_arrived()
@@ -352,7 +355,8 @@ namespace pi3hat_hw_interface
                 std::string name_;
                 std::vector<std::string> inter_type_stt_; 
                 std::vector<std::string> inter_type_cmd_; 
-                int packet_loss_;
+                int packet_loss_ = 0;
+                double loss_var_ = 0.0;
                 
 
 

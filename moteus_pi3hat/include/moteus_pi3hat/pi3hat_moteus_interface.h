@@ -53,7 +53,7 @@ class Pi3HatMoteusInterface {
     }
   };
 
-  Pi3HatMoteusInterface(const Options& options, const uint32_t m_tmout = 100000)
+  Pi3HatMoteusInterface(const Options& options, const uint32_t m_tmout = 0)
       : options_(options),
         thread_(std::bind(&Pi3HatMoteusInterface::CHILD_Run, this)),
         main_timeout_(m_tmout) {

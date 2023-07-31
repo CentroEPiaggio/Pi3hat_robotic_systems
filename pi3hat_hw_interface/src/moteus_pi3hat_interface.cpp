@@ -77,26 +77,25 @@ namespace pi3hat_hw_interface
         };
         MoteusPi3Hat_Interface::~MoteusPi3Hat_Interface()
         {
-            auto a = std::chrono::nanoseconds(10000000);
             for(int i = 0; i < NUM_STOP; i++)
             {
 
-                while(!can_recvd_.valid())
-                {
-                    rclcpp::sleep_for(a);
-                }
+                can_recvd_.wait();
                 
                 for(auto motor : motors_)
                 {
                     motor.make_stop();
                 }  
+
+                try
+                {
+                    cycle();
+                }
                 
-                // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Stop command %d",i);
-
-                // rclcpp::sleep_for(a);
-                // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Stop command %d",i);
-
-                cycle();
+                catch(std::logic_error)
+                {
+                    assert(false);
+                }
                 
                 // eventually check fault
             }
@@ -106,6 +105,7 @@ namespace pi3hat_hw_interface
         CallbackReturn MoteusPi3Hat_Interface::on_init(const hardware_interface::HardwareInfo & info)
         {
             // get jnt number and resize my structure
+            info_.name = info.name;
             auto n_jnt = info.joints.size();
              RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"joint number is %ld",
                 n_jnt);
@@ -204,7 +204,6 @@ namespace pi3hat_hw_interface
         
         CallbackReturn MoteusPi3Hat_Interface::on_activate(const rclcpp_lifecycle::State&)
         {
-            auto a = std::chrono::nanoseconds(10000000);
 
             for(int i = 0; i < NUM_STOP; i++)
             {
@@ -224,7 +223,6 @@ namespace pi3hat_hw_interface
                 //     RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "%d the id and bus data are %d and %d",i,cmd_data_[i].id,cmd_data_[i].bus);
                 //     RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "%d the kp_scale and kd_scale data are %lf and %lf",i,cmd_data_[i].position.kp_scale,cmd_data_[i].position.kd_scale);
                 // }
-                rclcpp::sleep_for(a);
                 try
                 {
                     cycle();
@@ -236,14 +234,7 @@ namespace pi3hat_hw_interface
                 }
 
                 RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"stop msg %d",i);
-                rclcpp::sleep_for(a);
-                while(!can_recvd_.valid())
-                {
-
-                    RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"await stop %d",can_recvd_.valid());
-
-                    rclcpp::sleep_for(a);
-                }
+                can_recvd_.wait();
                 // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"no await stop %d",can_recvd_.valid());
 
                 // eventually check fault
@@ -253,7 +244,6 @@ namespace pi3hat_hw_interface
         
         CallbackReturn MoteusPi3Hat_Interface::on_deactivate(const rclcpp_lifecycle::State&)
         {
-            auto a = std::chrono::nanoseconds(10000000);
             for(int i = 0; i < NUM_STOP; i++)
             {
                 for(auto motor : motors_)
@@ -267,10 +257,7 @@ namespace pi3hat_hw_interface
                 // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Stop command %d",i);
 
                 cycle();
-                while(!can_recvd_.valid())
-                {
-                    rclcpp::sleep_for(a);
-                }
+                can_recvd_.wait();
                 // eventually check fault
             }
             return CallbackReturn::SUCCESS;
@@ -287,12 +274,17 @@ namespace pi3hat_hw_interface
             std::vector<hardware_interface::StateInterface> stt_int;
             std::vector<std::string> int_type;
             int i;
+            stt_int.emplace_back(
+                        info_.name,
+                        hardware_interface::HW_IF_VALIDITY_LOSS,
+                        &valid_loss_);
             for(auto motor : motors_)
             {
                 // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"insert joint name %s and [id,bus] :: [%d,%d]",
                 // motor.get_name(false).c_str(),motor.get_id(),motor.get_bus());
                 i = 0;
                 int_type = motor.get_state_type();
+
                 for(auto type : int_type)
                 {
                     RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"insert joint name %s type %s and [id,bus] :: [%d,%d]",
@@ -300,14 +292,14 @@ namespace pi3hat_hw_interface
                     try
                     {
                     stt_int.emplace_back(
-                        motor.get_name(i<4?false:true),
+                        motor.get_name(i<MIN_STT_INT?false:true),
                         type,
-                        motor.get_stt_interface(type,i<4?false:true)
+                        motor.get_stt_interface(type,i<MIN_STT_INT?false:true)
                     );
                     }
                     catch(std::logic_error err)
                     {
-                        RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Raised error during the state interface exporting ID:%d bus:%d",motor.get_id(),motor.get_bus());
+                        RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Raised error during the state interface %s exporting ID:%d bus:%d",type.c_str(),motor.get_id(),motor.get_bus());
                         assert(false);
                     }
                     i++;
@@ -352,7 +344,7 @@ namespace pi3hat_hw_interface
             // if( count_ %1 00 == 0)
             //     RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "100");
             
-            if(can_recvd_.wait_for(1us) != std::future_status::ready)
+            if(can_recvd_.wait_for(10us) != std::future_status::ready)
             {
                 not_val_cycle_++;
                 
@@ -398,21 +390,21 @@ namespace pi3hat_hw_interface
                 for(size_t j = 0; j < pkt_loss_.size(); j++)
                 {
 
-                    perc = pkt_loss_.at(j) * MAX_COUNT * epoch_count_;
+                    // perc = pkt_loss_.at(j) * MAX_COUNT * epoch_count_;
                     // RCLCPP_WARN(
                     //     rclcpp::get_logger(LOGGER_NAME),
                     //     "motor %d has percentage of %lf"
                     //     ,motors_[j].get_id(),perc);
-                    epoch_count_++;
-                    lost_pkt = motors_[j].get_pkg_loss();
-                    motors_[j].reset_pkg_loss();
+                    // epoch_count_++;
+                    // lost_pkt = motors_[j].get_pkg_loss();
+                    motors_[j].reset_pkg_loss(MAX_COUNT,epoch_count_);
 
                     // RCLCPP_WARN(
                     //     rclcpp::get_logger(LOGGER_NAME),
                     //     "motor %d has no cpmpleted %d  msgs "
                     //     ,motors_[j].get_id(),a)
                     
-                    pkt_loss_.at(j) = static_cast<double>(perc +lost_pkt)/static_cast<double>(MAX_COUNT*epoch_count_);
+                    // pkt_loss_.at(j) = static_cast<double>(perc +lost_pkt)/static_cast<double>(MAX_COUNT*epoch_count_);
                     // RCLCPP_WARN(
                     //     rclcpp::get_logger(LOGGER_NAME),
                     //     "motor %d has percentage of %lf after update"
@@ -420,18 +412,18 @@ namespace pi3hat_hw_interface
                 }
                 //RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "Not valid msg percentage is %d/ %d",not_val_cycle_,count_);
                 
-                perc = valid_loss_ * MAX_COUNT * (epoch_count_ -1);
+                perc = valid_loss_ * MAX_COUNT * (epoch_count_ );
 
-                valid_loss_ =  (perc + static_cast<double>(not_val_cycle_))/static_cast<double>(epoch_count_*MAX_COUNT);
-                
+                valid_loss_ =  (perc + static_cast<double>(not_val_cycle_))/static_cast<double>((epoch_count_ +1 )*MAX_COUNT);
+                epoch_count_++;
                // RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "Not valid msg count is %d",not_val_cycle_);
                 count_ = 0;
                 not_val_cycle_ = 0;
                 RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"the validity loss is %lf",valid_loss_);
                 i = 0;
-                for(auto d : pkt_loss_)
+                for(auto motor : motors_)
                 {
-                    RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"the package loss  of motor %d is %lf",motors_[i].get_id(),d);
+                    RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"the package loss  of motor %d is %lf",motor.get_id(),motor.get_pkg_loss());
                     i++;
                 }
             }
