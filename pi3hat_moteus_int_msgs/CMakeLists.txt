@@ -13,6 +13,8 @@ find_package(std_msgs REQUIRED)
 
 set(msg_files
   "msg/PacketPass.msg"
+  "msg/JointsStates.msg"
+  "msg/JointsCommand.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
