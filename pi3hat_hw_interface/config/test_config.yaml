@@ -1,18 +1,15 @@
 controller_manager:
   ros__parameters:
     update_rate: 450
-
-    pd_joint_state:
-      type: rbt_pd_cnt/Real_PD_Cnt
-    joint_state_broadcaster:
-      type: joint_state_broadcaster/JointStateBroadcaster
-
-pd_joint_state:
+    state_broadcaster:
+      type: pi3hat_state_broadcaster/Pi3Hat_State_Broadcaster
+state_broadcaster:
   ros__parameters:
-    joint: 
+    joints:
       - joint1
       - joint2
-    init_pos:
-      - 0.0
-      - 0.0
-    
+      - joint3
+      - joint4
+    performance_index: true
+
+

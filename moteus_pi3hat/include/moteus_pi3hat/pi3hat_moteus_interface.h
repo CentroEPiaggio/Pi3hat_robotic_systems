@@ -208,7 +208,7 @@ class Pi3HatMoteusInterface {
   /// This block of variables are all controlled by the mutex.
   std::mutex mutex_;
   std::condition_variable condition_;
-  bool active_ = false;;
+  bool active_ = false;
   bool done_ = false;
   CallbackFunction callback_;
   Data data_;

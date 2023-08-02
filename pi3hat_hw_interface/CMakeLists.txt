@@ -22,11 +22,13 @@ add_library(
   src/moteus_pi3hat_interface.cpp
 )
 
-target_include_directories(
-  ${PROJECT_NAME}
-  PRIVATE
-  include
-)
+target_include_directories(${PROJECT_NAME} PUBLIC
+
+$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+
+$<INSTALL_INTERFACE:include>)
+
+
 ament_target_dependencies(
   ${PROJECT_NAME}
   hardware_interface
@@ -38,6 +40,9 @@ ament_target_dependencies(
 )
 
 pluginlib_export_plugin_description_file(hardware_interface moteus_pi3hat_interface.xml)
+
+
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -62,11 +67,11 @@ if(BUILD_TESTING)
     ament_lint_auto_find_test_dependencies()
 endif()
 
-target_include_directories(${PROJECT_NAME} PUBLIC
 
-$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-
-$<INSTALL_INTERFACE:include>)
+install(
+  DIRECTORY include/
+  DESTINATION include
+)
 
 install(
   TARGETS ${PROJECT_NAME}
