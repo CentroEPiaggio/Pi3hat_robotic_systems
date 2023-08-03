@@ -10,7 +10,7 @@
     type="pi3hat_state_broadcaster::Pi3Hat_State_Broadcaster"
     base_class_type="controller_interface::ControllerInterface">
       <description>
-      Pi3Hat joint groups controller
+      Pi3Hat state and performance broadcaster
       </description>
   </class>
 </library>

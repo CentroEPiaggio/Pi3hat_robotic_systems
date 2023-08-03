@@ -32,13 +32,14 @@ namespace pi3hat_joint_group_controller
         }
         try
         {
-            auto_declare<std::vector<std::string>>("init_pos",std::vector<std::string>());
+            auto_declare<std::vector<double>>("init_pos",std::vector<double>());
         }
           catch(const std::exception & e)
         {
             RCLCPP_WARN(rclcpp::get_logger(logger_name_),"Exception thrown during declaretion of init position with message: %s it gets default values", e.what());
-            default_init_pos_ = true;
+            
         }
+        default_init_pos_ = true;
         RCLCPP_INFO(get_node()->get_logger(),"initialize succesfully");
         return CallbackReturn::SUCCESS;
     }
@@ -71,7 +72,7 @@ namespace pi3hat_joint_group_controller
             }
         }
         else
-            // init_pos.resize(joint.size(),0.0);
+            init_positions.resize(joint.size(),0.0);
         
         // fill the map structure 
         sz = joint.size();
@@ -79,8 +80,9 @@ namespace pi3hat_joint_group_controller
         {
             position_cmd_.emplace(std::make_pair(joint[i],init_positions[i]));
             velocity_cmd_.emplace(std::make_pair(joint[i],0.0));
-            position_cmd_.emplace(std::make_pair(joint[i],1.0));
-            position_cmd_.emplace(std::make_pair(joint[i],1.0));
+            effort_cmd_.emplace(std::make_pair(joint[i],0.0));
+            kp_scale_cmd_.emplace(std::make_pair(joint[i],1.0));
+            kd_scale_cmd_.emplace(std::make_pair(joint[i],1.0));
 
         }
 
@@ -140,7 +142,7 @@ namespace pi3hat_joint_group_controller
         }
         else
         {
-            RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"No data are readed from realtime buffer");
+            RCLCPP_WARN(rclcpp::get_logger(logger_name_),"No data are readed from realtime buffer");
             return false;
         }
         // maybe needed?
@@ -152,26 +154,35 @@ namespace pi3hat_joint_group_controller
     {
         std::string type;
         // set the data from the readed message
+        // if(!get_reference())
+        //     return controller_interface::return_type::ERROR;
         get_reference();
 
         // set the commanded reference iterating over the exported commanded interface
         for(auto &cmd_int : command_interfaces_)
         {
             type = cmd_int.get_interface_name();
-            if(type == hardware_interface::HW_IF_POSITION)
-                cmd_int.set_value(position_cmd_.at(cmd_int.get_name()));
-            else if(type == hardware_interface::HW_IF_VELOCITY)
-                cmd_int.set_value(velocity_cmd_.at(cmd_int.get_name()));
-            else if(type == hardware_interface::HW_IF_EFFORT)
-                cmd_int.set_value(effort_cmd_.at(cmd_int.get_name()));
-            else if(type == hardware_interface::HW_IF_KP_SCALE)
-                 cmd_int.set_value(kp_scale_cmd_.at(cmd_int.get_name()));
-            else if(type == hardware_interface::HW_IF_KD_SCALE)
-                cmd_int.set_value(kd_scale_cmd_.at(cmd_int.get_name()));
-            else
+            try
             {
-                RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"Interface name not correspond to the declared one");
-                return controller_interface::return_type::ERROR;
+                if(type == hardware_interface::HW_IF_POSITION)
+                    cmd_int.set_value(position_cmd_.at(cmd_int.get_prefix_name()));
+                else if(type == hardware_interface::HW_IF_VELOCITY)
+                    cmd_int.set_value(velocity_cmd_.at(cmd_int.get_prefix_name()));
+                else if(type == hardware_interface::HW_IF_EFFORT)
+                    cmd_int.set_value(effort_cmd_.at(cmd_int.get_prefix_name()));
+                else if(type == hardware_interface::HW_IF_KP_SCALE)
+                    cmd_int.set_value(kp_scale_cmd_.at(cmd_int.get_prefix_name()));
+                else if(type == hardware_interface::HW_IF_KD_SCALE)
+                    cmd_int.set_value(kd_scale_cmd_.at(cmd_int.get_prefix_name()));
+                else
+                {
+                    RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"Interface name not correspond to the declared one");
+                    return controller_interface::return_type::ERROR;
+                }
+            }
+            catch(std::exception &e)
+            {
+                RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"catch error %s during the access to '%s' data",e.what(),cmd_int.get_name().c_str());
             }
         }
  
