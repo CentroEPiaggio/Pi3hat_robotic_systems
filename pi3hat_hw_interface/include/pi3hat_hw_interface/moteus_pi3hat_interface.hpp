@@ -30,8 +30,8 @@
 #include "rclcpp_lifecycle/lifecycle_publisher.hpp"
 #include "pi3hat_hw_interface/motor_manager.hpp"
 #include "pi3hat_moteus_int_msgs/msg/packet_pass.hpp"
-#define NUM_STOP 10
-#define MAIN_TIMEOUT 2000000
+#define NUM_STOP 30
+#define MAIN_TIMEOUT 3000000
 #define MIN_TX_TIMEOUT 200000
 
 
@@ -100,7 +100,8 @@ namespace pi3hat_hw_interface
                                 { 
                                     promise->set_value(out);
                                     // if(out.query_result_size <4 || out.query_result_size >4)
-                                    //     RCLCPP_WARN(rclcpp::get_logger("PINO"),"CALL Communication Callback with out %ld",out.query_result_size);
+                                    // 
+                                    // RCLCPP_WARN(rclcpp::get_logger("PINO"),"CALL Communication Callback with out %ld",out.query_result_size);
                                 }
                             );
                             

@@ -117,7 +117,6 @@ namespace pi3hat_hw_interface
                 cmd_data_ -> id = id_;
                 cmd_data_ -> bus = bus_;
                 cmd_data_ -> mode = moteus::Mode::kPosition;
-
                 cmd_data_ -> position.position = cmd_pos_ * motor_trans_;
                 cmd_data_ -> position.velocity =  cmd_vel_ * motor_trans_;
                 cmd_data_ -> position.feedforward_torque = cmd_trq_ / motor_trans_;

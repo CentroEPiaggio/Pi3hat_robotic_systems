@@ -278,14 +278,14 @@ namespace pi3hat_hw_interface
                         info_.name,
                         hardware_interface::HW_IF_VALIDITY_LOSS,
                         &valid_loss_);
-            for(auto motor : motors_)
+            for(auto &motor : motors_)
             {
                 // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"insert joint name %s and [id,bus] :: [%d,%d]",
                 // motor.get_name(false).c_str(),motor.get_id(),motor.get_bus());
                 i = 0;
                 int_type = motor.get_state_type();
 
-                for(auto type : int_type)
+                for(auto &type : int_type)
                 {
                     RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"insert joint name %s type %s and [id,bus] :: [%d,%d]",
                 motor.get_name(false).c_str(),type.c_str(),motor.get_id(),motor.get_bus());
@@ -312,10 +312,10 @@ namespace pi3hat_hw_interface
         {
            std::vector<hardware_interface::CommandInterface> cmd_int;
             std::vector<std::string> int_type;
-            for(auto motor : motors_)
+            for(auto &motor : motors_)
             {
                 int_type = motor.get_command_type();
-                for(auto type : int_type)
+                for(auto &type : int_type)
                 {
                     try
                     {

@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 450
+    update_rate: 400
     state_broadcaster:
       type: pi3hat_state_broadcaster/Pi3Hat_State_Broadcaster
     joint_controller:
@@ -8,18 +8,18 @@ controller_manager:
 state_broadcaster:
   ros__parameters:
     joints:
-      - joint1
-      - joint2
-      - joint3
-      - joint4
+      - joint
+      # - joint2
+      # - joint3
+      # - joint4
     performance_index: true
 joint_controller:
   ros__parameters:
     joints:
-      - joint1
-      - joint2
-      - joint3
-      - joint4
+      - joint
+      # - joint2
+      # - joint3
+      # - joint4
     
 
 

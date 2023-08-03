@@ -207,7 +207,7 @@ class Pi3Hat {
     /// When waiting for CAN replies, guarantee to wait for at least
     /// this many nanoseconds after the final transmission is sent
     /// over SPI (not necessarily over the CAN bus).
-    uint32_t min_tx_wait_ns = 50000;
+    uint32_t min_tx_wait_ns = 20000;
 
     /// After each successful receipt, wait this much longer for more.
     uint32_t rx_extra_wait_ns = 40000;

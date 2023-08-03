@@ -123,28 +123,43 @@ namespace pi3hat_joint_group_controller
 
         if(joints_rcvd_msg_.get())
         {
+            
             for(size_t i = 0; i < joints_rcvd_msg_->name.size(); i++)
             {
                 try
-                {
-                    position_cmd_.at(joints_rcvd_msg_->name[i]) = joints_rcvd_msg_->position[i];
-                    velocity_cmd_.at(joints_rcvd_msg_->name[i]) = joints_rcvd_msg_->velocity[i];
-                    effort_cmd_.at(joints_rcvd_msg_->name[i]) = joints_rcvd_msg_->effort[i];
-                    kp_scale_cmd_.at(joints_rcvd_msg_->name[i]) = joints_rcvd_msg_->kp_scale[i];
-                    kd_scale_cmd_.at(joints_rcvd_msg_->name[i]) = joints_rcvd_msg_->kd_scale[i];
+                {   
+                    // RCLCPP_INFO(get_node()->get_logger(),"pass name %s",joints_rcvd_msg_->name[i].c_str());
+                    if(joints_rcvd_msg_->position.size() == 0 || joints_rcvd_msg_->position.size() != joints_rcvd_msg_->name.size())
+                        position_cmd_.at(joints_rcvd_msg_->name[i]) = 0.0;
+                    else
+                        position_cmd_.at(joints_rcvd_msg_->name[i]) = joints_rcvd_msg_->position[i];
+                    if(joints_rcvd_msg_->velocity.size() == 0 || joints_rcvd_msg_->velocity.size() != joints_rcvd_msg_->name.size())
+                        velocity_cmd_.at(joints_rcvd_msg_->name[i]) = 0.0;
+                    else
+                        velocity_cmd_.at(joints_rcvd_msg_->name[i]) = joints_rcvd_msg_->velocity[i];
+                    if(joints_rcvd_msg_->effort.size() == 0 || joints_rcvd_msg_->effort.size() != joints_rcvd_msg_->name.size())
+                        effort_cmd_.at(joints_rcvd_msg_->name[i]) = 0.0;
+                    else
+                        effort_cmd_.at(joints_rcvd_msg_->name[i]) = joints_rcvd_msg_->effort[i];
+                    if(joints_rcvd_msg_->kp_scale.size() == 0 || joints_rcvd_msg_->kp_scale.size() != joints_rcvd_msg_->name.size())
+                        kp_scale_cmd_.at(joints_rcvd_msg_->name[i]) = 0.0;
+                    else
+                        kp_scale_cmd_.at(joints_rcvd_msg_->name[i]) = joints_rcvd_msg_->kp_scale[i];
+                    if(joints_rcvd_msg_->kd_scale.size() == 0 || joints_rcvd_msg_->kd_scale.size() != joints_rcvd_msg_->name.size())
+                        kd_scale_cmd_.at(joints_rcvd_msg_->name[i]) = 0.0;
+                    else
+                        kd_scale_cmd_.at(joints_rcvd_msg_->name[i]) = joints_rcvd_msg_->kd_scale[i];
                 }
                 catch(const std::exception& e)
                 {
-                    RCLCPP_ERROR( rclcpp::get_logger(logger_name_),"Raised error duringe the reference assegnation %s", e.what());
+                    RCLCPP_ERROR( rclcpp::get_logger(logger_name_),"Raised error during the reference assegnation %s", e.what());
                     return false;
                 }
             }
         }
         else
-        {
             RCLCPP_WARN(rclcpp::get_logger(logger_name_),"No data are readed from realtime buffer");
-            return false;
-        }
+            
         // maybe needed?
         //joints_rcvd_msg_.reset();
         return true;
@@ -185,6 +200,26 @@ namespace pi3hat_joint_group_controller
                 RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"catch error %s during the access to '%s' data",e.what(),cmd_int.get_name().c_str());
             }
         }
+
+        //  for(auto &cmd_int : command_interfaces_)
+        // {
+        //     type = cmd_int.get_interface_name();
+        //     try
+        //     {
+        //         if(type == hardware_interface::HW_IF_POSITION)
+        //             RCLCPP_INFO(rclcpp::get_logger("AAA"),"pos is %f",cmd_int.get_value());
+                
+        //         else
+        //         {
+        //             RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"Interface name not correspond to the declared one");
+        //             return controller_interface::return_type::ERROR;
+        //         }
+        //     }
+        //     catch(std::exception &e)
+        //     {
+        //         RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"catch error %s during the access to '%s' data",e.what(),cmd_int.get_name().c_str());
+        //     }
+        // }
  
         return controller_interface::return_type::OK;
 
