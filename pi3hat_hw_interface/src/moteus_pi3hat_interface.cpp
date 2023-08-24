@@ -15,9 +15,8 @@ namespace pi3hat_hw_interface
         {
             // create the comunnication thread_
             //communication_thread_ = new MoteusInterface(opt);
-            gets_ = [] (std::vector<Reply>& replies,int bus,int id,int opt,int& err, int prov_msg ) -> moteus::QueryResultV2
+            gets_ = [] (std::vector<Reply>& replies,int bus,int id,int ,int& err, int  ) -> moteus::QueryResultV2
             {
-                int i = 0;
                 bool discard = false;
                 // if(id == 2)
                 // {
@@ -68,9 +67,12 @@ namespace pi3hat_hw_interface
                 return {};
             };
 
-            poly_ = [](bool msg_valid, bool msg_complete,Command* cmd_d)
+            poly_ = [](bool , bool msg_complete,Command* cmd_d)
             {
-
+                if(!msg_complete)
+                {
+                    cmd_d->position.feedforward_torque = 0.0;
+                }
 
             };
             
@@ -92,8 +94,9 @@ namespace pi3hat_hw_interface
                     cycle();
                 }
                 
-                catch(std::logic_error)
+                catch(std::logic_error &e)
                 {
+                    RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME), "raise error during the destruction of the HW interface");
                     assert(false);
                 }
                 
@@ -116,7 +119,7 @@ namespace pi3hat_hw_interface
             Command prova;
             uint8_t bus,id;
             Motor_Manager motor;
-            int i=0;
+            size_t i=0;
             for(auto joint :info.joints)
             {
                 id = static_cast<uint8_t>(std::stoi(joint.parameters.at("id")));
@@ -144,7 +147,7 @@ namespace pi3hat_hw_interface
             i = 0;
             for(auto motor: motors_)
             {
-                 RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"%d insert joint name %s and [id,bus] :: [%d,%d]",
+                 RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"%ld insert joint name %s and [id,bus] :: [%d,%d]",
                 i,motor.get_name(false).c_str(),motor.get_id(),motor.get_bus());
                 i++;
             }
@@ -228,8 +231,9 @@ namespace pi3hat_hw_interface
                     cycle();
                 }
                 
-                catch(std::logic_error)
+                catch(std::logic_error &e)
                 {
+                    RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME), "raise error during the activation of the HW interface");
                     assert(false);
                 }
 
@@ -297,14 +301,15 @@ namespace pi3hat_hw_interface
                         motor.get_stt_interface(type,i<MIN_STT_INT?false:true)
                     );
                     }
-                    catch(std::logic_error err)
+                    catch(std::logic_error &err)
                     {
-                        RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Raised error during the state interface %s exporting ID:%d bus:%d",type.c_str(),motor.get_id(),motor.get_bus());
+                        RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Raised error %s during the state interface %s exporting ID:%d bus:%d",err.what(),type.c_str(),motor.get_id(),motor.get_bus());
                         assert(false);
                     }
                     i++;
                 }
             }  
+
             return stt_int;
         };
         
@@ -325,9 +330,9 @@ namespace pi3hat_hw_interface
                         motor.get_cmd_interface(type)
                     );
                     }
-                    catch(std::logic_error err)
+                    catch(std::logic_error &err)
                     {
-                        RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Raised error during the state interface exporting ID:%d bus:%d",motor.get_id(),motor.get_bus());
+                        RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Raised error %s during the state interface exporting ID:%d bus:%d",err.what(),motor.get_id(),motor.get_bus());
                         assert(false);
                     }
                 }
@@ -386,7 +391,7 @@ namespace pi3hat_hw_interface
             
             if(count_ % MAX_COUNT == 0)
             {
-                int lost_pkt ;
+                // int lost_pkt ;
                 for(size_t j = 0; j < pkt_loss_.size(); j++)
                 {
 
@@ -423,7 +428,7 @@ namespace pi3hat_hw_interface
                 i = 0;
                 for(auto motor : motors_)
                 {
-                    RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"the package loss  of motor %d is %lf",motor.get_id(),motor.get_pkg_loss());
+                    RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"the package loss  of motor %d is %d",motor.get_id(),motor.get_pkg_loss());
                     i++;
                 }
             }
@@ -455,9 +460,9 @@ namespace pi3hat_hw_interface
                 {
                     cycle();
                 }
-                catch(std::logic_error err)
+                catch(std::logic_error &err)
                 {
-                    RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Pi3Hat cycle error has rised");
+                    RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Pi3Hat cycle %s error has rised",err.what());
                     assert(false);
                 }
             }

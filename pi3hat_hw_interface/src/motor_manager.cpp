@@ -93,6 +93,7 @@ namespace pi3hat_hw_interface
                else
                     throw std::invalid_argument("The passsed interface command type has not the correct type");
             }
+            return 0;
             
         };
         void Motor_Manager::set_query_resolution(moteus::QueryCommandV2 res)

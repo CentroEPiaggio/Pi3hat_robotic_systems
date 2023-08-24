@@ -14,6 +14,7 @@ namespace pi3hat_state_broadcaster
 
     CallbackReturn Pi3Hat_State_Broadcaster::on_init()
     {
+        
          try
         {
             auto_declare<std::vector<std::string>>("joints",std::vector<std::string>());

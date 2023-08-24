@@ -162,6 +162,7 @@ namespace pi3hat_joint_group_controller
             
         // maybe needed?
         //joints_rcvd_msg_.reset();
+        
         return true;
     }
     
