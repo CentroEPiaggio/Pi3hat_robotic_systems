@@ -102,7 +102,8 @@ namespace pi3hat_hw_interface
                 
                 // eventually check fault
             }
-            communication_thread_.~Pi3HatMoteusInterface();
+            RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"Delete the comunication thread");
+            // communication_thread_.~Pi3HatMoteusInterface();
         };
 
         CallbackReturn MoteusPi3Hat_Interface::on_init(const hardware_interface::HardwareInfo & info)
@@ -202,6 +203,8 @@ namespace pi3hat_hw_interface
         
         CallbackReturn MoteusPi3Hat_Interface::on_cleanup(const rclcpp_lifecycle::State&)
         {
+            RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Pass cleanup");
+
             return CallbackReturn::SUCCESS;
         };
         
@@ -262,6 +265,8 @@ namespace pi3hat_hw_interface
 
                 cycle();
                 can_recvd_.wait();
+                RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Pass Deactvate");
+
                 // eventually check fault
             }
             return CallbackReturn::SUCCESS;
@@ -269,7 +274,15 @@ namespace pi3hat_hw_interface
         
         CallbackReturn MoteusPi3Hat_Interface::on_shutdown(const rclcpp_lifecycle::State&)
         {
+            RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Pass Shutsown");
             communication_thread_.~Pi3HatMoteusInterface();
+            return CallbackReturn::SUCCESS;
+        };
+
+         CallbackReturn MoteusPi3Hat_Interface::on_error(const rclcpp_lifecycle::State&)
+        {
+            RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Pass error");
+            // communication_thread_.~Pi3HatMoteusInterface();
             return CallbackReturn::SUCCESS;
         };
 

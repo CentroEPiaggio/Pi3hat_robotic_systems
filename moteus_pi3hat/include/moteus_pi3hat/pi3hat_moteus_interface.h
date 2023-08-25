@@ -60,12 +60,23 @@ class Pi3HatMoteusInterface {
   }
 
   ~Pi3HatMoteusInterface() {
+    
     {
       std::lock_guard<std::mutex> lock(mutex_);
+      // RCLCPP_INFO(rclcpp::get_logger("DESC"),"DEL LOCK ");
       done_ = true;
-      condition_.notify_one();
     }
-    thread_.join();
+    condition_.notify_one();  
+    // RCLCPP_INFO(rclcpp::get_logger("DESC"),"DEL  PASS");
+    
+  //  
+
+    if(thread_.joinable())
+    {
+      // RCLCPP_INFO(rclcpp::get_logger("END"),"JOIN");
+      thread_.join();
+    }
+    // RCLCPP_INFO(rclcpp::get_logger("END"),"PASSED JOIN");
   }
 
   struct ServoCommand {
@@ -108,17 +119,21 @@ class Pi3HatMoteusInterface {
   /// All memory pointed to by @p data must remain valid until the
   /// callback is invoked.
   void Cycle(const Data& data, CallbackFunction callback) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (active_) {
-      throw std::logic_error(
-          "Cycle cannot be called until the previous has completed");
-    }
-
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (active_) {
+        throw std::logic_error(
+            "Cycle cannot be called until the previous has completed");
+      }
+    
     callback_ = std::move(callback);
     active_ = true;
     data_ = data;
+    }
+    condition_.notify_one();
+    // RCLCPP_INFO(rclcpp::get_logger("CYCLE"),"PASS");
 
-    condition_.notify_all();
+     
   }
 
  private:
@@ -126,27 +141,42 @@ class Pi3HatMoteusInterface {
     ConfigureRealtime(options_.cpu);
 
     pi3hat_.reset(new pi3hat::Pi3Hat({}));
-    while (true) {
+
+    while (true)
+    {
       {
         std::unique_lock<std::mutex> lock(mutex_);
-        if (!active_) {
-          condition_.wait(lock);
-          if (done_) { return; }
+        //  RCLCPP_INFO(rclcpp::get_logger("RUN"),"RUN LOCK");
+        // if (!active_) {
+         
+      
+        condition_.wait(lock, [this]{return(active_ || done_);});
+        
+        // RCLCPP_INFO(rclcpp::get_logger("RUN"),"WAIT ENTER");
+        if (done_) { 
+          // RCLCPP_INFO(rclcpp::get_logger("END"),"The done input is call");
+          return; }
 
-          if (!active_) { continue; }
-        }
+        // if (!active_) { continue; }
+          
+        // }
+        // RCLCPP_INFO(rclcpp::get_logger("RUN"),"RUN RELASE");
       }
-
+      
       auto output = CHILD_Cycle();
       CallbackFunction callback_copy;
       {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::lock_guard<std::mutex> lock(mutex_);
+        // std::unique_lock<std::mutex> lock(mutex_);
+        // RCLCPP_INFO(rclcpp::get_logger("DONE"),"EXEC LOCK");
         active_ = false;
         std::swap(callback_copy, callback_);
+        // RCLCPP_INFO(rclcpp::get_logger("DONE"),"EXEC RELASE");
       }
      // RCLCPP_INFO(rclcpp::get_logger("Child_run"),"CALL CALLBACK");
       callback_copy(output);
     }
+    // RCLCPP_INFO(rclcpp::get_logger("DONE"),"EXIT THREAD ");
   }
 
   Output CHILD_Cycle() {
@@ -208,6 +238,7 @@ class Pi3HatMoteusInterface {
   /// This block of variables are all controlled by the mutex.
   std::mutex mutex_;
   std::condition_variable condition_;
+
   bool active_ = false;
   bool done_ = false;
   CallbackFunction callback_;
