@@ -53,11 +53,11 @@ class Pi3HatMoteusInterface {
     }
   };
 
-  Pi3HatMoteusInterface(const Options& options, const uint32_t m_tmout = 0)
-      : options_(options),
-        thread_(std::bind(&Pi3HatMoteusInterface::CHILD_Run, this)),
-        main_timeout_(m_tmout) {
-  }
+  Pi3HatMoteusInterface()
+      : options_{},//(options),
+        thread_{}//(std::bind(&Pi3HatMoteusInterface::CHILD_Run, this)),
+        // main_timeout_(m_tmout)
+        {}
 
   ~Pi3HatMoteusInterface() {
     
@@ -118,6 +118,26 @@ class Pi3HatMoteusInterface {
   ///
   /// All memory pointed to by @p data must remain valid until the
   /// callback is invoked.
+  void set_options(int cpu, uint32_t m_to, uint32_t c_to, uint32_t r_to , bool att)
+  {
+    if(!std::isnan(cpu) && cpu >0 && cpu < 4)
+      options_.cpu = cpu;
+    else 
+      throw std::logic_error("CPU value is wrong, choose a value between 0 and 3");
+    if(m_to > 0 && c_to >0 && r_to > 0)
+    {
+      main_timeout_ = m_to;
+      can_extra_timeout_ = c_to;
+      rx_extra_timeout_ = r_to;
+      attitude_ = att;
+    }
+    else  
+      throw std::logic_error("All timeout should be greater than zero");
+  }
+  void start_communication()
+  {
+    thread_ = std::thread(std::bind(&Pi3HatMoteusInterface::CHILD_Run, this));
+  }
   void Cycle(const Data& data, CallbackFunction callback) {
     {
       std::lock_guard<std::mutex> lock(mutex_);
@@ -125,7 +145,6 @@ class Pi3HatMoteusInterface {
         throw std::logic_error(
             "Cycle cannot be called until the previous has completed");
       }
-    
     callback_ = std::move(callback);
     active_ = true;
     data_ = data;
@@ -155,6 +174,8 @@ class Pi3HatMoteusInterface {
         // RCLCPP_INFO(rclcpp::get_logger("RUN"),"WAIT ENTER");
         if (done_) { 
           // RCLCPP_INFO(rclcpp::get_logger("END"),"The done input is call");
+
+          RCLCPP_INFO(rclcpp::get_logger("DONE"),"EXIT THREAD ");
           return; }
 
         // if (!active_) { continue; }
@@ -162,8 +183,9 @@ class Pi3HatMoteusInterface {
         // }
         // RCLCPP_INFO(rclcpp::get_logger("RUN"),"RUN RELASE");
       }
-      
-      auto output = CHILD_Cycle();
+       
+
+      auto output = CHILD_Cycle(main_timeout_, rx_extra_timeout_, can_extra_timeout_, attitude_);
       CallbackFunction callback_copy;
       {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -176,17 +198,15 @@ class Pi3HatMoteusInterface {
      // RCLCPP_INFO(rclcpp::get_logger("Child_run"),"CALL CALLBACK");
       callback_copy(output);
     }
-    // RCLCPP_INFO(rclcpp::get_logger("DONE"),"EXIT THREAD ");
+    
   }
 
-  Output CHILD_Cycle() {
+  Output CHILD_Cycle(uint32_t main_to,uint32_t can_to, uint32_t rec_to, bool att) {
     tx_can_.resize(data_.commands.size());
     int out_idx = 0;
     for (const auto& cmd : data_.commands) {
       const auto& query = cmd.query;
-
       auto& can = tx_can_[out_idx++];
-
       can.expect_reply = query.any_set();
       can.id = cmd.id | (can.expect_reply ? 0x8000 : 0x0000);
       can.bus = cmd.bus;
@@ -216,7 +236,10 @@ class Pi3HatMoteusInterface {
     input.tx_can = { tx_can_.data(), tx_can_.size() };
     input.rx_can = { rx_can_.data(), rx_can_.size() };
     input.timeout_ns = main_timeout_; 
-
+    input.rx_extra_wait_ns = this->rx_extra_timeout_;
+    input.min_tx_wait_ns = this->can_extra_timeout_;
+    input.request_attitude = attitude_;
+    Options option_;
     Output result;
 
     const auto output = pi3hat_->Cycle(input);
@@ -232,7 +255,7 @@ class Pi3HatMoteusInterface {
     return result;
   }
 
-  const Options options_;
+  Options options_;
 
 
   /// This block of variables are all controlled by the mutex.
@@ -246,7 +269,9 @@ class Pi3HatMoteusInterface {
 
   std::thread thread_;
   uint32_t main_timeout_;
-  uint32_t tx_timeout_;
+  uint32_t rx_extra_timeout_;
+  uint32_t can_extra_timeout_;
+  bool attitude_;
 
 
   /// All further variables are only used from within the child thread.

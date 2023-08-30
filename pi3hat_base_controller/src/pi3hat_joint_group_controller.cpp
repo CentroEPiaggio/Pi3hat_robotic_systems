@@ -16,7 +16,7 @@ namespace pi3hat_joint_group_controller
 
     Pi3Hat_Joint_Group_Controller::~Pi3Hat_Joint_Group_Controller()
     {
-        rt_buffer_.~RealtimeBuffer();
+        // rt_buffer_.~RealtimeBuffer();
     }
 
     CallbackReturn Pi3Hat_Joint_Group_Controller::on_init()

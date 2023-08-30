@@ -11,7 +11,7 @@ namespace pi3hat_hw_interface
 
          
         MoteusPi3Hat_Interface::MoteusPi3Hat_Interface():
-        communication_thread_(opt_thread_.set_cpu(CPU),MAIN_TIMEOUT)
+        communication_thread_()
         {
             // create the comunnication thread_
             //communication_thread_ = new MoteusInterface(opt);
@@ -75,33 +75,36 @@ namespace pi3hat_hw_interface
                 }
 
             };
+           
             
         };
         MoteusPi3Hat_Interface::~MoteusPi3Hat_Interface()
         {
-            for(int i = 0; i < NUM_STOP; i++)
+             
+            for(int i = 0; i< NUM_STOP; i++)
             {
-
-                can_recvd_.wait();
-                
                 for(auto motor : motors_)
                 {
                     motor.make_stop();
+                    RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"stop");
                 }  
 
                 try
                 {
                     cycle();
                 }
-                
+               
                 catch(std::logic_error &e)
                 {
-                    RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME), "raise error during the destruction of the HW interface");
+                    RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME), "raise error during the destruction of the HW interface %s", e.what());
                     assert(false);
                 }
-                
-                // eventually check fault
+                 can_recvd_.wait();
             }
+            
+            
+                // eventually check fault
+            
             RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"Delete the comunication thread");
             // communication_thread_.~Pi3HatMoteusInterface();
         };
@@ -109,6 +112,7 @@ namespace pi3hat_hw_interface
         CallbackReturn MoteusPi3Hat_Interface::on_init(const hardware_interface::HardwareInfo & info)
         {
             // get jnt number and resize my structure
+            uint32_t m_to = 0,c_to = 0,r_to = 0 ,att = false;
             info_.name = info.name;
             auto n_jnt = info.joints.size();
              RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"joint number is %ld",
@@ -121,6 +125,23 @@ namespace pi3hat_hw_interface
             uint8_t bus,id;
             Motor_Manager motor;
             size_t i=0;
+            // for(auto &p : info.hardware_parameters)
+            // {
+            //     RCLCPP_INFO(rclcpp::get_logger("DIO"),"%s",p.second.c_str());
+            // }
+            m_to = std::stoi(info.hardware_parameters.at("main_timeout"));
+            c_to = std::stoi(info.hardware_parameters.at("can_timeout"));
+            r_to = std::stoi(info.hardware_parameters.at("rcv_timeout"));
+            att = std::stoi(info.hardware_parameters.at("attitude")) == 0 ? false : true;
+            try
+            {
+                communication_thread_.set_options(CPU,m_to,c_to,r_to,att);
+            }
+            catch(std::logic_error &e)
+            {
+                RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME), "raised error:  %s",e.what());
+                assert(true);
+            }
             for(auto joint :info.joints)
             {
                 id = static_cast<uint8_t>(std::stoi(joint.parameters.at("id")));
@@ -196,6 +217,7 @@ namespace pi3hat_hw_interface
                 }
                 motor.set_query_resolution(PQ);
             } 
+            communication_thread_.start_communication();
 
 
             return CallbackReturn::SUCCESS;
@@ -240,7 +262,7 @@ namespace pi3hat_hw_interface
                     assert(false);
                 }
 
-                RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"stop msg %d",i);
+                // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"stop msg %d",i);
                 can_recvd_.wait();
                 // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"no await stop %d",can_recvd_.valid());
 

@@ -3,7 +3,10 @@
     <ros2_control name="MoteusPi3Hat_Interface" type="system">
         <hardware>
             <plugin>pi3hat_hw_interface/MoteusPi3Hat_Interface</plugin>
-
+            <param name="main_timeout">100</param>
+            <param name="can_timeout">20000</param>
+            <param name="rcv_timeout">20000</param>
+            <param name="attitude">0</param>
         </hardware>
          <!-- <joint name="joint1">
             <param name="id">2</param>
@@ -23,6 +26,7 @@
             <param name="motor_transmission"> 1.0</param>
             <param name="sec_enc_transmission"> 0.0</param>
         </joint> -->
+        
         <joint name="joint">
             <param name="id">4</param>
             <param name="bus">1</param>

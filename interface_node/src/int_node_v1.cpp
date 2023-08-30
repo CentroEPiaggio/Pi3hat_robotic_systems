@@ -47,7 +47,7 @@ namespace pi3hat_node
                     k_p_scale_(kp_s),
                     k_d_scale_(kd_s),
                     count_(0),
-                    comm_interface_(MoteusInterface(trd_opt))
+                    comm_interface_(MoteusInterface())
                 {
                     
                     // setup command and query resolution 
