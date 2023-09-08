@@ -437,7 +437,7 @@ namespace pi3hat_hw_interface
                     //     ,motors_[j].get_id(),perc);
                     // epoch_count_++;
                     // lost_pkt = motors_[j].get_pkg_loss();
-                    motors_[j].reset_pkg_loss(MAX_COUNT,epoch_count_);
+                    motors_[j].reset_pkg_loss();//(MAX_COUNT,epoch_count_);
 
                     // RCLCPP_WARN(
                     //     rclcpp::get_logger(LOGGER_NAME),
@@ -454,7 +454,7 @@ namespace pi3hat_hw_interface
                 
                 perc = valid_loss_ * MAX_COUNT * (epoch_count_ );
 
-                valid_loss_ =  (perc + static_cast<double>(not_val_cycle_))/static_cast<double>((epoch_count_ +1 )*MAX_COUNT);
+                valid_loss_ = not_val_cycle_; //(perc + static_cast<double>(not_val_cycle_))/static_cast<double>((epoch_count_ +1 )*MAX_COUNT);
                 epoch_count_++;
                // RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "Not valid msg count is %d",not_val_cycle_);
                 count_ = 0;

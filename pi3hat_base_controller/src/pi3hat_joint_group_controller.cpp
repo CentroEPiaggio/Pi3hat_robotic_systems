@@ -40,6 +40,7 @@ namespace pi3hat_joint_group_controller
             
         }
         default_init_pos_ = true;
+        joints_rcvd_msg_ = std::make_shared<CmdMsgs>();
         RCLCPP_INFO(get_node()->get_logger(),"initialize succesfully");
         return CallbackReturn::SUCCESS;
     }
@@ -93,7 +94,13 @@ namespace pi3hat_joint_group_controller
             5,
             [this](const CmdMsgs::SharedPtr msg)
             {
-                rt_buffer_.writeFromNonRT(msg);
+                // rt_buffer_.writeFromNonRT(msg);
+                joints_rcvd_msg_->set__name(msg->name);
+                joints_rcvd_msg_->set__position(msg->position);
+                joints_rcvd_msg_->set__velocity(msg->velocity);
+                joints_rcvd_msg_->set__effort(msg->effort);
+                joints_rcvd_msg_->set__kp_scale(msg->kp_scale);
+                joints_rcvd_msg_->set__kd_scale(msg->kd_scale);
             }
         );
         RCLCPP_INFO(get_node()->get_logger(),"configure succesfully");
@@ -119,7 +126,7 @@ namespace pi3hat_joint_group_controller
 
     bool Pi3Hat_Joint_Group_Controller::get_reference()
     {
-        joints_rcvd_msg_ = *rt_buffer_.readFromRT();
+        // joints_rcvd_msg_ = *rt_buffer_.readFromRT();
 
         if(joints_rcvd_msg_.get())
         {
@@ -158,7 +165,7 @@ namespace pi3hat_joint_group_controller
             }
         }
         else
-            RCLCPP_WARN(rclcpp::get_logger(logger_name_),"No data are readed from realtime buffer");
+            // RCLCPP_WARN(rclcpp::get_logger(logger_name_),"No data are readed from realtime buffer");
             
         // maybe needed?
         //joints_rcvd_msg_.reset();

@@ -3,9 +3,10 @@
 #include "moteus_pi3hat/pi3hat.h"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/macros.hpp"
-
 #include <stdio.h>
 #include <cstdio>
+
+#define DELTA 0.5
 
 namespace pi3hat_hw_interface
 {
@@ -153,6 +154,7 @@ namespace pi3hat_hw_interface
         int Motor_Manager::get_motor_state(int prov_msg)
         {
             int error;
+            double diff;
             // count_++;
             // if(count_ % MAX_COUNT == 0)
             // {
@@ -190,10 +192,19 @@ namespace pi3hat_hw_interface
                 msr_vel_ = res.velocity/motor_trans_;
                 msr_trq_ = res.torque*motor_trans_;
                 msr_tmp_ = res.temperature;
+
                 if(sec_enc_trans_ != 0.0)
                 {
-                    msr_enc_pos_ = res.sec_enc_pos/sec_enc_trans_;
+                    if(!first_read_)
+                        sec_enc_off_ = res.sec_enc_pos/sec_enc_trans_;
+                    msr_enc_pos_ = res.sec_enc_pos/sec_enc_trans_ - sec_enc_off_;
                     msr_enc_vel_ = res.sec_enc_vel/sec_enc_trans_;
+                    diff = msr_enc_pos_ - old_sec_enc_;
+                    if(diff > 0 && std::abs(diff) > DELTA)
+                        sec_enc_counter_ --;
+                    else if (diff < 0 &&  std::abs(diff) > DELTA)
+                        sec_enc_counter_ ++;
+                    msr_enc_pos_ += (float)sec_enc_counter_;
                 }
 
                 return res.fault;

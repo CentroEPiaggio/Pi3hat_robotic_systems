@@ -298,10 +298,11 @@ namespace pi3hat_hw_interface
                    
                     return loss_var_;
                 };
-                void reset_pkg_loss(int cnt_lim, int ep_cnt)
+                void reset_pkg_loss()//(int cnt_lim, int ep_cnt)
                 {
-                    loss_var_ = static_cast<double>(loss_var_ * cnt_lim * ep_cnt + packet_loss_ ) / 
-                    static_cast<double>(cnt_lim * (ep_cnt + 1));
+                    loss_var_ = packet_loss_;
+                    // static_cast<double>(loss_var_ * cnt_lim * ep_cnt + packet_loss_ ) / 
+                    // static_cast<double>(cnt_lim * (ep_cnt + 1));
                     packet_loss_ = 0;
                 };
                 bool get_msg_arrived()
@@ -357,6 +358,9 @@ namespace pi3hat_hw_interface
                 std::vector<std::string> inter_type_cmd_; 
                 int packet_loss_ = 0;
                 double loss_var_ = 0.0;
+                double sec_enc_off_ = 0.0, old_sec_enc_ = 0.0;
+                bool first_read_ = false;
+                int sec_enc_counter_ = 0;
                 
 
 

@@ -8,16 +8,16 @@ controller_manager:
 state_broadcaster:
   ros__parameters:
     joints:
-      - joint
-      # - joint2
-      # - joint3
+      - jnt_b9_1Hz_trq4_c2
+      - jnt_b9_1Hz_trq4_c3
+      # - joinjoint1t3
       # - joint4
     performance_index: true
 joint_controller:
   ros__parameters:
     joints:
-      - joint
-      # - joint2
+      - jnt_b9_1Hz_trq4_c2
+      - jnt_b9_1Hz_trq4_c3
       # - joint3
       # - joint4
     
