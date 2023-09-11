@@ -122,30 +122,9 @@ namespace pi3hat_hw_interface
                             hardware_interface::HW_IF_KP_SCALE,
                             hardware_interface::HW_IF_KD_SCALE
                         };
-                    if(second_trans == 0.0)
-                    {
-                        
-                        inter_type_stt_ = {
-                            hardware_interface::HW_IF_POSITION,
-                            hardware_interface::HW_IF_VELOCITY,
-                            hardware_interface::HW_IF_EFFORT,
-                            hardware_interface::HW_IF_TEMPERATURE,
-                            hardware_interface::HW_IF_PACKAGE_LOSS
-                        
-                        };
-                    }
-                    else
-                    {
-                        inter_type_stt_ = {
-                            hardware_interface::HW_IF_POSITION,
-                            hardware_interface::HW_IF_VELOCITY,
-                            hardware_interface::HW_IF_EFFORT,
-                            hardware_interface::HW_IF_TEMPERATURE,
-                            hardware_interface::HW_IF_PACKAGE_LOSS,
-                            hardware_interface::HW_IF_POSITION,
-                            hardware_interface::HW_IF_VELOCITY
-                        };
-                    }
+                    inter_type_stt_ = {};
+                    // RCLCPP_INFO(rclcpp::get_logger("DIO"),"pass sec_trans %f",second_trans);
+
                     //std::function<void(bool,bool,Command&)> a = bind(&pl_fun,this, _1,_2,_3);
                 };
                 ~Motor_Manager()
@@ -171,7 +150,31 @@ namespace pi3hat_hw_interface
                         bus_ = bus;
                         get_callback_ = gt_fun;
                         pol_callback_ = std::bind(pl_fun,_1,_2,this->cmd_data_);
+                         if(second_trans == 0.0)
+                        {
+                            
+                            inter_type_stt_ = {
+                                hardware_interface::HW_IF_POSITION,
+                                hardware_interface::HW_IF_VELOCITY,
+                                hardware_interface::HW_IF_EFFORT,
+                                hardware_interface::HW_IF_TEMPERATURE,
+                                hardware_interface::HW_IF_PACKAGE_LOSS
+                            
+                            };
+                        }
+                        else
+                        {
+                            inter_type_stt_ = {
+                                hardware_interface::HW_IF_POSITION,
+                                hardware_interface::HW_IF_VELOCITY,
+                                hardware_interface::HW_IF_EFFORT,
+                                hardware_interface::HW_IF_TEMPERATURE,
+                                hardware_interface::HW_IF_PACKAGE_LOSS,
+                                hardware_interface::HW_IF_POSITION,
+                                hardware_interface::HW_IF_VELOCITY
+                            };
 
+                        }
                     };
                 // set and get the current command resolution
                 void set_command_resolution(moteus::PositionResolution res);
@@ -359,7 +362,7 @@ namespace pi3hat_hw_interface
                 int packet_loss_ = 0;
                 double loss_var_ = 0.0;
                 double sec_enc_off_ = 0.0, old_sec_enc_ = 0.0;
-                bool first_read_ = false;
+                bool first_read_ = true;
                 int sec_enc_counter_ = 0;
                 
 

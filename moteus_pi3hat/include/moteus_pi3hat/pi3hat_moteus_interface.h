@@ -148,6 +148,14 @@ class Pi3HatMoteusInterface {
     callback_ = std::move(callback);
     active_ = true;
     data_ = data;
+    // for(auto cmd : data.commands)
+    // {
+    //   RCLCPP_INFO(rclcpp::get_logger("LIV3"),"value of data is %d",cmd.query.sec_enc_pos);
+    // }
+    //  for(auto cmd : data_.commands)
+    // {
+    //   RCLCPP_INFO(rclcpp::get_logger("LIV4"),"value of data is %d",cmd.query.sec_enc_pos);
+    // }
     }
     condition_.notify_one();
     // RCLCPP_INFO(rclcpp::get_logger("CYCLE"),"PASS");
@@ -227,6 +235,7 @@ class Pi3HatMoteusInterface {
           throw std::logic_error("unsupported mode");
         }
       }
+      // RCLCPP_INFO(rclcpp::get_logger("LIV2"),"the command value is %d and %d",cmd.query.sec_enc_pos,cmd.query.sec_enc_vel);
       moteus::EmitQueryCommandV2(&write_frame, cmd.query);
     }
 

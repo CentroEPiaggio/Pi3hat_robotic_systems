@@ -90,10 +90,14 @@ namespace pi3hat_hw_interface
                             rep.result.velocity = std::nan("2");
                             rep.result.torque = std::nan("3");
                             rep.result.temperature = std::nan("4");
-                            rep.result.sec_enc_pos = std::nan("1");
+                            rep.result.sec_enc_pos = std::nan("6");
                             rep.result.sec_enc_vel = std::nan("2");
                         }
                         data_.commands = {cmd_data_.data(),cmd_data_.size()};
+                        //  for(auto cmd : data_.commands)
+                        //     {
+                        //     RCLCPP_INFO(rclcpp::get_logger("LIV10"),"value of data is %d",cmd.query.sec_enc_pos);
+                        //     }
                         data_.replies  = {msr_data_.data(),msr_data_.size()};
                         communication_thread_.Cycle(
                                 data_,

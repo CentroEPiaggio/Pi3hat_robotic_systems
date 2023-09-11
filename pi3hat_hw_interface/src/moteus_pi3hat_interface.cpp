@@ -46,7 +46,7 @@ namespace pi3hat_hw_interface
                             else
                             {
                                 err = 0;
-
+                                // RCLCPP_INFO(rclcpp::get_logger("PASS"),"sec enc has value %f",item.result.sec_enc_pos);
                                 
                                 return item.result; 
                                 //std::printf("FOUND: %d,%d",item.id,item.bus);
@@ -144,6 +144,7 @@ namespace pi3hat_hw_interface
             }
             for(auto joint :info.joints)
             {
+                // RCLCPP_INFO(rclcpp::get_logger("PORCO"),"mt: %f and srt: %f",std::stod(joint.parameters.at("motor_transmission")),std::stod(joint.parameters.at("sec_enc_transmission")));
                 id = static_cast<uint8_t>(std::stoi(joint.parameters.at("id")));
                 
                 bus =static_cast<uint8_t>(std::stoi(joint.parameters.at("bus")));
@@ -202,7 +203,7 @@ namespace pi3hat_hw_interface
             PQ.temperature = moteus::Resolution::kFloat;
             PQ.fault = moteus::Resolution::kInt8;
 
-            for(auto motor : motors_)
+            for(auto &motor : motors_)
             {
                 motor.set_command_resolution(PC);
                 if(motor.get_sec_transmission() == 0.0)
@@ -216,6 +217,9 @@ namespace pi3hat_hw_interface
                     PQ.sec_enc_vel = moteus::Resolution::kFloat;
                 }
                 motor.set_query_resolution(PQ);
+                // RCLCPP_INFO(rclcpp::get_logger("TEST___"),"Quesy resolution encoder is %d %d",PQ.sec_enc_pos,PQ.sec_enc_vel);
+                // auto pp = motor.get_qry_res();
+                // RCLCPP_INFO(rclcpp::get_logger("TEST___TEST"),"Quesy resolution encoder is %d %d",pp.sec_enc_pos,pp.sec_enc_vel);
             } 
             communication_thread_.start_communication();
 
@@ -279,7 +283,12 @@ namespace pi3hat_hw_interface
                 {
                     motor.make_stop();
                 }  
+                // for(auto cmd:data_.commands)
+                // {
                 
+                //     RCLCPP_INFO(rclcpp::get_logger("LIV20"),"value of data is %d",cmd.query.sec_enc_pos);
+    
+                // }
                 // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Stop command %d",i);
 
                 // rclcpp::sleep_for(a);
@@ -472,13 +481,15 @@ namespace pi3hat_hw_interface
 
         hardware_interface::return_type MoteusPi3Hat_Interface::write(const rclcpp::Time & , const rclcpp::Duration & ) 
         {
+            
             if(valid_)
             {
                 for(auto &motor : motors_)
                 {
                     motor.make_position();
                     // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "the motor ID is %d",motor.get_id());
-
+                    // auto pp = motor.get_qry_res();
+                    // RCLCPP_INFO(rclcpp::get_logger("TEST___TEST4"),"Quesy resolution encoder is %d %d",pp.sec_enc_pos,pp.sec_enc_vel);
                 }
 
                 // int i  = 0;

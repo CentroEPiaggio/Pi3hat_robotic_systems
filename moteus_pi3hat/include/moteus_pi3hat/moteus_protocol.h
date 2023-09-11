@@ -22,7 +22,9 @@
 #include <limits>
 #include <tuple>
 #include <stdexcept>
-
+#include "rclcpp/macros.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/macros.hpp"
 /// @file
 ///
 /// This describes helper classes useful for constructing and parsing
@@ -283,6 +285,7 @@ class WriteCombiner {
     if (current_resolution_ == resolutions_[this_offset]) {
       // We don't need to write any register operations here, and the
       // value should go out only if requested.
+      // RCLCPP_INFO(rclcpp::get_logger("DIO"), "Exit because all are Kignore");
       return current_resolution_ != Resolution::kIgnore;
     }
     // We need to do some kind of framing.  See how far ahead the new
@@ -300,6 +303,7 @@ class WriteCombiner {
          i < N && resolutions_[i] == new_resolution;
          i++) {
       count++;
+      // RCLCPP_INFO(rclcpp::get_logger("MMMM"),"has count %d",count);
     }
 
     int8_t write_command = base_command_ + [&]() {
@@ -326,6 +330,7 @@ class WriteCombiner {
     if ((start_register_ + this_offset) > 127) {
       throw std::logic_error("unsupported");
     }
+
     frame_->Write<int8_t>(start_register_ + this_offset);
     return true;
   }
@@ -564,6 +569,20 @@ struct PositionResolution {
 
     );
   };
+  void operator=(const PositionResolution a)
+  {
+    
+      position = a.position;
+      velocity = a.velocity;
+      feedforward_torque = a.velocity;
+      kp_scale = a.kp_scale;
+      kd_scale = a.kp_scale;
+      maximum_torque = a.maximum_torque;
+      stop_position = a.stop_position;
+      watchdog_timeout = a.watchdog_timeout;
+
+   
+  };
 };
 
 inline void EmitStopCommand(WriteCanFrame* frame) {
@@ -643,6 +662,7 @@ struct QueryCommand {
         temperature != Resolution::kIgnore ||
         fault != Resolution::kIgnore;
   }
+
 };
 
 // struct added to send query request also for second encoder position and velocity 
@@ -690,6 +710,21 @@ struct QueryCommandV2 {
         sec_enc_vel == a.sec_enc_vel
     );
   };
+  void operator=(const QueryCommandV2 a)
+  {
+      mode = a.mode;
+      position = a.position;
+      velocity = a.velocity;
+      torque = a.torque;
+      q_current = a.q_current;
+      d_current = a.d_current;
+      rezero_state = a.rezero_state;
+      voltage = a.voltage;
+      temperature = a.temperature;
+      fault = a.fault;
+      sec_enc_pos = a.sec_enc_pos;
+      sec_enc_vel = a.sec_enc_vel;
+  };
 };
 
 
@@ -725,6 +760,7 @@ inline void EmitQueryCommandV2(
     WriteCanFrame* frame,
     const QueryCommandV2& command) {
   {
+    // RCLCPP_INFO(rclcpp::get_logger("LIV"),"first six value");
     WriteCombiner<6> combiner(frame, 0x10, Register::kMode, {
         command.mode,
             command.position,
@@ -738,6 +774,7 @@ inline void EmitQueryCommandV2(
     }
   }
   {
+    // RCLCPP_INFO(rclcpp::get_logger("LIV"),"mix faur value");
     WriteCombiner<4> combiner(frame, 0x10, Register::kRezeroState, {
         command.rezero_state,
             command.voltage,
@@ -748,6 +785,7 @@ inline void EmitQueryCommandV2(
     }
   }
   {
+    // RCLCPP_INFO(rclcpp::get_logger("LIV"),"last two value with res %d %d",command.sec_enc_pos,command.sec_enc_vel);
     WriteCombiner<2> combiner(frame, 0x10, Register::kEncoder1Pos,{
       command.sec_enc_pos,
       command.sec_enc_vel});

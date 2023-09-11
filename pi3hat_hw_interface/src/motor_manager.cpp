@@ -100,11 +100,13 @@ namespace pi3hat_hw_interface
         void Motor_Manager::set_query_resolution(moteus::QueryCommandV2 res)
         {
             qry_res_ = res;
+            
             if (sec_enc_trans_ == 0.0)
             {
                 qry_res_.sec_enc_pos = moteus::Resolution::kIgnore;
                 qry_res_.sec_enc_vel = moteus::Resolution::kIgnore;
             }
+
         };
 
         void Motor_Manager::set_command_resolution(moteus::PositionResolution res)
@@ -126,12 +128,22 @@ namespace pi3hat_hw_interface
                 cmd_data_ -> position.kp_scale = cmd_kp_scale_;
                 cmd_data_ -> query = qry_res_;
                 cmd_data_ -> resolution = cmd_res_;
+
+                // RCLCPP_INFO(rclcpp::get_logger("LIV"),"Quesy resolution encoder is %d %d and i pass %d %d",
+                // cmd_data_->query.sec_enc_pos,
+                // cmd_data_->query.sec_enc_vel,
+                // qry_res_.sec_enc_pos,
+                // qry_res_.sec_enc_vel);
+
                 pol_callback_(msg_valid_,msg_complete_);
             }
             else
                 RCLCPP_WARN(rclcpp::get_logger("pp"),"Occio non passa nell\'iff");
                 
-            
+             
+                // RCLCPP_INFO(rclcpp::get_logger("LIV50"),"value of data is %d",cmd_data_->query.sec_enc_pos);
+                // RCLCPP_INFO(rclcpp::get_logger("LIV90"),"value of desidered data is %d",qry_res_.sec_enc_pos);
+                
         }
 
         void Motor_Manager::make_stop()
@@ -195,16 +207,25 @@ namespace pi3hat_hw_interface
 
                 if(sec_enc_trans_ != 0.0)
                 {
-                    if(!first_read_)
-                        sec_enc_off_ = res.sec_enc_pos/sec_enc_trans_;
-                    msr_enc_pos_ = res.sec_enc_pos/sec_enc_trans_ - sec_enc_off_;
+                    
+                    if(first_read_)
+                    {
+                        sec_enc_off_ = res.sec_enc_pos;
+                        first_read_ = false;
+                    }    
+                    msr_enc_pos_ = res.sec_enc_pos - sec_enc_off_;
                     msr_enc_vel_ = res.sec_enc_vel/sec_enc_trans_;
                     diff = msr_enc_pos_ - old_sec_enc_;
+                    old_sec_enc_ = msr_enc_pos_;
                     if(diff > 0 && std::abs(diff) > DELTA)
                         sec_enc_counter_ --;
                     else if (diff < 0 &&  std::abs(diff) > DELTA)
                         sec_enc_counter_ ++;
                     msr_enc_pos_ += (float)sec_enc_counter_;
+                    msr_enc_pos_ /= sec_enc_trans_;
+                    
+                    RCLCPP_INFO(rclcpp::get_logger("DIO"),"we have m: %f and se: %f computed by msr_wo:%f,msr_wo_o:%f and count:%d",
+                    msr_pos_,msr_enc_pos_,res.sec_enc_pos-sec_enc_off_,res.sec_enc_pos,sec_enc_counter_);
                 }
 
                 return res.fault;
