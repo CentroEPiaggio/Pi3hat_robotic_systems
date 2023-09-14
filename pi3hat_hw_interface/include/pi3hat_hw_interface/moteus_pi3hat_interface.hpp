@@ -131,7 +131,7 @@ namespace pi3hat_hw_interface
                 int count_ = 0 ;
                 int not_val_cycle_ = 0,epoch_count_=0;
                 std::vector<double> pkt_loss_;
-                double valid_loss_ = 0.0;
+                double valid_loss_ = 0.0, cycle_dur_=0.0;
                 bool valid_ = true;
         };
     }

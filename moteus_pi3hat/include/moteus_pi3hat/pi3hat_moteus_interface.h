@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <thread>
 #include <vector>
+#include <chrono>
 
 #include "moteus_pi3hat/pi3hat.h"
 #include "moteus_pi3hat/moteus_protocol.h"
@@ -36,7 +37,7 @@
 
 namespace mjbots {
 namespace moteus {
-
+using namespace std::literals;
 /// This class represents the interface to the moteus controllers.
 /// Internally it uses a background thread to operate the pi3hat,
 /// enabling the main thread to perform work while servo communication
@@ -108,6 +109,7 @@ class Pi3HatMoteusInterface {
 
   struct Output {
     size_t query_result_size = 0;
+    double cycle_s = 0.0;
   };
 
   using CallbackFunction = std::function<void (const Output&)>;
@@ -168,7 +170,7 @@ class Pi3HatMoteusInterface {
     ConfigureRealtime(options_.cpu);
 
     pi3hat_.reset(new pi3hat::Pi3Hat({}));
-
+    std::chrono::time_point<std::chrono::high_resolution_clock> start,end;
     while (true)
     {
       {
@@ -191,9 +193,9 @@ class Pi3HatMoteusInterface {
         // }
         // RCLCPP_INFO(rclcpp::get_logger("RUN"),"RUN RELASE");
       }
-       
 
-      auto output = CHILD_Cycle(main_timeout_, rx_extra_timeout_, can_extra_timeout_, attitude_);
+      start = std::chrono::high_resolution_clock::now(); 
+      auto output = CHILD_Cycle();
       CallbackFunction callback_copy;
       {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -204,12 +206,14 @@ class Pi3HatMoteusInterface {
         // RCLCPP_INFO(rclcpp::get_logger("DONE"),"EXEC RELASE");
       }
      // RCLCPP_INFO(rclcpp::get_logger("Child_run"),"CALL CALLBACK");
+      end = std::chrono::high_resolution_clock::now(); 
+      output.cycle_s = std::chrono::duration<double>(end-start).count();
       callback_copy(output);
     }
     
   }
 
-  Output CHILD_Cycle(uint32_t main_to,uint32_t can_to, uint32_t rec_to, bool att) {
+  Output CHILD_Cycle() {
     tx_can_.resize(data_.commands.size());
     int out_idx = 0;
     for (const auto& cmd : data_.commands) {
@@ -244,10 +248,10 @@ class Pi3HatMoteusInterface {
     pi3hat::Pi3Hat::Input input;
     input.tx_can = { tx_can_.data(), tx_can_.size() };
     input.rx_can = { rx_can_.data(), rx_can_.size() };
-    input.timeout_ns = main_timeout_; 
+    input.timeout_ns = this->main_timeout_; 
     input.rx_extra_wait_ns = this->rx_extra_timeout_;
     input.min_tx_wait_ns = this->can_extra_timeout_;
-    input.request_attitude = attitude_;
+    input.request_attitude = this->attitude_;
     Options option_;
     Output result;
 

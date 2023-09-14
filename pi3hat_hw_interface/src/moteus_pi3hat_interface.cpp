@@ -133,6 +133,7 @@ namespace pi3hat_hw_interface
             c_to = std::stoi(info.hardware_parameters.at("can_timeout"));
             r_to = std::stoi(info.hardware_parameters.at("rcv_timeout"));
             att = std::stoi(info.hardware_parameters.at("attitude")) == 0 ? false : true;
+            RCLCPP_INFO(rclcpp::get_logger("DIO"),"pass");
             try
             {
                 communication_thread_.set_options(CPU,m_to,c_to,r_to,att);
@@ -326,6 +327,10 @@ namespace pi3hat_hw_interface
                         info_.name,
                         hardware_interface::HW_IF_VALIDITY_LOSS,
                         &valid_loss_);
+            stt_int.emplace_back(
+                        info_.name,
+                        hardware_interface::HW_IF_CYCLE_DUR,
+                        &cycle_dur_);
             for(auto &motor : motors_)
             {
                 // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"insert joint name %s and [id,bus] :: [%d,%d]",
@@ -415,6 +420,9 @@ namespace pi3hat_hw_interface
                 //     }
                 // }
                 valid_ = true;
+                cycle_dur_ = out.cycle_s;
+
+                // RCLCPP_INFO(rclcpp::get_logger("tt"),"the cycle dur is %f",cycle_dur_);
                 
                 //RCLCPP_INFO(rclcpp::get_logger(LOGGER_Nout = can_recvd_.get();AME), "the output num is  %ld",out.query_result_size);
                 // out.query_result_size = msr_data_.size();

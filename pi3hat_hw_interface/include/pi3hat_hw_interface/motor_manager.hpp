@@ -12,7 +12,7 @@
 #include <tuple>
 // #define NULL __null
 
-#define MAX_COUNT 1000
+#define MAX_COUNT 100
 #define MIN_STT_INT 5
 
 using namespace mjbots;
@@ -34,6 +34,7 @@ namespace hardware_interface
     constexpr char HW_IF_KD_SCALE[] = "kd_scale_value";
     constexpr char HW_IF_VALIDITY_LOSS[] = "validity_loss";
     constexpr char HW_IF_PACKAGE_LOSS[] = "package_loss";
+    constexpr char HW_IF_CYCLE_DUR[] = "cycle_duration";
 
 
 }
