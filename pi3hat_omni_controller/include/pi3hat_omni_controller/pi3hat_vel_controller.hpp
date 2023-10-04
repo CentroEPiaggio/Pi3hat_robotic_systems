@@ -66,6 +66,14 @@ namespace pi3hat_vel_controller
 
             void compute_leg_joints_vel_ref(VectorXd& q_leg, VectorXd& q_dot_leg, size_t l_index, double height_rate_tmp)
 
+            // le farà jacopino :
+            // callback per il servizio di "homing"
+            // callback per l'emergenza-> kp_scale e kd_scale a zero 
+            // le callback gestiscono anche un membro della classe enum robot_state = {PREHOMING, ACTIVE , EMEEGENCY }
+            // PREHOMING non legge i comandi ma aspetta la richiesta di srvizio 
+            // ACTIVE risponde alle richieste da topic 
+            // EMRGENCY death state 
+
         private:
             rclcpp::Subscription<CmdMsgs>::SharedPtr cmd_sub_;
             std::string logger_name_;
@@ -79,7 +87,9 @@ namespace pi3hat_vel_controller
             bool default_init_pos_;
 
             //robot parameter referring to https://ieeexplore.ieee.org/document/7827337
-            double a_, b_, alpha_;    
+            double a_, b_, alpha_; 
+            // add mutex instance
+            const std::vector<std::string> joints_ = {"jnt1","jnt2",..}   
     };
 };
 

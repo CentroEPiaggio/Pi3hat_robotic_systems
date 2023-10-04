@@ -8,10 +8,9 @@ namespace pi3hat_vel_controller
     Pi3Hat_Vel_Controller::Pi3Hat_Vel_Controller():
     cmd_sub_(nullptr),
     logger_name_("Pi3Hat_Vel_Controller"),
-    rt_buffer_(nullptr),
+    //rt_buffer_(nullptr),
     vel_target_rcvd_msg_(nullptr),
     default_init_pos_(false)
-    
     {}
 
     Pi3Hat_Vel_Controller::~Pi3Hat_Vel_Controller()
@@ -21,6 +20,7 @@ namespace pi3hat_vel_controller
 
     CallbackReturn Pi3Hat_Vel_Controller::on_init()
     {
+        // da qui 
         try
         {
             auto_declare<std::vector<std::string>>("joints",std::vector<std::string>());           //sto dichiarando le interfacce
@@ -30,6 +30,7 @@ namespace pi3hat_vel_controller
             RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"Exception thrown during declaration of joints name with message: %s", e.what());
             return CallbackReturn::ERROR;
         }
+        // a qui tolto 
         try
         {
             auto_declare<std::vector<double>>("init_pos",std::vector<double>());                   //sto dichiarando le posizioni inniziali
@@ -53,7 +54,9 @@ namespace pi3hat_vel_controller
         a_ = get_node()->get_parameter("driveshaft_y").as_double();
         b_ = get_node()->get_parameter("driveshaft_x").as_double();
         alpha_ = get_node()->get_parameter("mecanum_angle").as_double();
-        std::vector<std::string> joint = get_node()->get_parameter("joints").as_string_array();
+        // a questo punto si può aggiungiungere joints_ come membro della classe e settarlo nell'hpp
+        //std::vector<std::string> joint = get_node()->get_parameter("joints").as_string_array();
+
         if(joint.empty())
         {
             RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"'joints' parameter is empty");
@@ -82,24 +85,26 @@ namespace pi3hat_vel_controller
         sz = joint.size();
         for(size_t i = 0; i < sz; i++)
         {
-            position_cmd_.emplace(std::make_pair(joint[i],init_positions[i]));
+            // da mettere joints_ al posto di joint nuovo membro 
+            position_cmd_.emplace(std::make_pair(joint[i],init_positions[i])); // init with NaN
             position_out_.emplace(std::make_pair(joint[i],init_positions[i]));                //used to store current measured joint position
             temperature_out_.emplace(std::make_pair(joint[i],init_positions[i]));             //used to store current measured joint temperature
             velocity_cmd_.emplace(std::make_pair(joint[i],0.0));
             effort_cmd_.emplace(std::make_pair(joint[i],0.0));
-            kp_scale_cmd_.emplace(std::make_pair(joint[i],1.0));
+            kp_scale_cmd_.emplace(std::make_pair(joint[i],1.0)); 
             kd_scale_cmd_.emplace(std::make_pair(joint[i],1.0));
 
         }
 
         // build the subscriber
-        
+        // ci pensa jacopino Add QOS and deadline event callback
         cmd_sub_ = get_node()->create_subscription<CmdMsgs>(
             "~/command",
             5,
             [this](const CmdMsgs::SharedPtr msg)
             {
                 // rt_buffer_.writeFromNonRT(msg);
+                // aggiungere il lock_guard std::lock_guard(<mutex_var>)
                 vel_target_rcvd_msg_->set__v_x(msg->v_x);
                 vel_target_rcvd_msg_->set__v_y(msg->v_y);
                 vel_target_rcvd_msg_->set__omega(msg->omega);
@@ -112,7 +117,8 @@ namespace pi3hat_vel_controller
 
     CallbackReturn Pi3Hat_Vel_Controller::on_activate(const rclcpp_lifecycle::State &)
     {
-        rt_buffer_.reset();
+       // rt_buffer_.reset();
+       // JACOPINO se c'è tempo scrivi un check sulle interfacce hostate e claimate 
         RCLCPP_INFO(get_node()->get_logger(),"activate succesfully");
         return CallbackReturn::SUCCESS;
     }
@@ -128,9 +134,9 @@ namespace pi3hat_vel_controller
     }
     
     bool Pi3Hat_Vel_Controller::get_target(double& v_x_tmp, double& v_y_tmp, double& omega_tmp, double& height_rate_tmp)
-    {
+    { 
         // joints_rcvd_msg_ = *rt_buffer_.readFromRT();
-
+        //  lock_guard + save data on var
         if(vel_target_rcvd_msg_.get())
         {
             try
@@ -154,7 +160,7 @@ namespace pi3hat_vel_controller
         //joints_rcvd_msg_.reset();
     }
 
-    bool Pi3Hat_Vel_Controller::compute_reference(double v_x_tmp, double v_y_tmp, double omega_tmp, double height_rate_tmp)
+    bool Pi3Hat_Vel_Controller::compute_reference(double v_x_tmp, double v_y_tmp, double omega_tmp, double height_rate_tmp)// add duration as argument [s]
     {   
         VectorXd v_base(3);
         VectorXd w_mecanum(4);
@@ -168,6 +174,7 @@ namespace pi3hat_vel_controller
             try
             {   
                 velocity_cmd_.at(joint[i]) = w_mecanum[i - JNT_NUM];
+                
             }
             catch(const std::exception& e)
             {
@@ -193,6 +200,7 @@ namespace pi3hat_vel_controller
             {
                 try
                 {   
+                    // add integration of pos with computed command vel, so we can send also position reference
                     velocity_cmd_.at(joint[JNT_LEG_NUM*i + j]) = q_dot_leg(j) 
                 }
                 catch(const std::exception& e)
@@ -238,10 +246,12 @@ namespace pi3hat_vel_controller
         q_dot_leg(1) = - s12 / (sin(q_leg(1)) + s12) * q_dot_leg(2);                               // this is true until the foot remains under the hip
     }
 
-    controller_interface::return_type Pi3Hat_Vel_Controller::update(const rclcpp::Time & , const rclcpp::Duration & )
+    controller_interface::return_type Pi3Hat_Vel_Controller::update(const rclcpp::Time & , const rclcpp::Duration & dur)
     {
         std::string type;
-        double v_x, v_y, omega, height_rate;             //floating base velocity
+        double v_x, v_y, omega, height_rate;   
+        // get seconds/ milliseconds from duration and compute DeltaT in second
+                  //floating base velocity
         // set the data from the readed message
         // if(!get_reference())
         //     return controller_interface::return_type::ERROR;
