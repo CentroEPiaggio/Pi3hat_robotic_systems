@@ -109,13 +109,13 @@ namespace pi3hat_vel_controller
             //robot parameter referring to https://ieeexplore.ieee.org/document/7827337
             double a_, b_, alpha_; 
             // add mutex instance
-            // joint names has been added, check they are right
+            // joint names has been added, check they are right // just an F instead of an H, for the rest all perfect
             const std::vector<std::string> joints_ = {
                                                     "RF_HAA","RF_HFE","RF_HKE",
                                                     "LF_HAA","LF_HFE","LF_HKE",
                                                     "LH_HAA","LH_HFE","LH_HKE",
                                                     "RH_HAA","RH_HFE","RH_HKE",
-                                                    "RF_WHEEL","LF_WHEEL","LF_WHEEL","LH_WHEEL"}; 
+                                                    "RF_WHEEL","LF_WHEEL","LH_WHEEL","LH_WHEEL"}; 
             // controller state and and spline parameter declaration
             Controller_State state_ = Controller_State::INACTIVE;  
             // given the third order spline p(t) = a_3*t^3 + a_2*t^2 + a_1*t +a_0

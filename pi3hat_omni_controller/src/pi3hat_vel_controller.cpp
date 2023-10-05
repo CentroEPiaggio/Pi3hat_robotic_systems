@@ -83,14 +83,14 @@ namespace pi3hat_vel_controller
         spline_par_[2] = 3 * RF_KFE_HOM / (homing_dur_*homing_dur_); // a_2_knee
         spline_par_[3] = -2 * RF_KFE_HOM /( homing_dur_*homing_dur_*homing_dur_); // a_3_knee
 
-        // a questo punto si può aggiungiungere joints_ come membro della classe e settarlo nell'hpp
+        // a questo punto si può aggiungiungere joints_ come membro della classe e settarlo nell'hpp //fatto da Jacopino
         //std::vector<std::string> joint = get_node()->get_parameter("joints").as_string_array();
 
-        if(joint.empty())
-        {
-            RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"'joints' parameter is empty");
-            return CallbackReturn::ERROR;
-        }
+        // if(joint.empty())
+        // {
+        //     RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"'joints' parameter is empty");
+        //     return CallbackReturn::ERROR;
+        // }
         
         // init the initial position if its needed
         if(!default_init_pos_)
@@ -108,20 +108,20 @@ namespace pi3hat_vel_controller
             }
         }
         else
-            init_positions.resize(joint.size(),0.0);
+            init_positions.resize(joints_.size(),0.0);
         
         // fill the map structure 
-        sz = joint.size();
+        sz = joint_s.size();
         for(size_t i = 0; i < sz; i++)
         {
             // da mettere joints_ al posto di joint nuovo membro 
-            position_cmd_.emplace(std::make_pair(joint[i],init_positions[i])); // init with NaN
-            position_out_.emplace(std::make_pair(joint[i],init_positions[i]));                //used to store current measured joint position
-            temperature_out_.emplace(std::make_pair(joint[i],init_positions[i]));             //used to store current measured joint temperature
-            velocity_cmd_.emplace(std::make_pair(joint[i],0.0));
-            effort_cmd_.emplace(std::make_pair(joint[i],0.0));
-            kp_scale_cmd_.emplace(std::make_pair(joint[i],1.0)); 
-            kd_scale_cmd_.emplace(std::make_pair(joint[i],1.0));
+            position_cmd_.emplace(std::make_pair(joints_[i],NAN)); // init with NaN
+            position_out_.emplace(std::make_pair(joints_[i],NAN));                //used to store current measured joint position
+            temperature_out_.emplace(std::make_pair(joints_[i],NAN));             //used to store current measured joint temperature
+            velocity_cmd_.emplace(std::make_pair(joints_[i],0.0));
+            effort_cmd_.emplace(std::make_pair(joints_[i],0.0));
+            kp_scale_cmd_.emplace(std::make_pair(joints_[i],1.0)); 
+            kd_scale_cmd_.emplace(std::make_pair(joints_[i],1.0));
 
         }
 
