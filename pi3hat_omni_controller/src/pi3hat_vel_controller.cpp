@@ -11,6 +11,7 @@ namespace pi3hat_vel_controller
     //rt_buffer_(nullptr),
     vel_target_rcvd_msg_(nullptr),
     default_init_pos_(false)
+    //prova
     {}
 
     Pi3Hat_Vel_Controller::~Pi3Hat_Vel_Controller()
