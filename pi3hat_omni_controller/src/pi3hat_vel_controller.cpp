@@ -1,10 +1,13 @@
 #include "pluginlib/class_list_macros.hpp"
 #include "pi3hat_omni_controller/pi3hat_vel_controller.hpp"
 #include "pi3hat_hw_interface/motor_manager.hpp"
+#include "std_srvs/srv/"
 #include <cstdint>
 
 namespace pi3hat_vel_controller
 {
+
+    
     Pi3Hat_Vel_Controller::Pi3Hat_Vel_Controller():
     cmd_sub_(nullptr),
     logger_name_("Pi3Hat_Vel_Controller"),
@@ -21,6 +24,19 @@ namespace pi3hat_vel_controller
 
     CallbackReturn Pi3Hat_Vel_Controller::on_init()
     {
+
+
+        // declare homing duration params
+        try
+        {
+            auto_declare<double>("homing_duration",5.0);         
+        }
+         catch(const std::exception & e)
+        {
+            RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"Exception thrown during declaration of joints name with message: %s", e.what());
+            return CallbackReturn::ERROR;
+        }
+
         // da qui 
         try
         {
@@ -31,6 +47,7 @@ namespace pi3hat_vel_controller
             RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"Exception thrown during declaration of joints name with message: %s", e.what());
             return CallbackReturn::ERROR;
         }
+        
         // a qui tolto 
         try
         {
@@ -50,11 +67,22 @@ namespace pi3hat_vel_controller
     CallbackReturn Pi3Hat_Vel_Controller::on_configure(const rclcpp_lifecycle::State &)
     {
         std::vector<double> init_positions;
+        double homig_dur;
         size_t sz;
         // get the controlled joints name
         a_ = get_node()->get_parameter("driveshaft_y").as_double();
         b_ = get_node()->get_parameter("driveshaft_x").as_double();
         alpha_ = get_node()->get_parameter("mecanum_angle").as_double();
+
+        //get homing duration 
+
+        homing_dur_ = this->get_parameter("homing_duration").as_double();
+        // set spline parameters
+        spline_par_[0] = 3 * RF_HFE_HOM / (homing_dur_*homing_dur_); // a_2_hip
+        spline_par_[1] = -2 * RF_HFE_HOM /( homing_dur_*homing_dur_*homing_dur_); // a_3_hip
+        spline_par_[2] = 3 * RF_KFE_HOM / (homing_dur_*homing_dur_); // a_2_knee
+        spline_par_[3] = -2 * RF_KFE_HOM /( homing_dur_*homing_dur_*homing_dur_); // a_3_knee
+
         // a questo punto si può aggiungiungere joints_ come membro della classe e settarlo nell'hpp
         //std::vector<std::string> joint = get_node()->get_parameter("joints").as_string_array();
 
@@ -247,6 +275,53 @@ namespace pi3hat_vel_controller
         q_dot_leg(1) = - s12 / (sin(q_leg(1)) + s12) * q_dot_leg(2);                               // this is true until the foot remains under the hip
     }
 
+    void compute_homing_ref(LEG_IND l_i)
+    {
+        rclcpp::Time dt = this->now() - homing_start_;
+        double dt_sec = dt.seconds();
+        if(dt_sec <= homing_dur_)
+        {
+            if(l_i == LEG_IND::RF || l_i == LEG_IND::LH )
+            {
+                position_cmd_[joints_[3*l_i+1]] = spline_par_[1]*dt_sec*dt_sec*dt_sec + spline_par_[0]*dt_sec*dt_sec;
+                position_cmd_[joints_[3*l_i+2]] = spline_par_[3]*dt_sec*dt_sec*dt_sec + spline_par_[2]*dt_sec*dt_sec;
+                velocity_cmd_[joints_[3*l_i+1]] = 3*spline_par_[1]*dt_sec*dt_sec + 2*spline_par_[0]*dt_sec;
+                velocity_cmd_[joints_[3*l_i+2]] = 3*spline_par_[3]*dt_sec*dt_sec + 2*spline_par_[2]dt_sec;
+            }
+
+            if(l_i == LEG_IND::RH || l_i == LEG_IND::LF )
+            {
+                position_cmd_[joints_[3*l_i+1]] = - spline_par_[1]*dt_sec*dt_sec*dt_sec + spline_par_[0]*dt_sec*dt_sec;
+                position_cmd_[joints_[3*l_i+2]] = - spline_par_[3]*dt_sec*dt_sec*dt_sec + spline_par_[2]*dt_sec*dt_sec;
+                velocity_cmd_[joints_[3*l_i+1]] = - 3*spline_par_[1]*dt_sec*dt_sec + 2*spline_par_[0]*dt_sec;
+                velocity_cmd_[joints_[3*l_i+2]] = - 3*spline_par_[3]*dt_sec*dt_sec + 2*spline_par_[2]dt_sec;
+            }
+        }
+        else
+        {
+            if(l_i == LEG_IND::RF || l_i == LEG_IND::LH )
+            {
+                position_cmd_[joints_[3*l_i+1]] = RF_HFE_HOM;
+                position_cmd_[joints_[3*l_i+2]] = RF_KFE_HOM;
+                velocity_cmd_[joints_[3*l_i+1]] = 0.0;
+                velocity_cmd_[joints_[3*l_i+2]] = 0.0;
+            }
+
+            if(l_i == LEG_IND::RH || l_i == LEG_IND::LF )
+            {
+                position_cmd_[joints_[3*l_i+1]] = -RF_HFE_HOM;
+                position_cmd_[joints_[3*l_i+2]] = -RF_KFE_HOM;
+                velocity_cmd_[joints_[3*l_i+1]] = 0.0;
+                velocity_cmd_[joints_[3*l_i+2]] = 0.0;
+            }
+            state_ = Controller_State::ACTIVE;
+
+        }
+
+
+    }
+
+
     controller_interface::return_type Pi3Hat_Vel_Controller::update(const rclcpp::Time & , const rclcpp::Duration & dur)
     {
         std::string type;
@@ -280,11 +355,26 @@ namespace pi3hat_vel_controller
             }
         }
 
-        //get the velocity target from the specific topic
-        get_target(v_x, v_y, omega, height_rate);  
 
-        //compute the joints reference from velocity target
-        compute_reference(v_x, v_y, omega, height_rate);
+        switch (state_)
+        {
+        case Controller_State::INACTIVE:
+            compute_homing_ref(RF);
+            compute_homing_ref(LF);
+            compute_homing_ref(LH);
+            compute_homing_ref(RH);
+            break;
+        case Controller_State::ACTIVE
+            //get the velocity target from the specific topic
+            get_target(v_x, v_y, omega, height_rate);  
+
+            //compute the joints reference from velocity target
+            compute_reference(v_x, v_y, omega, height_rate);
+            break;
+        default:
+            break;
+        }
+        
 
 
         // set the commanded reference iterating over the exported commanded interface

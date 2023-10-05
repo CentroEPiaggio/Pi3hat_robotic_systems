@@ -13,6 +13,7 @@ find_package(controller_interface REQUIRED)
 find_package(hardware_interface REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(pi3hat_moteus_int_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(realtime_tools REQUIRED)
 find_package(pi3hat_hw_interface REQUIRED)
 
@@ -38,6 +39,7 @@ ament_target_dependencies(${PROJECT_NAME}
   realtime_tools
   pi3hat_hw_interface
   pi3hat_moteus_int_msgs
+  std_srvs
 )
 
 install(
@@ -73,6 +75,7 @@ ament_export_dependencies(
   realtime_tools
   pi3hat_hw_interface
   pi3hat_moteus_int_msgs
+  std_srvs
 )
 ament_export_include_directories(
   include

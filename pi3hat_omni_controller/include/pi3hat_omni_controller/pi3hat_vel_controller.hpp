@@ -23,6 +23,8 @@
 #define JNT_LEG_NUM     3      // 3 Revolute joints each leg 
 #define WHL_NUM         4      // 1 wheel for each leg
 #define LINK_LENGHT     0.18   // link lenght in m
+#define RF_HFE_HOM - 0.785398163
+#define RF_KFE_HOM 1.570796326
 
 namespace pi3hat_vel_controller
 {
@@ -32,6 +34,9 @@ namespace pi3hat_vel_controller
 
     using Eigen::MatrixXd;
     using Eigen::VectorXd;
+
+    enum Controller_State {INACTIVE,ACTIVE,EMERGENCY};
+    enum LEG_IND {RF,LF,LH,RH};s
 
     class Pi3Hat_Vel_Controller : public controller_interface::ControllerInterface
     {
@@ -65,6 +70,18 @@ namespace pi3hat_vel_controller
             void compute_mecanum_speed(VectorXd& v_base, VectorXd& w_mecanum);
 
             void compute_leg_joints_vel_ref(VectorXd& q_leg, VectorXd& q_dot_leg, size_t l_index, double height_rate_tmp)
+            
+
+            // function to compute the next homing reference 
+            void compute_homing_ref(LEG_IND l_i);
+
+            // <<-------------------------->>
+            // callback and service must be add, i will do it tomorrow
+
+            //<<-------------------------->>
+
+
+            
 
             // le farà jacopino :
             // callback per il servizio di "homing"
@@ -86,10 +103,25 @@ namespace pi3hat_vel_controller
             std::__shared_ptr<>
             bool default_init_pos_;
 
+            // add homing starting times
+            std::share_ptr<rclcpp::Time> homing_start_ = nullptr;
+
             //robot parameter referring to https://ieeexplore.ieee.org/document/7827337
             double a_, b_, alpha_; 
             // add mutex instance
-            const std::vector<std::string> joints_ = {"jnt1","jnt2",..}   
+            // joint names has been added, check they are right
+            const std::vector<std::string> joints_ = {
+                                                    "RF_HAA","RF_HFE","RF_HKE",
+                                                    "LF_HAA","LF_HFE","LF_HKE",
+                                                    "LH_HAA","LH_HFE","LH_HKE",
+                                                    "RH_HAA","RH_HFE","RH_HKE",
+                                                    "RF_WHEEL","LF_WHEEL","LF_WHEEL","LH_WHEEL"}; 
+            // controller state and and spline parameter declaration
+            Controller_State state_ = Controller_State::INACTIVE;  
+            // given the third order spline p(t) = a_3*t^3 + a_2*t^2 + a_1*t +a_0
+            // the parameter contains a_3 and a_2 for RF hip and knee, the others are zero 
+            std::array<double,4> spline_par_ = {0.0,0.0,0.0,0.0};
+            double homing_dur_ = 0.0;
     };
 };
 
