@@ -1,26 +1,22 @@
 #include "pluginlib/class_list_macros.hpp"
 #include "pi3hat_omni_controller/pi3hat_vel_controller.hpp"
 #include "pi3hat_hw_interface/motor_manager.hpp"
-#include "std_srvs/srv/"
 #include <cstdint>
+#define VEL_CMD true
 
 namespace pi3hat_vel_controller
 {
 
     
     Pi3Hat_Vel_Controller::Pi3Hat_Vel_Controller():
-    cmd_sub_(nullptr),
     logger_name_("Pi3Hat_Vel_Controller"),
     //rt_buffer_(nullptr),
-    vel_target_rcvd_msg_(nullptr),
-    default_init_pos_(false)
+    vel_target_rcvd_msg_(make_shared<CmdMsgs>())
     //prova
     {}
 
     Pi3Hat_Vel_Controller::~Pi3Hat_Vel_Controller()
-    {
-        // rt_buffer_.~RealtimeBuffer();
-    }
+    {}
 
     CallbackReturn Pi3Hat_Vel_Controller::on_init()
     {
@@ -29,37 +25,15 @@ namespace pi3hat_vel_controller
         // declare homing duration params
         try
         {
-            auto_declare<double>("homing_duration",5.0);         
+            auto_declare<double>("homing_duration",5.0); 
+            auto_declare<int>("input_frequency",100);        
         }
          catch(const std::exception & e)
         {
             RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"Exception thrown during declaration of joints name with message: %s", e.what());
             return CallbackReturn::ERROR;
         }
-
-        // da qui 
-        try
-        {
-            auto_declare<std::vector<std::string>>("joints",std::vector<std::string>());           //sto dichiarando le interfacce
-        }
-         catch(const std::exception & e)
-        {
-            RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"Exception thrown during declaration of joints name with message: %s", e.what());
-            return CallbackReturn::ERROR;
-        }
-        
-        // a qui tolto 
-        try
-        {
-            auto_declare<std::vector<double>>("init_pos",std::vector<double>());                   //sto dichiarando le posizioni inniziali
-        }
-          catch(const std::exception & e)
-        {
-            RCLCPP_WARN(rclcpp::get_logger(logger_name_),"Exception thrown during declaretion of init position with message: %s it gets default values", e.what());
-            
-        }
-        default_init_pos_ = true;
-        vel_target_rcvd_msg_ = std::make_shared<CmdMsgs>();
+        // add physics omni_wheel physics parameter autodeclare
         RCLCPP_INFO(get_node()->get_logger(),"initialize succesfully");
         return CallbackReturn::SUCCESS;
     }
@@ -67,6 +41,8 @@ namespace pi3hat_vel_controller
     CallbackReturn Pi3Hat_Vel_Controller::on_configure(const rclcpp_lifecycle::State &)
     {
         std::vector<double> init_positions;
+        rclcpp::QoS sub_qos(10);
+        rclcpp::SubscriptionOptions sub_opt;
         double homig_dur;
         size_t sz;
         // get the controlled joints name
@@ -82,51 +58,36 @@ namespace pi3hat_vel_controller
         spline_par_[1] = -2 * RF_HFE_HOM /( homing_dur_*homing_dur_*homing_dur_); // a_3_hip
         spline_par_[2] = 3 * RF_KFE_HOM / (homing_dur_*homing_dur_); // a_2_knee
         spline_par_[3] = -2 * RF_KFE_HOM /( homing_dur_*homing_dur_*homing_dur_); // a_3_knee
-
-        // a questo punto si può aggiungiungere joints_ come membro della classe e settarlo nell'hpp //fatto da Jacopino
-        //std::vector<std::string> joint = get_node()->get_parameter("joints").as_string_array();
-
-        // if(joint.empty())
-        // {
-        //     RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"'joints' parameter is empty");
-        //     return CallbackReturn::ERROR;
-        // }
-        
-        // init the initial position if its needed
-        if(!default_init_pos_)
-        {
-            init_positions = get_node()->get_parameter("init_pos").as_double_array();
-            if(init_positions.empty())
-            {
-                RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"'init_pos' parameter is empty");
-                return CallbackReturn::ERROR;
-            }
-            if(init_positions.size() != joint.size())
-            {
-                RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"'init_pos' and 'joints' can not have different dimension");
-                return CallbackReturn::ERROR;
-            }
-        }
-        else
-            init_positions.resize(joints_.size(),0.0);
         
         // fill the map structure 
         sz = joint_s.size();
         for(size_t i = 0; i < sz; i++)
         {
             // da mettere joints_ al posto di joint nuovo membro 
-            position_cmd_.emplace(std::make_pair(joints_[i],NAN)); // init with NaN
-            position_out_.emplace(std::make_pair(joints_[i],NAN));                //used to store current measured joint position
-            temperature_out_.emplace(std::make_pair(joints_[i],NAN));             //used to store current measured joint temperature
+            position_cmd_.emplace(std::make_pair(joints_[i],i<(JNT_LEG_NUM)*LEG_NUM?0.0:std::nan())); // init with NaN
+            position_out_.emplace(std::make_pair(joints_[i],std::nan()));                //used to store current measured joint position
+            temperature_out_.emplace(std::make_pair(joints_[i],std::nan()));             //used to store current measured joint temperature
             velocity_cmd_.emplace(std::make_pair(joints_[i],0.0));
             effort_cmd_.emplace(std::make_pair(joints_[i],0.0));
             kp_scale_cmd_.emplace(std::make_pair(joints_[i],1.0)); 
             kd_scale_cmd_.emplace(std::make_pair(joints_[i],1.0));
 
         }
-
-        // build the subscriber
-        // ci pensa jacopino Add QOS and deadline event callback
+        sub_qos.reliability(rclcpp::ReliabilityPolicy::BestEffort);
+        sub_qos.deadline(get_node()->get_parameter("input_frequency"));
+        sub_opt.event_callbacks.deadline_callback = [node=get_node(),loss_counter_,velocity_cmd_](rclcpp::QOSDeadlineRequestedInfo& event)->void
+        {
+            RCLCPP_INFO(node->get_logger(),"miss subscriber deadline: %d", event.total_count);
+            loss_counter_ ++;
+            if(loss_counter_ > MAX_LOSS)
+            {
+                for(auto &it: velocity_cmd_)
+                {
+                    it.second = 0.0;
+                }
+            }
+        }
+        
         cmd_sub_ = get_node()->create_subscription<CmdMsgs>(
             "~/command",
             5,
@@ -135,8 +96,8 @@ namespace pi3hat_vel_controller
                 // rt_buffer_.writeFromNonRT(msg);
                 
                 // aggiungere il lock_guard std::lock_guard(<mutex_var>)
-                std::lock_guard<std::mutex> lock(mutex_var);
-
+                lock_guard<std::mutex> lock(mutex_var);
+                loss_counter_ = 0;
                 vel_target_rcvd_msg_->set__v_x(msg->v_x);
                 vel_target_rcvd_msg_->set__v_y(msg->v_y);
                 vel_target_rcvd_msg_->set__omega(msg->omega);
@@ -172,27 +133,22 @@ namespace pi3hat_vel_controller
         //  lock_guard + save data on var
         std::lock_guard<std::mutex> lock(mutex_var);        //when exit from get_target() the mutex is unlocked
 
-        if(vel_target_rcvd_msg_.get())
-        {
-            try
-            {   
-                // RCLCPP_INFO(get_node()->get_logger(),"pass name %s",joints_rcvd_msg_->name[i].c_str());
-                v_x_tmp = vel_target_rcvd_msg_->v_x;
-                v_y_tmp = vel_target_rcvd_msg_->v_y;
-                omega_tmp = vel_target_rcvd_msg_->omega;
-                height_rate_tmp = vel_target_rcvd_msg_->height_rate;
-            }
-            catch(const std::exception& e)
-            {
-                RCLCPP_ERROR( rclcpp::get_logger(logger_name_),"Raised error during the velocity targets assegnation %s", e.what());
-                return false;
-            }
+        
+        try
+        {   
+            // RCLCPP_INFO(get_node()->get_logger(),"pass name %s",joints_rcvd_msg_->name[i].c_str());
+            v_x_tmp = vel_target_rcvd_msg_->v_x;
+            v_y_tmp = vel_target_rcvd_msg_->v_y;
+            omega_tmp = vel_target_rcvd_msg_->omega;
+            height_rate_tmp = vel_target_rcvd_msg_->height_rate;
         }
-        else
-            RCLCPP_WARN(rclcpp::get_logger(logger_name_),"No data are readed from realtime buffer");
+        catch(const std::exception& e)
+        {
+            RCLCPP_ERROR( rclcpp::get_logger(logger_name_),"Raised error during the velocity targets assegnation %s", e.what());
+            return false;
+        }
+        
             
-        // maybe needed?
-        //joints_rcvd_msg_.reset();
     }
 
     bool Pi3Hat_Vel_Controller::compute_reference(double v_x_tmp, double v_y_tmp, double omega_tmp, double height_rate_tmp, double dt)// add duration as argument [s]
@@ -208,8 +164,12 @@ namespace pi3hat_vel_controller
         {
             try
             {   
-                velocity_cmd_.at(joint[i]) = w_mecanum[i - JNT_LEG_NUM * LEG_NUM];
-                
+                #if VEL_CCM 
+                    position_cmd_.at(joints_[i]) = std::nan();
+                #else
+                    position_cmd_.at(joints_[i]) += dt* velocity_cmd_.at(joints_[i]);
+                #endif 
+                velocity_cmd_.at(joints_[i]) = w_mecanum[i - JNT_LEG_NUM * LEG_NUM];
             }
             catch(const std::exception& e)
             {
@@ -270,16 +230,76 @@ namespace pi3hat_vel_controller
         w_mecanum = m * v_base;
     }
 
-    void Pi3Hat_Vel_Controller::compute_leg_joints_vel_ref(VectorXd& q_leg, VectorXd& q_dot_leg, size_t l_index, double height_rate_tmp)
+    void homing_start_srv(const share_ptr<TransactionService::Request> req, 
+                                  const shared_ptr<TransactionService::Response> res)
+    {
+        lock_guard<mutex>(calbck_m_);
+        if(state_ == Controller_State::PRE_HOMING && req->data)
+        {
+            homing_start_ = make_shared<rclcpp::Time>(this->now());
+            state_ = Controller_State::HOMING;
+            res ->success = true;
+            res ->message = string("Homing has been started");
+        }
+        else if(!req->data)
+        {
+            res->success = false;
+            res->message = string("Request is not correct");
+        }
+        else if(state != Controller_State::PRE_HOMING)
+        {
+            res->success = false;
+            res->message = string("Can not call the homing in this state");
+        }
+    }
+
+    void emergency_srv(const share_ptr<TransactionService::Request> req, 
+                                  const shared_ptr<TransactionService::Response> res)
+    {
+        lock_guard<mutex>(calbck_m_);
+        if(state_ != Controller_State::EMERGENCY && req->data)
+        {
+            state_ = Controller_State::EMERGENCY;
+            for(auto &it:kp_scale_cmd_)
+            {
+                it.second = 0.0
+            }
+            for(auto &it:kd_scale_cmd_)
+            {
+                it.second = 0.0
+            }
+            res ->success = true;
+            res ->message = string("Emergency mode has been activated");
+        }
+        else
+        {
+            res ->success = true;
+            if(req->data)
+                res ->message = string("The state is just in Emergency mode");
+            else
+                res -> message = string("Request is not correct");
+        }
+
+    }
+
+    void Pi3Hat_Vel_Controller::compute_leg_joints_vel_ref(VectorXd& q_leg, VectorXd& q_dot_leg, LEG_IND l_index, double height_rate_tmp)
     {
         q_dot_leg(0) = 0.0;     //HAA always zero till now
 
         double s12 = sin(q_leg(1) + q_leg(2));
         double c12 = cos(q_leg(1) + q_leg(2));
         double den = c12 * (sin(q_leg(1) + s12)) - s12 * (cos(q_leg(1)) + c12); 
-
-        q_dot_leg(2) = (1 / LINK_LENGHT) * (sin(q_leg(1)) + s12) / den * (- height_rate_tmp);      // height_rate is referred to the floating base while there we consider the foot velocity
-        q_dot_leg(1) = - s12 / (sin(q_leg(1)) + s12) * q_dot_leg(2);                               // this is true until the foot remains under the hip
+        
+        if(l_index == LEG_IND::RF || l_index == LEG_IND::LH)
+        {
+            q_dot_leg(2) = (1 / LINK_LENGHT) * (sin(q_leg(1)) + s12) / den * (- height_rate_tmp);      // height_rate is referred to the floating base while there we consider the foot velocity
+            q_dot_leg(1) = - s12 / (sin(q_leg(1)) + s12) * q_dot_leg(2);                               // this is true until the foot remains under the hip
+        }
+        else
+        {
+            q_dot_leg(2) = - (1 / LINK_LENGHT) * (sin(q_leg(1)) + s12) / den * (- height_rate_tmp);    
+            q_dot_leg(1) =  s12 / (sin(q_leg(1)) + s12) * q_dot_leg(2);
+        }
     }
 
     void Pi3Hat_Vel_Controller::compute_homing_ref(LEG_IND l_i)
@@ -341,7 +361,7 @@ namespace pi3hat_vel_controller
         //floating base velocity
         double v_x, v_y, omega, height_rate;   
         // get seconds/ milliseconds from duration and compute DeltaT in second
-        double deltaT = duration_to_s(dur); 
+        double deltaT = dur.seconds(); 
 
         // set the data from the readed message
         // if(!get_reference())
@@ -370,24 +390,29 @@ namespace pi3hat_vel_controller
             }
         }
 
-
-        switch (state_)
         {
-        case Controller_State::INACTIVE:
-            compute_homing_ref(RF);
-            compute_homing_ref(LF);
-            compute_homing_ref(LH);
-            compute_homing_ref(RH);
-            break;
-        case Controller_State::ACTIVE
-            //get the velocity target from the specific topic
-            get_target(v_x, v_y, omega, height_rate);  
+            lock_guard(calbck_m_);
+            switch (state_)
+            {
+            case Controller_State::PRE_HOMING:
 
-            //compute the joints reference from velocity target
-            compute_reference(v_x, v_y, omega, height_rate, deltaT);
-            break;
-        default:
-            break;
+                break;
+            case Controller_State::HOMING:
+                compute_homing_ref(RF);
+                compute_homing_ref(LF);
+                compute_homing_ref(LH);
+                compute_homing_ref(RH);
+                break;
+            case Controller_State::ACTIVE
+                //get the velocity target from the specific topic
+                get_target(v_x, v_y, omega, height_rate);  
+
+                //compute the joints reference from velocity target
+                compute_reference(v_x, v_y, omega, height_rate, deltaT);
+                break;
+            default:
+                break;
+            }
         }
         
 

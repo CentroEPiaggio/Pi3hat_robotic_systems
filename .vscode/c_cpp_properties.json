@@ -6,7 +6,8 @@
                 "${workspaceFolder}/**",
                 "/opt/ros/humble/include/**",
                 "/opt/ros/humble/include/std_msgs",
-                "/opt/ros/humble/include/sensor_msgs"
+                "/opt/ros/humble/include/sensor_msgs",
+                "/opt/ros/humble/include/std_srvs"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
