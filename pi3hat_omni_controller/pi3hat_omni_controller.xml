@@ -1,0 +1,9 @@
+<library path="pi3hat_omni_controller">
+  <class name="pi3hat_vel_controller/Pi3Hat_Vel_Controller" 
+    type="pi3hat_vel_controller::Pi3Hat_Vel_Controller"
+    base_class_type="controller_interface::ControllerInterface">
+      <description>
+      Pi3Hat omniwheeled legged robot velocity controller
+      </description>
+  </class>
+</library>
