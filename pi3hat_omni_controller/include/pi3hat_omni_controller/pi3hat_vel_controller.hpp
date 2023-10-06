@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <eigen3/Eigen/Dense>
+#include <mutex>
 
 #include "rclcpp/qos.hpp"
 #include "rclcpp/subscription.hpp"
@@ -65,7 +66,7 @@ namespace pi3hat_vel_controller
 
             bool get_target(double& v_x_tmp, double& v_y_tmp, double& omega_tmp, double& height_rate_tmp);
 
-            bool Pi3Hat_Vel_Controller::compute_reference(double v_x_tmp, double v_y_tmp, double omega_tmp, double height_rate_tmp);
+            bool compute_reference(double v_x_tmp, double v_y_tmp, double omega_tmp, double height_rate_tmp);
 
             void compute_mecanum_speed(VectorXd& v_base, VectorXd& w_mecanum);
 
@@ -109,6 +110,7 @@ namespace pi3hat_vel_controller
             //robot parameter referring to https://ieeexplore.ieee.org/document/7827337
             double a_, b_, alpha_; 
             // add mutex instance
+            std::mutex mutex_var;
             // joint names has been added, check they are right // just an F instead of an H, for the rest all perfect
             const std::vector<std::string> joints_ = {
                                                     "RF_HAA","RF_HFE","RF_HKE",

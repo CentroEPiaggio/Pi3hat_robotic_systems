@@ -133,7 +133,10 @@ namespace pi3hat_vel_controller
             [this](const CmdMsgs::SharedPtr msg)
             {
                 // rt_buffer_.writeFromNonRT(msg);
+                
                 // aggiungere il lock_guard std::lock_guard(<mutex_var>)
+                std::lock_guard<std::mutex> lock(mutex_var);
+
                 vel_target_rcvd_msg_->set__v_x(msg->v_x);
                 vel_target_rcvd_msg_->set__v_y(msg->v_y);
                 vel_target_rcvd_msg_->set__omega(msg->omega);
@@ -165,7 +168,10 @@ namespace pi3hat_vel_controller
     bool Pi3Hat_Vel_Controller::get_target(double& v_x_tmp, double& v_y_tmp, double& omega_tmp, double& height_rate_tmp)
     { 
         // joints_rcvd_msg_ = *rt_buffer_.readFromRT();
+
         //  lock_guard + save data on var
+        std::lock_guard<std::mutex> lock(mutex_var);        //when exit from get_target() the mutex is unlocked
+
         if(vel_target_rcvd_msg_.get())
         {
             try
@@ -189,7 +195,7 @@ namespace pi3hat_vel_controller
         //joints_rcvd_msg_.reset();
     }
 
-    bool Pi3Hat_Vel_Controller::compute_reference(double v_x_tmp, double v_y_tmp, double omega_tmp, double height_rate_tmp)// add duration as argument [s]
+    bool Pi3Hat_Vel_Controller::compute_reference(double v_x_tmp, double v_y_tmp, double omega_tmp, double height_rate_tmp, double dt)// add duration as argument [s]
     {   
         VectorXd v_base(3);
         VectorXd w_mecanum(4);
@@ -202,7 +208,7 @@ namespace pi3hat_vel_controller
         {
             try
             {   
-                velocity_cmd_.at(joint[i]) = w_mecanum[i - JNT_NUM];
+                velocity_cmd_.at(joint[i]) = w_mecanum[i - JNT_LEG_NUM * LEG_NUM];
                 
             }
             catch(const std::exception& e)
@@ -229,12 +235,13 @@ namespace pi3hat_vel_controller
             {
                 try
                 {   
-                    // add integration of pos with computed command vel, so we can send also position reference
+                    // add integration of pos with computed command vel, so we can send also position reference  
+                    position_cmd_.at(joint[JNT_LEG_NUM*i + j]) = q_dot_leg(j) * dt + q_leg(j)
                     velocity_cmd_.at(joint[JNT_LEG_NUM*i + j]) = q_dot_leg(j) 
                 }
                 catch(const std::exception& e)
                 {
-                    RCLCPP_ERROR( rclcpp::get_logger(logger_name_),"Raised error during the %d-th leg %d-th joint velocity references assegnation %s", i, j, e.what());
+                    RCLCPP_ERROR( rclcpp::get_logger(logger_name_),"Raised error during the %d-th leg %d-th joint references assegnation %s", i, j, e.what());
                     return false;
                 }              
             }
@@ -244,7 +251,7 @@ namespace pi3hat_vel_controller
         return true;
     }
 
-    void compute_mecanum_speed(VectorXd& v_base, VectorXd& w_mecanum)
+    void Pi3Hat_Vel_Controller::compute_mecanum_speed(VectorXd& v_base, VectorXd& w_mecanum)
     {
         MatrixXd m(4,3);
         m(0,0) = -(1.0 / tan(alpha_));
@@ -263,7 +270,7 @@ namespace pi3hat_vel_controller
         w_mecanum = m * v_base;
     }
 
-    void compute_leg_joints_vel_ref(VectorXd& q_leg, VectorXd& q_dot_leg, size_t l_index, double height_rate_tmp)
+    void Pi3Hat_Vel_Controller::compute_leg_joints_vel_ref(VectorXd& q_leg, VectorXd& q_dot_leg, size_t l_index, double height_rate_tmp)
     {
         q_dot_leg(0) = 0.0;     //HAA always zero till now
 
@@ -275,7 +282,7 @@ namespace pi3hat_vel_controller
         q_dot_leg(1) = - s12 / (sin(q_leg(1)) + s12) * q_dot_leg(2);                               // this is true until the foot remains under the hip
     }
 
-    void compute_homing_ref(LEG_IND l_i)
+    void Pi3Hat_Vel_Controller::compute_homing_ref(LEG_IND l_i)
     {
         rclcpp::Time dt = this->now() - homing_start_;
         double dt_sec = dt.seconds();
@@ -321,13 +328,21 @@ namespace pi3hat_vel_controller
 
     }
 
+    double Pi3Hat_Vel_Controller::duration_to_s(rclcpp::Duration d)
+        {
+        long  ns = d.nanoseconds();
+        double tot_s = (double)ns/1000000000.0;      //bruttissima ma funge
+        return tot_s;
+        }
 
     controller_interface::return_type Pi3Hat_Vel_Controller::update(const rclcpp::Time & , const rclcpp::Duration & dur)
     {
         std::string type;
+        //floating base velocity
         double v_x, v_y, omega, height_rate;   
         // get seconds/ milliseconds from duration and compute DeltaT in second
-                  //floating base velocity
+        double deltaT = duration_to_s(dur); 
+
         // set the data from the readed message
         // if(!get_reference())
         //     return controller_interface::return_type::ERROR;
@@ -369,7 +384,7 @@ namespace pi3hat_vel_controller
             get_target(v_x, v_y, omega, height_rate);  
 
             //compute the joints reference from velocity target
-            compute_reference(v_x, v_y, omega, height_rate);
+            compute_reference(v_x, v_y, omega, height_rate, deltaT);
             break;
         default:
             break;
