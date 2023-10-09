@@ -16,6 +16,7 @@ find_package(pi3hat_moteus_int_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(realtime_tools REQUIRED)
 find_package(pi3hat_hw_interface REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 add_library(
   ${PROJECT_NAME}
@@ -29,6 +30,9 @@ $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 
 $<INSTALL_INTERFACE:include>)
 
+target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
+
+
 ament_target_dependencies(${PROJECT_NAME}
   builtin_interfaces
   controller_interface
@@ -40,7 +44,9 @@ ament_target_dependencies(${PROJECT_NAME}
   pi3hat_hw_interface
   pi3hat_moteus_int_msgs
   std_srvs
+  Eigen3
 )
+
 
 install(
   TARGETS
@@ -76,6 +82,7 @@ ament_export_dependencies(
   pi3hat_hw_interface
   pi3hat_moteus_int_msgs
   std_srvs
+  Eigen3
 )
 ament_export_include_directories(
   include

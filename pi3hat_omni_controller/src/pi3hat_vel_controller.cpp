@@ -2,11 +2,14 @@
 #include "pi3hat_omni_controller/pi3hat_vel_controller.hpp"
 #include "pi3hat_hw_interface/motor_manager.hpp"
 #include <cstdint>
+
+#include "eigen3/Eigen/Core"
 #define VEL_CMD true
+#define MAX_LOSS 20
+
 
 namespace pi3hat_vel_controller
 {
-
     
     Pi3Hat_Vel_Controller::Pi3Hat_Vel_Controller():
     logger_name_("Pi3Hat_Vel_Controller"),
@@ -15,8 +18,7 @@ namespace pi3hat_vel_controller
     //prova
     {}
 
-    Pi3Hat_Vel_Controller::~Pi3Hat_Vel_Controller()
-    {}
+
 
     CallbackReturn Pi3Hat_Vel_Controller::on_init()
     {
@@ -50,9 +52,11 @@ namespace pi3hat_vel_controller
         b_ = get_node()->get_parameter("driveshaft_x").as_double();
         alpha_ = get_node()->get_parameter("mecanum_angle").as_double();
 
+        std::chrono::duration dur = std::chrono::milliseconds(get_node()->get_parameter("input_frequency").as_int());
+
         //get homing duration 
 
-        homing_dur_ = this->get_parameter("homing_duration").as_double();
+        homing_dur_ = get_node()->get_parameter("homing_duration").as_double();
         // set spline parameters
         spline_par_[0] = 3 * RF_HFE_HOM / (homing_dur_*homing_dur_); // a_2_hip
         spline_par_[1] = -2 * RF_HFE_HOM /( homing_dur_*homing_dur_*homing_dur_); // a_3_hip
@@ -60,13 +64,15 @@ namespace pi3hat_vel_controller
         spline_par_[3] = -2 * RF_KFE_HOM /( homing_dur_*homing_dur_*homing_dur_); // a_3_knee
         
         // fill the map structure 
-        sz = joint_s.size();
+        sz = joints_.size();
         for(size_t i = 0; i < sz; i++)
         {
             // da mettere joints_ al posto di joint nuovo membro 
-            position_cmd_.emplace(std::make_pair(joints_[i],i<(JNT_LEG_NUM)*LEG_NUM?0.0:std::nan())); // init with NaN
-            position_out_.emplace(std::make_pair(joints_[i],std::nan()));                //used to store current measured joint position
-            temperature_out_.emplace(std::make_pair(joints_[i],std::nan()));             //used to store current measured joint temperature
+
+            position_cmd_.emplace(std::make_pair(joints_[i],i<(JNT_LEG_NUM)*LEG_NUM?0.0:std::nan("0"))); // init with NaN
+            position_out_.emplace(std::make_pair(joints_[i],std::nan("0")));                //used to store current measured joint position
+            temperature_out_.emplace(std::make_pair(joints_[i],std::nan("0")));             //used to store current measured joint temperature
+
             velocity_cmd_.emplace(std::make_pair(joints_[i],0.0));
             effort_cmd_.emplace(std::make_pair(joints_[i],0.0));
             kp_scale_cmd_.emplace(std::make_pair(joints_[i],1.0)); 
@@ -74,10 +80,12 @@ namespace pi3hat_vel_controller
 
         }
         sub_qos.reliability(rclcpp::ReliabilityPolicy::BestEffort);
-        sub_qos.deadline(get_node()->get_parameter("input_frequency"));
-        sub_opt.event_callbacks.deadline_callback = [node=get_node(),loss_counter_,velocity_cmd_](rclcpp::QOSDeadlineRequestedInfo& event)->void
+
+        sub_qos.deadline();
+        sub_opt.event_callbacks.deadline_callback = [&](rclcpp::QOSDeadlineRequestedInfo& event)->void
         {
-            RCLCPP_INFO(node->get_logger(),"miss subscriber deadline: %d", event.total_count);
+            RCLCPP_INFO(get_node()->get_logger(),"miss subscriber deadline: %d", event.total_count);
+
             loss_counter_ ++;
             if(loss_counter_ > MAX_LOSS)
             {
@@ -86,7 +94,9 @@ namespace pi3hat_vel_controller
                     it.second = 0.0;
                 }
             }
-        }
+
+        };
+
         
         cmd_sub_ = get_node()->create_subscription<CmdMsgs>(
             "~/command",
@@ -95,8 +105,10 @@ namespace pi3hat_vel_controller
             {
                 // rt_buffer_.writeFromNonRT(msg);
                 
-                // aggiungere il lock_guard std::lock_guard(<mutex_var>)
-                lock_guard<std::mutex> lock(mutex_var);
+
+                // aggiungere il lock_guard std::lock_guard(<mutex_var_>)
+                lock_guard<std::mutex> lock(mutex_var_);
+
                 loss_counter_ = 0;
                 vel_target_rcvd_msg_->set__v_x(msg->v_x);
                 vel_target_rcvd_msg_->set__v_y(msg->v_y);
@@ -131,7 +143,7 @@ namespace pi3hat_vel_controller
         // joints_rcvd_msg_ = *rt_buffer_.readFromRT();
 
         //  lock_guard + save data on var
-        std::lock_guard<std::mutex> lock(mutex_var);        //when exit from get_target() the mutex is unlocked
+        std::lock_guard<std::mutex> lock(mutex_var_);        //when exit from get_target() the mutex is unlocked
 
         
         try
@@ -178,14 +190,14 @@ namespace pi3hat_vel_controller
             }            
         }
         
-        for (size_t i = 0; i < LEG_NUM; i++)
+        for (auto &i:legs_)
         {   
             VectorXd q_leg(3), q_dot_leg(3);   //[HAA, HFE, KFE]
             
             //extract the i-th leg joint position info
             for (size_t j = 0; j < JNT_LEG_NUM; j++)
             {
-                q_leg(j) = position_out_.at(joint[JNT_LEG_NUM*i + j]) ;           
+                q_leg(j) = position_out_.at(joints_[JNT_LEG_NUM*i + j]) ;           
             }
             
             compute_leg_joints_vel_ref(q_leg, q_dot_leg, i, height_rate_tmp);
@@ -196,12 +208,12 @@ namespace pi3hat_vel_controller
                 try
                 {   
                     // add integration of pos with computed command vel, so we can send also position reference  
-                    position_cmd_.at(joint[JNT_LEG_NUM*i + j]) = q_dot_leg(j) * dt + q_leg(j)
-                    velocity_cmd_.at(joint[JNT_LEG_NUM*i + j]) = q_dot_leg(j) 
+                    position_cmd_.at(joints_[JNT_LEG_NUM*i + j]) = q_dot_leg(j) * dt + q_leg(j);
+                    velocity_cmd_.at(joints_[JNT_LEG_NUM*i + j]) = q_dot_leg(j); 
                 }
                 catch(const std::exception& e)
                 {
-                    RCLCPP_ERROR( rclcpp::get_logger(logger_name_),"Raised error during the %d-th leg %d-th joint references assegnation %s", i, j, e.what());
+                    RCLCPP_ERROR( rclcpp::get_logger(logger_name_),"Raised error during the %d-th leg %ld-th joint references assegnation %s", i, j, e.what());
                     return false;
                 }              
             }
@@ -230,13 +242,15 @@ namespace pi3hat_vel_controller
         w_mecanum = m * v_base;
     }
 
-    void homing_start_srv(const share_ptr<TransactionService::Request> req, 
+
+    void  Pi3Hat_Vel_Controller::homing_start_srv(const shared_ptr<TransactionService::Request> req, 
                                   const shared_ptr<TransactionService::Response> res)
     {
-        lock_guard<mutex>(calbck_m_);
+        lock_guard<mutex> a(calbck_m_);
         if(state_ == Controller_State::PRE_HOMING && req->data)
         {
-            homing_start_ = make_shared<rclcpp::Time>(this->now());
+            homing_start_ = make_shared<rclcpp::Time>(get_node()->now());
+
             state_ = Controller_State::HOMING;
             res ->success = true;
             res ->message = string("Homing has been started");
@@ -246,27 +260,33 @@ namespace pi3hat_vel_controller
             res->success = false;
             res->message = string("Request is not correct");
         }
-        else if(state != Controller_State::PRE_HOMING)
+
+        else if(state_ != Controller_State::PRE_HOMING)
+
         {
             res->success = false;
             res->message = string("Can not call the homing in this state");
         }
     }
 
-    void emergency_srv(const share_ptr<TransactionService::Request> req, 
+
+    void Pi3Hat_Vel_Controller::emergency_srv(const shared_ptr<TransactionService::Request> req, 
                                   const shared_ptr<TransactionService::Response> res)
     {
-        lock_guard<mutex>(calbck_m_);
+        std::lock_guard<std::mutex> a(calbck_m_);
+
         if(state_ != Controller_State::EMERGENCY && req->data)
         {
             state_ = Controller_State::EMERGENCY;
             for(auto &it:kp_scale_cmd_)
             {
-                it.second = 0.0
+
+                it.second = 0.0;
             }
             for(auto &it:kd_scale_cmd_)
             {
-                it.second = 0.0
+                it.second = 0.0;
+
             }
             res ->success = true;
             res ->message = string("Emergency mode has been activated");
@@ -304,8 +324,9 @@ namespace pi3hat_vel_controller
 
     void Pi3Hat_Vel_Controller::compute_homing_ref(LEG_IND l_i)
     {
-        rclcpp::Time dt = this->now() - homing_start_;
-        double dt_sec = dt.seconds();
+        auto now = get_node()->now();
+       
+        double dt_sec = now.seconds() - homing_start_->seconds();
         if(dt_sec <= homing_dur_)
         {
             if(l_i == LEG_IND::RF || l_i == LEG_IND::LH )
@@ -313,7 +334,7 @@ namespace pi3hat_vel_controller
                 position_cmd_[joints_[3*l_i+1]] = spline_par_[1]*dt_sec*dt_sec*dt_sec + spline_par_[0]*dt_sec*dt_sec;
                 position_cmd_[joints_[3*l_i+2]] = spline_par_[3]*dt_sec*dt_sec*dt_sec + spline_par_[2]*dt_sec*dt_sec;
                 velocity_cmd_[joints_[3*l_i+1]] = 3*spline_par_[1]*dt_sec*dt_sec + 2*spline_par_[0]*dt_sec;
-                velocity_cmd_[joints_[3*l_i+2]] = 3*spline_par_[3]*dt_sec*dt_sec + 2*spline_par_[2]dt_sec;
+                velocity_cmd_[joints_[3*l_i+2]] = 3*spline_par_[3]*dt_sec*dt_sec + 2*spline_par_[2]*dt_sec;
             }
 
             if(l_i == LEG_IND::RH || l_i == LEG_IND::LF )
@@ -321,7 +342,7 @@ namespace pi3hat_vel_controller
                 position_cmd_[joints_[3*l_i+1]] = - spline_par_[1]*dt_sec*dt_sec*dt_sec + spline_par_[0]*dt_sec*dt_sec;
                 position_cmd_[joints_[3*l_i+2]] = - spline_par_[3]*dt_sec*dt_sec*dt_sec + spline_par_[2]*dt_sec*dt_sec;
                 velocity_cmd_[joints_[3*l_i+1]] = - 3*spline_par_[1]*dt_sec*dt_sec + 2*spline_par_[0]*dt_sec;
-                velocity_cmd_[joints_[3*l_i+2]] = - 3*spline_par_[3]*dt_sec*dt_sec + 2*spline_par_[2]dt_sec;
+                velocity_cmd_[joints_[3*l_i+2]] = - 3*spline_par_[3]*dt_sec*dt_sec + 2*spline_par_[2]*dt_sec;
             }
         }
         else
@@ -348,12 +369,12 @@ namespace pi3hat_vel_controller
 
     }
 
-    double Pi3Hat_Vel_Controller::duration_to_s(rclcpp::Duration d)
-        {
-        long  ns = d.nanoseconds();
-        double tot_s = (double)ns/1000000000.0;      //bruttissima ma funge
-        return tot_s;
-        }
+    // double Pi3Hat_Vel_Controller::duration_to_s(rclcpp::Duration d)
+    //     {
+    //     long  ns = d.nanoseconds();
+    //     double tot_s = (double)ns/1000000000.0;      //bruttissima ma funge
+    //     return tot_s;
+    //     }
 
     controller_interface::return_type Pi3Hat_Vel_Controller::update(const rclcpp::Time & , const rclcpp::Duration & dur)
     {
@@ -386,12 +407,14 @@ namespace pi3hat_vel_controller
             }
             catch(std::exception &e)
             {
-                RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"catch error %s during the access to '%s' data",e.what(),cmd_int.get_name().c_str());
+                RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"catch error %s during the access to '%s' data",e.what(),stt_int.get_name().c_str());
             }
         }
 
         {
-            lock_guard(calbck_m_);
+
+            lock_guard<mutex> a(calbck_m_);
+
             switch (state_)
             {
             case Controller_State::PRE_HOMING:
@@ -403,7 +426,9 @@ namespace pi3hat_vel_controller
                 compute_homing_ref(LH);
                 compute_homing_ref(RH);
                 break;
-            case Controller_State::ACTIVE
+
+            case Controller_State::ACTIVE:
+
                 //get the velocity target from the specific topic
                 get_target(v_x, v_y, omega, height_rate);  
 
@@ -426,7 +451,7 @@ namespace pi3hat_vel_controller
                 if(type == hardware_interface::HW_IF_POSITION)
                     cmd_int.set_value(position_cmd_.at(cmd_int.get_prefix_name()));
                 else if(type == hardware_interface::HW_IF_VELOCITY)
-                    cmd_int.set_value(velocity_cmd_.at(cmd_in`t.get_prefix_name()));
+                    cmd_int.set_value(velocity_cmd_.at(cmd_int.get_prefix_name()));
                 else if(type == hardware_interface::HW_IF_EFFORT)
                     cmd_int.set_value(effort_cmd_.at(cmd_int.get_prefix_name()));
                 else if(type == hardware_interface::HW_IF_KP_SCALE)
@@ -498,5 +523,5 @@ namespace pi3hat_vel_controller
 };
 
 PLUGINLIB_EXPORT_CLASS(
-    pi3hat_Vel_controller::Pi3Hat_Vel_Controller, controller_interface::ControllerInterface
+    pi3hat_vel_controller::Pi3Hat_Vel_Controller, controller_interface::ControllerInterface
 );
