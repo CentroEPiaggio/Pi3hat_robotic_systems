@@ -2,9 +2,11 @@
 #include "pi3hat_omni_controller/pi3hat_vel_controller.hpp"
 #include "pi3hat_hw_interface/motor_manager.hpp"
 #include <cstdint>
+
 #include "eigen3/Eigen/Core"
 #define VEL_CMD true
 #define MAX_LOSS 20
+
 
 namespace pi3hat_vel_controller
 {
@@ -15,6 +17,7 @@ namespace pi3hat_vel_controller
     vel_target_rcvd_msg_(make_shared<CmdMsgs>())
     //prova
     {}
+
 
 
     CallbackReturn Pi3Hat_Vel_Controller::on_init()
@@ -65,9 +68,11 @@ namespace pi3hat_vel_controller
         for(size_t i = 0; i < sz; i++)
         {
             // da mettere joints_ al posto di joint nuovo membro 
+
             position_cmd_.emplace(std::make_pair(joints_[i],i<(JNT_LEG_NUM)*LEG_NUM?0.0:std::nan("0"))); // init with NaN
             position_out_.emplace(std::make_pair(joints_[i],std::nan("0")));                //used to store current measured joint position
             temperature_out_.emplace(std::make_pair(joints_[i],std::nan("0")));             //used to store current measured joint temperature
+
             velocity_cmd_.emplace(std::make_pair(joints_[i],0.0));
             effort_cmd_.emplace(std::make_pair(joints_[i],0.0));
             kp_scale_cmd_.emplace(std::make_pair(joints_[i],1.0)); 
@@ -75,10 +80,12 @@ namespace pi3hat_vel_controller
 
         }
         sub_qos.reliability(rclcpp::ReliabilityPolicy::BestEffort);
+
         sub_qos.deadline();
         sub_opt.event_callbacks.deadline_callback = [&](rclcpp::QOSDeadlineRequestedInfo& event)->void
         {
             RCLCPP_INFO(get_node()->get_logger(),"miss subscriber deadline: %d", event.total_count);
+
             loss_counter_ ++;
             if(loss_counter_ > MAX_LOSS)
             {
@@ -87,7 +94,9 @@ namespace pi3hat_vel_controller
                     it.second = 0.0;
                 }
             }
+
         };
+
         
         cmd_sub_ = get_node()->create_subscription<CmdMsgs>(
             "~/command",
@@ -96,8 +105,10 @@ namespace pi3hat_vel_controller
             {
                 // rt_buffer_.writeFromNonRT(msg);
                 
+
                 // aggiungere il lock_guard std::lock_guard(<mutex_var_>)
                 lock_guard<std::mutex> lock(mutex_var_);
+
                 loss_counter_ = 0;
                 vel_target_rcvd_msg_->set__v_x(msg->v_x);
                 vel_target_rcvd_msg_->set__v_y(msg->v_y);
@@ -231,6 +242,7 @@ namespace pi3hat_vel_controller
         w_mecanum = m * v_base;
     }
 
+
     void  Pi3Hat_Vel_Controller::homing_start_srv(const shared_ptr<TransactionService::Request> req, 
                                   const shared_ptr<TransactionService::Response> res)
     {
@@ -238,6 +250,7 @@ namespace pi3hat_vel_controller
         if(state_ == Controller_State::PRE_HOMING && req->data)
         {
             homing_start_ = make_shared<rclcpp::Time>(get_node()->now());
+
             state_ = Controller_State::HOMING;
             res ->success = true;
             res ->message = string("Homing has been started");
@@ -247,27 +260,33 @@ namespace pi3hat_vel_controller
             res->success = false;
             res->message = string("Request is not correct");
         }
+
         else if(state_ != Controller_State::PRE_HOMING)
+
         {
             res->success = false;
             res->message = string("Can not call the homing in this state");
         }
     }
 
+
     void Pi3Hat_Vel_Controller::emergency_srv(const shared_ptr<TransactionService::Request> req, 
                                   const shared_ptr<TransactionService::Response> res)
     {
         std::lock_guard<std::mutex> a(calbck_m_);
+
         if(state_ != Controller_State::EMERGENCY && req->data)
         {
             state_ = Controller_State::EMERGENCY;
             for(auto &it:kp_scale_cmd_)
             {
+
                 it.second = 0.0;
             }
             for(auto &it:kd_scale_cmd_)
             {
                 it.second = 0.0;
+
             }
             res ->success = true;
             res ->message = string("Emergency mode has been activated");
@@ -393,7 +412,9 @@ namespace pi3hat_vel_controller
         }
 
         {
+
             lock_guard<mutex> a(calbck_m_);
+
             switch (state_)
             {
             case Controller_State::PRE_HOMING:
@@ -405,7 +426,9 @@ namespace pi3hat_vel_controller
                 compute_homing_ref(LH);
                 compute_homing_ref(RH);
                 break;
+
             case Controller_State::ACTIVE:
+
                 //get the velocity target from the specific topic
                 get_target(v_x, v_y, omega, height_rate);  
 

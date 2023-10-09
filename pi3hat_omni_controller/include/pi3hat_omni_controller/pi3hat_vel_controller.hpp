@@ -75,12 +75,14 @@ namespace pi3hat_vel_controller
 
             void compute_mecanum_speed(VectorXd& v_base, VectorXd& w_mecanum);
 
+
             void compute_leg_joints_vel_ref(VectorXd& q_leg, VectorXd& q_dot_leg, LEG_IND l_index, double height_rate_tmp);
 
             void homing_start_srv(const shared_ptr<TransactionService::Request> req, 
                                   const shared_ptr<TransactionService::Response> res);
             
             void emergency_srv(const shared_ptr<TransactionService::Request> req, 
+
                                   const shared_ptr<TransactionService::Response> res);
 
             // function to compute the next homing reference 
@@ -118,14 +120,17 @@ namespace pi3hat_vel_controller
             //robot parameter referring to https://ieeexplore.ieee.org/document/7827337
             double a_, b_, alpha_; 
             // add mutex instance
+
             std::mutex mutex_var_;
             
+
             // controller state and and spline parameter declaration
             Controller_State state_ = Controller_State::PRE_HOMING;  
             // given the third order spline p(t) = a_3*t^3 + a_2*t^2 + a_1*t +a_0
             // the parameter contains a_3 and a_2 for RF hip and knee, the others are zero 
             std::array<double,4> spline_par_ = {0.0,0.0,0.0,0.0};
             double homing_dur_ = 0.0;
+
             std::mutex calbck_m_;
             int loss_counter_ = 0;
             const std::array<LEG_IND,4> legs_ = {RF,LF,LH,RH};
@@ -137,6 +142,7 @@ namespace pi3hat_vel_controller
                                                     "RH_HFE","RH_HKE",
                                                     "RF_WHEEL","LF_WHEEL",
                                                     "LH_WHEEL","LH_WHEEL"}; 
+
     };
 };
 

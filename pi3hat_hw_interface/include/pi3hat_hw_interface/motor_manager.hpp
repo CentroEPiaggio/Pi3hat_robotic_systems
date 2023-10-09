@@ -13,7 +13,7 @@
 // #define NULL __null
 
 #define MAX_COUNT 100
-#define MIN_STT_INT 5
+#define MIN_STT_INT 6
 
 using namespace mjbots;
 using namespace std;
@@ -35,6 +35,7 @@ namespace hardware_interface
     constexpr char HW_IF_VALIDITY_LOSS[] = "validity_loss";
     constexpr char HW_IF_PACKAGE_LOSS[] = "package_loss";
     constexpr char HW_IF_CYCLE_DUR[] = "cycle_duration";
+    constexpr char HW_IF_CURRENT[] = "current";
 
 
 }
@@ -159,6 +160,7 @@ namespace pi3hat_hw_interface
                                 hardware_interface::HW_IF_VELOCITY,
                                 hardware_interface::HW_IF_EFFORT,
                                 hardware_interface::HW_IF_TEMPERATURE,
+                                hardware_interface::HW_IF_CURRENT,
                                 hardware_interface::HW_IF_PACKAGE_LOSS
                             
                             };
@@ -170,10 +172,12 @@ namespace pi3hat_hw_interface
                                 hardware_interface::HW_IF_VELOCITY,
                                 hardware_interface::HW_IF_EFFORT,
                                 hardware_interface::HW_IF_TEMPERATURE,
+                                hardware_interface::HW_IF_CURRENT,
                                 hardware_interface::HW_IF_PACKAGE_LOSS,
                                 hardware_interface::HW_IF_POSITION,
                                 hardware_interface::HW_IF_VELOCITY
                             };
+                            RCLCPP_INFO(rclcpp::get_logger("DIO"),"MADONNA");
 
                         }
                     };
@@ -352,6 +356,7 @@ namespace pi3hat_hw_interface
                 double cmd_pos_ = 0.0;
                 double cmd_vel_ = 0.0;
                 double cmd_trq_ = 0.0;
+                double msr_cur_ = 0.0;
                 Command* cmd_data_;
                 
                 uint8_t id_;

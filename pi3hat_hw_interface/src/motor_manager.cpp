@@ -52,10 +52,11 @@ namespace pi3hat_hw_interface
                 return &cmd_vel_;
             else if(type == hardware_interface::HW_IF_EFFORT)
                 return &cmd_trq_;
-            else if(type == hardware_interface::HW_IF_KP_SCALE  ) 
+            else if(type == hardware_interface::HW_IF_KP_SCALE ) 
                 return &cmd_kp_scale_;
             else if(type == hardware_interface::HW_IF_KD_SCALE)
                 return &cmd_kd_scale_;
+            
 
             else
                 throw std::invalid_argument("The passsed interface command type has not the correct type");
@@ -76,10 +77,12 @@ namespace pi3hat_hw_interface
                     return &msr_trq_;
                 else if(type == hardware_interface::HW_IF_TEMPERATURE)
                     return &msr_tmp_;
+                else if(type == hardware_interface::HW_IF_CURRENT)
+                    return &msr_cur_;
                 else if(type == hardware_interface::HW_IF_PACKAGE_LOSS)
                     return &loss_var_;
                 else
-                    throw std::invalid_argument("The passsed interface command type has not the correct type");
+                    throw std::invalid_argument("The passsed interface state type has not the correct type");
             }
             if(sensor && sec_enc_trans_!= 0.0)
             {
@@ -92,7 +95,7 @@ namespace pi3hat_hw_interface
                     return &msr_enc_vel_;
                 }
                else
-                    throw std::invalid_argument("The passsed interface command type has not the correct type");
+                    throw std::invalid_argument("The passsed interface state type has not the correct type");
             }
             return 0;
             
@@ -121,8 +124,8 @@ namespace pi3hat_hw_interface
                 cmd_data_ -> id = id_;
                 cmd_data_ -> bus = bus_;
                 cmd_data_ -> mode = moteus::Mode::kPosition;
-                cmd_data_ -> position.position = (cmd_pos_ * motor_trans_) / (M_PI);
-                cmd_data_ -> position.velocity =  (cmd_vel_ * motor_trans_ )/(M_PI);
+                cmd_data_ -> position.position = (cmd_pos_ * motor_trans_) / (2*M_PI);
+                cmd_data_ -> position.velocity =  (cmd_vel_ * motor_trans_ )/(2*M_PI);
                 cmd_data_ -> position.feedforward_torque = cmd_trq_ / motor_trans_;
                 cmd_data_ -> position.kd_scale = cmd_kd_scale_;
                 cmd_data_ -> position.kp_scale = cmd_kp_scale_;
@@ -200,10 +203,11 @@ namespace pi3hat_hw_interface
             {
                 // RCLCPP_ERROR(rclcpp::get_logger("PP"),"the read is ok");
                 msg_complete_ = true;
-                msr_pos_ = (res.position/motor_trans_)*M_PI;
-                msr_vel_ = (res.velocity/motor_trans_)*M_PI;
+                msr_pos_ = (res.position/motor_trans_)*2*M_PI;
+                msr_vel_ = (res.velocity/motor_trans_)*2*M_PI;
                 msr_trq_ = res.torque*motor_trans_;
                 msr_tmp_ = res.temperature;
+                msr_cur_ = res.q_current;
 
                 if(sec_enc_trans_ != 0.0)
                 {
@@ -214,7 +218,7 @@ namespace pi3hat_hw_interface
                         first_read_ = false;
                     }    
                     msr_enc_pos_ = res.sec_enc_pos - sec_enc_off_;
-                    msr_enc_vel_ = (res.sec_enc_vel/sec_enc_trans_)*M_PI;
+                    msr_enc_vel_ = (res.sec_enc_vel/sec_enc_trans_)*2*M_PI;
                     diff = msr_enc_pos_ - old_sec_enc_;
                     old_sec_enc_ = msr_enc_pos_;
                     if(diff > 0 && std::abs(diff) > DELTA)
@@ -223,7 +227,7 @@ namespace pi3hat_hw_interface
                         sec_enc_counter_ ++;
                     msr_enc_pos_ += (float)sec_enc_counter_;
                     msr_enc_pos_ /= sec_enc_trans_;
-                    msr_enc_pos_ *= M_PI;
+                    msr_enc_pos_ *= 2*M_PI;
                     
                     // RCLCPP_INFO(rclcpp::get_logger("DIO"),"we have m: %f and se: %f computed by msr_wo:%f,msr_wo_o:%f and count:%d",
                     // msr_pos_,msr_enc_pos_,res.sec_enc_pos-sec_enc_off_,res.sec_enc_pos,sec_enc_counter_);

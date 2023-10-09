@@ -77,10 +77,11 @@ namespace pi3hat_state_broadcaster
         stt_msg_.velocity.resize(joints_.size());
         stt_msg_.effort.resize(joints_.size());
         stt_msg_.temperature.resize(joints_.size());
+        stt_msg_.current.resize(joints_.size());
         if(se_prov)
         {
-            stt_msg_.sec_enc_pos.resize(joints_.size(),std::nan(""));
-            stt_msg_.sec_enc_vel.resize(joints_.size(),std::nan(""));
+            stt_msg_.sec_enc_pos.resize(joints_.size());
+            stt_msg_.sec_enc_vel.resize(joints_.size());
         }
 
         stt_pub_ = get_node()->create_publisher<StateMsgs>(
@@ -112,6 +113,9 @@ namespace pi3hat_state_broadcaster
 
     CallbackReturn Pi3Hat_State_Broadcaster::on_activate(const rclcpp_lifecycle::State &)
     {
+        // for(size_t i = 0; i < joints_.size(); i++)
+        //     RCLCPP_INFO(get_node()->get_logger(),"joints %d has name %s and is %s",i,joints_[i].c_str(),se_flag_[i]?"active":"inactive");
+
         RCLCPP_INFO(get_node()->get_logger(),"activated succesfully");
         return CallbackReturn::SUCCESS;
     }
@@ -136,6 +140,7 @@ namespace pi3hat_state_broadcaster
             stt_int_cnf.names.push_back(joints_[i] + "/" + hardware_interface::HW_IF_VELOCITY);
             stt_int_cnf.names.push_back(joints_[i] + "/" + hardware_interface::HW_IF_EFFORT);
             stt_int_cnf.names.push_back(joints_[i] + "/" + hardware_interface::HW_IF_TEMPERATURE);
+            stt_int_cnf.names.push_back(joints_[i] + "/" + hardware_interface::HW_IF_CURRENT);
         }
         for(size_t i = 0; i < joints_.size(); i++)
         {
@@ -179,13 +184,15 @@ namespace pi3hat_state_broadcaster
         {
             // RCLCPP_INFO(get_node()->get_logger(),"executing std stt for jnt %s",joints_[i].c_str());
             // RCLCPP_INFO(get_node()->get_logger(),"temp ind is %ld",1 + sz + 4*i );
-            stt_msg_.position[i] = state_interfaces_[2 + sz + 4*i ].get_value();
+            stt_msg_.position[i] = state_interfaces_[2 + sz + 5*i ].get_value();
             // RCLCPP_INFO(get_node()->get_logger(),"temp ind is %ld",1 + sz + 4*i + 1);
-            stt_msg_.velocity[i] = state_interfaces_[2 + sz + 4*i + 1].get_value();
+            stt_msg_.velocity[i] = state_interfaces_[2 + sz + 5*i + 1].get_value();
             // RCLCPP_INFO(get_node()->get_logger(),"temp ind is %ld",1 + sz + 4*i + 2);
-            stt_msg_.effort[i] = state_interfaces_[2 + sz + 4*i + 2].get_value();
+            stt_msg_.effort[i] = state_interfaces_[2 + sz + 5*i + 2].get_value();
             // RCLCPP_INFO(get_node()->get_logger(),"temp ind is %ld",1 + sz + 4*i + 3);
-            stt_msg_.temperature[i] = state_interfaces_[2 + sz + 4*i + 3].get_value();
+            stt_msg_.temperature[i] = state_interfaces_[2 + sz + 5*i + 3].get_value();
+
+            stt_msg_.current[i] = state_interfaces_[2 + sz + 5*i + 4].get_value();
             
         }
     
@@ -193,9 +200,9 @@ namespace pi3hat_state_broadcaster
         {
             if(se_flag_[i])
             {
-                RCLCPP_INFO(get_node()->get_logger(),"executing se stt for jnt %s",joints_[i].c_str());
-                stt_msg_.sec_enc_pos[i] = state_interfaces_[ 2 + sz*5 + 2*i +1].get_value();
-                stt_msg_.sec_enc_vel[i] = state_interfaces_[ 2 + sz*5 + 2*i +2].get_value();
+                // RCLCPP_INFO(get_node()->get_logger(),"executing se stt for jnt %s",joints_[i].c_str());
+                stt_msg_.sec_enc_pos[i] = state_interfaces_[ 2 + sz*6 + 2*i ].get_value();
+                stt_msg_.sec_enc_vel[i] = state_interfaces_[ 2 + sz*6 + 2*i +1].get_value();
             }
         }
         stt_pub_->publish(stt_msg_);

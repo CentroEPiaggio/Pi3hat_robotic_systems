@@ -1,23 +1,28 @@
 controller_manager:
   ros__parameters:
-    update_rate: 400
+    update_rate: 1000 # hz tutto
     state_broadcaster:
-      type: pi3hat_state_broadcaster/Pi3Hat_State_Broadcaster
+      type: pi3hat_state_broadcaster/Pi3Hat_State_Broadcaster # stampa roba su topic 
     joint_controller:
-      type: pi3hat_joint_group_controller/Pi3Hat_Joint_Group_Controller
+      type: pi3hat_joint_group_controller/Pi3Hat_Joint_Group_Controller # prende messaggi da topic 
 state_broadcaster:
   ros__parameters:
     joints:
-      - joint
+      - joint1
+      - joint2 
       # - jnt_b9_1Hz_trq4_c2
       # - jnt_b9_1Hz_trq4_c3
       # - joinjoint1t3
       # - joint4
+    second_encoders:
+      - joint1
+      - joint2
     performance_index: true
 joint_controller:
   ros__parameters:
     joints:
-      - joint
+      - joint1
+      - joint2 
       # - jnt_b9_1Hz_trq4_c2
       # - jnt_b9_1Hz_trq4_c3
       # - joinjoint1t3

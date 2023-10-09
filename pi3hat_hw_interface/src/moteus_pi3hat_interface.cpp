@@ -202,6 +202,7 @@ namespace pi3hat_hw_interface
             PQ.velocity = moteus::Resolution::kFloat;
             PQ.torque = moteus::Resolution::kFloat;
             PQ.temperature = moteus::Resolution::kFloat;
+            PQ.q_current = moteus::Resolution::kFloat;
             PQ.fault = moteus::Resolution::kInt8;
 
             for(auto &motor : motors_)
