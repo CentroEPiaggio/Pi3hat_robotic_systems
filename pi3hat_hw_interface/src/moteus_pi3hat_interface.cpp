@@ -86,7 +86,7 @@ namespace pi3hat_hw_interface
                 for(auto motor : motors_)
                 {
                     motor.make_stop();
-                    RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"stop");
+                    //RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"stop");
                 }  
 
                 try

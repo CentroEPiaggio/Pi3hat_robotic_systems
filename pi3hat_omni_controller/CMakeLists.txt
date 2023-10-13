@@ -17,6 +17,10 @@ find_package(std_srvs REQUIRED)
 find_package(realtime_tools REQUIRED)
 find_package(pi3hat_hw_interface REQUIRED)
 find_package(Eigen3 REQUIRED)
+<<<<<<< HEAD
+=======
+find_package(sensor_msgs REQUIRED)
+>>>>>>> d274abb (fix bug on omnicontroller)
 
 add_library(
   ${PROJECT_NAME}
@@ -45,6 +49,11 @@ ament_target_dependencies(${PROJECT_NAME}
   pi3hat_moteus_int_msgs
   std_srvs
   Eigen3
+<<<<<<< HEAD
+=======
+  sensor_msgs
+  
+>>>>>>> d274abb (fix bug on omnicontroller)
 )
 
 
@@ -57,8 +66,20 @@ install(
   LIBRARY DESTINATION lib
 )
 
+<<<<<<< HEAD
 pluginlib_export_plugin_description_file(controller_interface pi3hat_omni_controller.xml)
 
+=======
+
+
+pluginlib_export_plugin_description_file(controller_interface pi3hat_omni_controller.xml)
+
+install(
+  DIRECTORY launch urdf config
+  DESTINATION share/${PROJECT_NAME}
+)
+
+>>>>>>> d274abb (fix bug on omnicontroller)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -83,6 +104,10 @@ ament_export_dependencies(
   pi3hat_moteus_int_msgs
   std_srvs
   Eigen3
+<<<<<<< HEAD
+=======
+  sensor_msgs
+>>>>>>> d274abb (fix bug on omnicontroller)
 )
 ament_export_include_directories(
   include

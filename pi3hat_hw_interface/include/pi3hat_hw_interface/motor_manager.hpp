@@ -12,7 +12,11 @@
 #include <tuple>
 // #define NULL __null
 
+<<<<<<< HEAD
 #define MAX_COUNT 100
+=======
+#define MAX_COUNT 10000
+>>>>>>> d274abb (fix bug on omnicontroller)
 #define MIN_STT_INT 6
 
 using namespace mjbots;

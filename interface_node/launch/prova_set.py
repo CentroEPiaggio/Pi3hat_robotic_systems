@@ -11,10 +11,17 @@ async def main():
 ######################################################################################################################################################################################
 #                                                                              SERVOS CONFIGURATION                                                                                  #
 ######################################################################################################################################################################################    
+<<<<<<< HEAD
     ids = [4]#[2,1,3,4]
+=======
+    ids = [1,2,9,3,4,10,5,6,11,7,8,12]#[2,1,3,4]
+>>>>>>> d274abb (fix bug on omnicontroller)
     transport = moteus_pi3hat.Pi3HatRouter(
         servo_bus_map = {
-            1:ids         
+	    1:[1,2,9],
+	    2:[3,4,10],
+	    3:[5,6,11],
+	    4:[7,8,12]
         }
     )
 
@@ -36,10 +43,12 @@ async def main():
         kd = await s.command(b'conf set servo.pid_position.kd ' + str(MActPar.KD).encode('utf-8')) 
         ilimit = await s.command(b'conf set servo.pid_position.ilimit 0')
         ki = await s.command(b'conf set servo.pid_position.ki ' + str(MActPar.KI).encode('utf-8'))
+        await s.command(b'conf set servopos.position_min ' + str(-900).encode('utf-8'))
+        await s.command(b'conf set servopos.position_max ' + str(900).encode('utf-8'))
 
         flux_brake_voltage = await s.command(b'conf set servo.flux_brake_min_voltage ' + str(MActPar.FBV).encode('utf-8'))
         await s.command(b'd index 0.0')
-        await s.command(b'conf set servo.default_timeout_s ' + str(10).encode('utf-8'))
+        await s.command(b'conf set servo.default_timeout_s ' + str(1).encode('utf-8'))
     
         
 ######################################################################################################################################################################################

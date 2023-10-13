@@ -34,11 +34,17 @@ class MotorState:
 
 #   ACTUATOR PARAMETERS
 class MActPar:
-    MAXVEL = 1
+    MAXVEL = 20
     MAXPOW = 450
+<<<<<<< HEAD
     MAXCUR = 40 
     KP = 5.0
     KD = 0.05
+=======
+    MAXCUR = 5 
+    KP = 0.0
+    KD = 0.00
+>>>>>>> d274abb (fix bug on omnicontroller)
     KI = 0
     FBV = 27.5
     RID = 9
