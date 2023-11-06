@@ -1,3 +1,12 @@
+/**
+ * @file int_node_v1.cpp
+ * @brief This file contains the implementation of the Pi3Hat_int class, which is a ROS2 node that interfaces with the Moteus motor driver through the Pi3Hat board.
+ * The node sends position commands to the motor driver and receives position and velocity data from it.
+ * It uses the moteus_pi3hat library to communicate with the driver through the Pi3Hat board.
+ * The node subscribes to a topic to receive the desired trajectory and publishes the measured position and velocity of the motor.
+ * The node also provides a destructor that sends a stop command to the motor driver before exiting.
+ * 
+ */
 #include <stdio.h>
 #include "rclcpp/node.hpp"
 #include "rclcpp/executors/single_threaded_executor.hpp"
@@ -144,6 +153,13 @@ namespace pi3hat_node
                     mot_pos_cmd_ = msg->data[0];
                     mot_vel_cmd_ = msg->data[1];
                 }
+                /**
+                 * @brief Timer callback function that sends commands to the motor driver and receives data from it.
+                 * 
+                 * This function sends position commands to the motor driver and receives position and velocity data from it.
+                 * It uses a promise to asynchronously receive the data from the driver and updates the internal structure with the received data.
+                 * 
+                 */
                 void timer_callback()
                 {
                     //RCLCPP_INFO(this->get_logger(),"timer callback");
