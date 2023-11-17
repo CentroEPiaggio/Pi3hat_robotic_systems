@@ -18,9 +18,7 @@ find_package(std_msgs REQUIRED)
 
 add_library(
   rbt_pd_cnt
-  SHARED 
-  src/robot_pd_cnt.cpp 
-  src/real_pd_cnt.cpp
+  SHARED src/robot_pd_cnt.cpp
 )
 target_include_directories(
   rbt_pd_cnt PRIVATE include
@@ -40,22 +38,14 @@ ament_target_dependencies(rbt_pd_cnt
 
 pluginlib_export_plugin_description_file(controller_interface rbt_pd_cnt.xml)
 
-
-target_include_directories(${PROJECT_NAME} PUBLIC
-
-$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-
-$<INSTALL_INTERFACE:include>)
-
-# install(
-#   DIRECTORY include/
-#   DESTINATION include
-# )
+install(
+  DIRECTORY include/
+  DESTINATION include
+)
 
 install(
   TARGETS
   rbt_pd_cnt
-  EXPORT export_${PROJECT_NAME}
   RUNTIME DESTINATION bin
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib

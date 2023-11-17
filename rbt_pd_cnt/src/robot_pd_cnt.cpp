@@ -211,7 +211,7 @@ namespace rbt_pd_cnt
             }
             jnt_cmd_.effort[i] = K_p_*(jnt_cmd_.position[i] - jnt_stt_.position[i]) +
                                  K_d_*(jnt_cmd_.velocity[i] - jnt_stt_.velocity[i]) 
-                                + jnt_cmd_.effort[i];
+                                 + jnt_cmd_.effort[i];
             command_interfaces_[i].set_value(jnt_cmd_.effort[i]);
             // RCLCPP_INFO(
             //         get_node()->get_logger(),

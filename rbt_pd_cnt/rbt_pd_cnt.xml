@@ -6,11 +6,4 @@
     PD Joint controller
     </description>
   </class>
-   <class name="rbt_pd_cnt/Real_PD_Cnt" 
-    type="rbt_pd_cnt::Real_PD_Cnt"
-    base_class_type="controller_interface::ControllerInterface">
-    <description>
-    PD Joint controller
-    </description>
-  </class>
 </library>
