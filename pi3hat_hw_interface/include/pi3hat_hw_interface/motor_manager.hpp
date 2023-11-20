@@ -45,6 +45,7 @@ namespace hardware_interface
 }
 namespace pi3hat_hw_interface
 {
+    
     namespace motor_manager
     {
         // it contains all the data needed to describe the single motor state

@@ -1,6 +1,7 @@
 #include "pi3hat_hw_interface/moteus_pi3hat_interface.hpp"
 #include "pluginlib/class_list_macros.hpp"
 #include <cmath>
+
 #define LOGGER_NAME "MoteusPi3Hat_Interface"
 #define CPU 1
 using namespace rclcpp;
@@ -132,11 +133,24 @@ namespace pi3hat_hw_interface
             m_to = std::stoi(info.hardware_parameters.at("main_timeout"));
             c_to = std::stoi(info.hardware_parameters.at("can_timeout"));
             r_to = std::stoi(info.hardware_parameters.at("rcv_timeout"));
-            att = std::stoi(info.hardware_parameters.at("attitude")) == 0 ? false : true;
+            att_req_ = std::stoi(info.hardware_parameters.at("attitude")) == 0 ? false : true;
+            if(att_req_)
+            {
+                imu_to_base_pos_ << std::stod(info.hardware_parameters.at("i2b_pos_x")),
+                                    std::stod(info.hardware_parameters.at("i2b_pos_y")) ,
+                                    std::stod(info.hardware_parameters.at("i2b_pos_z")) ;
+                
+                orientation_ = Eigen::Quaternion( 
+                    std::stod(info.hardware_parameters.at("i2b_ori_w")),
+                    std::stod(info.hardware_parameters.at("i2b_ori_x")),
+                    std::stod(info.hardware_parameters.at("i2b_ori_y")),
+                    std::stod(info.hardware_parameters.at("i2b_ori_z")));
+
+            }
             RCLCPP_INFO(rclcpp::get_logger("DIO"),"pass");
             try
             {
-                communication_thread_.set_options(CPU,m_to,c_to,r_to,att);
+                communication_thread_.set_options(CPU,m_to,c_to,r_to,att_req_);
             }
             catch(std::logic_error &e)
             {
@@ -332,6 +346,7 @@ namespace pi3hat_hw_interface
                         info_.name,
                         hardware_interface::HW_IF_CYCLE_DUR,
                         &cycle_dur_);
+            num_stt_int_ = 2;
             for(auto &motor : motors_)
             {
                 // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"insert joint name %s and [id,bus] :: [%d,%d]",
@@ -350,6 +365,7 @@ namespace pi3hat_hw_interface
                         type,
                         motor.get_stt_interface(type,i<MIN_STT_INT?false:true)
                     );
+                    num_stt_int_ += 1;
                     }
                     catch(std::logic_error &err)
                     {
@@ -359,6 +375,23 @@ namespace pi3hat_hw_interface
                     i++;
                 }
             }  
+            if(att_req_)
+            std::string name = "IMU_sensor";
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_LIN_ACC_X, &acc_imu_(0));
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_LIN_ACC_Y, &acc_imu_(1));
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_LIN_ACC_Z, &acc_imu_(2));
+
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_ANG_SPD_X, &vel_imu_(0));
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_ANG_SPD_Y, &vel_imu_(0));
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_ANG_SPD_Z, &vel_imu_(0));
+
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_W,orientation_());
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_X);
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_Y);
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_Z);
+      
+
+
 
             return stt_int;
         };
@@ -423,10 +456,23 @@ namespace pi3hat_hw_interface
                 valid_ = true;
                 cycle_dur_ = out.cycle_s;
 
-                // RCLCPP_INFO(rclcpp::get_logger("tt"),"the cycle dur is %f",cycle_dur_);
+          
+                //get imu data from pi3hat in imu frame 
+                communication_thread_.getAttitude(filtered_IMU_);
+                Eigen::Vector3d ang_vel_imu <<  (filtered_IMU_.rate_dps.x*180)/std::M_PI,
+                                                (filtered_IMU_.rate_dps.y*180)/std::M_PI,
+                                                (filtered_IMU_.rate_dps.z*180)/std::M_PI;
+                Eigen::Vector3d lin_acc_imu << filtered_IMU_.accel_mps2.x,filtered_IMU_.accel_mps2.y,filtered_IMU_.accel_mps2.z;
                 
-                //RCLCPP_INFO(rclcpp::get_logger(LOGGER_Nout = can_recvd_.get();AME), "the output num is  %ld",out.query_result_size);
-                // out.query_result_size = msr_data_.size();
+                // rotate angular velocity in base frame
+                vel_imu_= orientation_*(ang_vel_imu);
+
+                // rotare the linear acceleration considering also the centripetalp effects, are not computed the angular acceleration components
+                acc_imu_ = orientation_*(lin_acc_imu + ang_vel_imu.cross3(ang_vel_imu.cross3(imu_to_base_pos_)));
+
+                state_interf
+
+
                 for(auto &motor : motors_)
                 {
                     motor.set_msg_valid(true);

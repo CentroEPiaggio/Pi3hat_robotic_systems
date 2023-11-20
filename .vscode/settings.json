@@ -1,4 +1,9 @@
 {
     "ros.distro": "humble",
-    "cmake.sourceDirectory": "/home/vincenzo/Documenti/Centro_Piaggio/Mulinex/Pi3hat_robotic_systems/interface_node"
+    "cmake.sourceDirectory": "/home/vincenzo/Documenti/Centro_Piaggio/Mulinex/Pi3hat_robotic_systems/interface_node",
+    "files.associations": {
+        "future": "cpp",
+        "core": "cpp",
+        "dense": "cpp"
+    }
 }

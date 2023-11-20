@@ -112,6 +112,16 @@ class Pi3HatMoteusInterface {
     double cycle_s = 0.0;
   };
 
+  void getAttitude(mjbots::pi3hat::Attitude& att)
+  {
+    att.accel_mps2 = attitude_.accel_mps2;
+    att.attitude = attitude_.attitude;
+    att.rate_dps = attitude_.rate_dps;
+    att.attitude_uncertainty = attitude_.attitude_uncertainty;
+    att.bias_dps = attitude_.bias_dps;
+    att.bias_uncertainty_dps = attitude_.bias_uncertainty_dps;
+  }
+
   using CallbackFunction = std::function<void (const Output&)>;
 
   /// When called, this will schedule a cycle of communication with
@@ -131,7 +141,7 @@ class Pi3HatMoteusInterface {
       main_timeout_ = m_to;
       can_extra_timeout_ = c_to;
       rx_extra_timeout_ = r_to;
-      attitude_ = att;
+      attitude_req_ = att;
     }
     else  
       throw std::logic_error("All timeout should be greater than zero");
@@ -262,6 +272,7 @@ class Pi3HatMoteusInterface {
       data_.replies[i].id = (can.id & 0x7f00) >> 8;
       data_.replies[i].bus = can.bus;
       data_.replies[i].result = moteus::ParseQueryResultV2(can.data, can.size);
+      
       result.query_result_size = i + 1;
     }
 
@@ -284,7 +295,8 @@ class Pi3HatMoteusInterface {
   uint32_t main_timeout_;
   uint32_t rx_extra_timeout_;
   uint32_t can_extra_timeout_;
-  bool attitude_;
+  bool attitude_req_;
+  mjbots::pi3hat::Attitude attitude_;
 
 
   /// All further variables are only used from within the child thread.

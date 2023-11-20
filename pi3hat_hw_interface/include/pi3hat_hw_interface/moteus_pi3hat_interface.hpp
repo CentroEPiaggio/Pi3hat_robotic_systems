@@ -17,7 +17,9 @@
 #include <functional>
 #include <stdio.h>
 
-
+#include "eigen3/Eigen/Dense"
+#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/Geometry"
 #include "rclcpp/macros.hpp"
 #include "rclcpp/logger.hpp"
 #include "hardware_interface/handle.hpp"
@@ -30,6 +32,7 @@
 #include "rclcpp_lifecycle/lifecycle_publisher.hpp"
 #include "pi3hat_hw_interface/motor_manager.hpp"
 #include "pi3hat_moteus_int_msgs/msg/packet_pass.hpp"
+#include "moteus_pi3hat/pi3hat_moteus_interface.h"
 #define NUM_STOP 30
 #define MAIN_TIMEOUT 3000000
 #define MIN_TX_TIMEOUT 200000
@@ -47,7 +50,8 @@ using PerData = pi3hat_moteus_int_msgs::msg::PacketPass;
 using namespace std::chrono_literals;
 
 #define SLEEP_FOR_10MS 10000000ns
-
+#define NUM_ACC 3
+#define NUM_VEL 3
 
 using Get_Function = std::function<moteus::QueryResultV2 ( std::vector<Reply>& replies, int bus, int id, int opt,int& err,int provided_msg)>;
 using Policy_Function = std::function<void( bool msg_valid, bool msg_coplete, Command* cmd_d)>;
@@ -58,6 +62,23 @@ namespace pi3hat_hw_interface
 {
     namespace moteus_pi3hat_interface
     {
+        namespace hardware_interface
+        {
+            constexpr char HW_IF_LIN_ACC_X[] = "linear_acceleration.x";
+            constexpr char HW_IF_LIN_ACC_Y[] = "linear_acceleration.y";
+            constexpr char HW_IF_LIN_ACC_Z[] = "linear_acceleration.z";
+
+            constexpr char HW_IF_ANG_SPD_X[] = "angular_velocity.x";
+            constexpr char HW_IF_ANG_SPD_Y[] = "angular_velocity.y";
+            constexpr char HW_IF_ANG_SPD_Z[] = "angular_velocity.z";
+
+            constexpr char HW_IF_QUATERN_X[] = "orientation.x";
+            constexpr char HW_IF_QUATERN_Y[] = "orientation.y";
+            constexpr char HW_IF_QUATERN_Z[] = "orientation.z";
+            constexpr char HW_IF_QUATERN_W[] = "orientation.w";
+
+
+        }
         class MoteusPi3Hat_Interface : public hardware_interface::SystemInterface
         {
             public:
@@ -132,7 +153,12 @@ namespace pi3hat_hw_interface
                 int not_val_cycle_ = 0,epoch_count_=0;
                 std::vector<double> pkt_loss_;
                 double valid_loss_ = 0.0, cycle_dur_=0.0;
-                bool valid_ = true;
+                bool valid_ = true,att_req_;
+                mjbots::pi3hat::Attitude filtered_IMU_;
+                int num_stt_int_;
+                Eigen::Vector3d acc_imu_,vel_imu_,imu_to_base_pos_;
+                Eigen::Quaternion orientation_;
+
         };
     }
 }
