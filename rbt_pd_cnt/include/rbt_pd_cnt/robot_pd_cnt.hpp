@@ -43,10 +43,11 @@ namespace rbt_pd_cnt
         protected:
             // subscriber 
             rclcpp::Subscription<CmdType>::SharedPtr jnt_cmd_sub_;
+            rclcpp::Publisher<CmdType>::SharedPtr jnt_stt_pub_;
             // logger name
             std::string logger_name_;
-            // controller parameter
-            double K_d_,K_p_;
+            // controller parameter, for each joints
+            std::vector<double> K_p_,K_d_;
             //joint command and state variable
             std::vector<double> init_pos_;
             sensor_msgs::msg::JointState jnt_cmd_,jnt_stt_;

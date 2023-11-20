@@ -28,8 +28,8 @@ namespace rbt_pd_cnt
     {
         first_time_ = true;
         try{        
-            auto_declare<double>("K_d",10.0);
-            auto_declare<double>("K_p",100.0);
+            auto_declare<std::vector<double>>("K_d",std::vector<double>());
+            auto_declare<std::vector<double>>("K_p",std::vector<double>());
             auto_declare<std::vector<std::string>>("joint", std::vector<std::string>());
             auto_declare<std::vector<double>>("init_pos",std::vector<double>());
         }
@@ -44,8 +44,18 @@ namespace rbt_pd_cnt
     CallbackReturn Rbt_PD_cnt::on_configure(const rclcpp_lifecycle::State & )
     {
         joint_ = get_node()->get_parameter("joint").as_string_array();
-        K_p_ = get_node()->get_parameter("K_p").as_double();
-        K_d_ = get_node()->get_parameter("K_d").as_double();
+        K_p_ = get_node()->get_parameter("K_p").as_double_array();
+        K_d_ = get_node()->get_parameter("K_d").as_double_array();
+        if(K_p_.empty() || K_d_.empty())
+        {
+            RCLCPP_ERROR(get_node()->get_logger(),"'K_p_' or 'K_d' parameter is empty");
+            return CallbackReturn::ERROR;
+        }
+        if(K_p_.size() != K_d_.size())
+        {
+            RCLCPP_ERROR(get_node()->get_logger(),"'K_p_' and 'K_d' has different size");
+            return CallbackReturn::ERROR; 
+        }
         init_pos_ = get_node()->get_parameter("init_pos").as_double_array();
 
         if(joint_.empty())
@@ -63,11 +73,15 @@ namespace rbt_pd_cnt
             RCLCPP_ERROR(get_node()->get_logger(),"'start_command' and 'joint' dimensions are different");
             return CallbackReturn::ERROR;
         }
-        if(K_p_ < 0 || K_d_ < 0)
+        for(size_t i = 0; i<K_p_.size();i++)
         {
-            RCLCPP_ERROR(get_node()->get_logger(),"PD Gains must be positive");
-            return CallbackReturn::ERROR;
+            if(K_p_[i] < 0 || K_d_[i] < 0)
+            {
+                RCLCPP_ERROR(get_node()->get_logger(),"PD Gains must be positive");
+                return CallbackReturn::ERROR;
+            } 
         }
+     
         //jnt_pos_stt_.resize(init_pos_.size());
         std::vector<double> zeros(init_pos_.size(),0.0);
         jnt_cmd_.set__position(init_pos_);
@@ -83,6 +97,7 @@ namespace rbt_pd_cnt
             "~/command", rclcpp::SystemDefaultsQoS(),
             [this](const CmdType::SharedPtr msg){rt_command_ptr_.writeFromNonRT(msg);}
         );
+        jnt_stt_pub_ = get_node()->create_publisher<CmdType>("Joint_Feedback",10);
 
         RCLCPP_INFO(get_node()->get_logger(),"configure succesfull");
         return CallbackReturn::SUCCESS;
@@ -180,6 +195,8 @@ namespace rbt_pd_cnt
             //     get_node()->get_logger(),"Joint %d has pos %f and vel %f",i,jnt_stt_.position[i],jnt_stt_.velocity[i]
             // );
         }
+        jnt_stt_.set__name(joint_);
+        jnt_stt_pub_->publish(jnt_stt_);
         std::vector<double> zeros(init_pos_.size(),0.0);
         jnt_cmd_.set__effort(zeros);
         auto joint_command = rt_command_ptr_.readFromRT();
@@ -209,8 +226,8 @@ namespace rbt_pd_cnt
                 );
 
             }
-            jnt_cmd_.effort[i] = K_p_*(jnt_cmd_.position[i] - jnt_stt_.position[i]) +
-                                 K_d_*(jnt_cmd_.velocity[i] - jnt_stt_.velocity[i]) 
+            jnt_cmd_.effort[i] = K_p_[i]*(jnt_cmd_.position[i] - jnt_stt_.position[i]) +
+                                 K_d_[i]*(jnt_cmd_.velocity[i] - jnt_stt_.velocity[i]) 
                                  + jnt_cmd_.effort[i];
             command_interfaces_[i].set_value(jnt_cmd_.effort[i]);
             // RCLCPP_INFO(
