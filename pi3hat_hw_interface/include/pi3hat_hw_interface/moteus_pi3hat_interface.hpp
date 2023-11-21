@@ -156,8 +156,10 @@ namespace pi3hat_hw_interface
                 bool valid_ = true,att_req_;
                 mjbots::pi3hat::Attitude filtered_IMU_;
                 int num_stt_int_;
+                std::vector<double> acc_base_,vel_base_,quaternion_;
                 Eigen::Vector3d acc_imu_,vel_imu_,imu_to_base_pos_;
-                Eigen::Quaternion orientation_;
+                Eigen::Quaternion<double> orientation_, imuw2_nav_ = Eigen::AngleAxisd(std::M_PI,Eigen::Vector3d::UnitX());
+                int acc_correction_ = 0;
 
         };
     }

@@ -66,6 +66,7 @@ namespace pi3hat_hw_interface
                 //     i++;
                 // }
                 return {};
+
             };
 
             poly_ = [](bool , bool msg_complete,Command* cmd_d)
@@ -136,18 +137,19 @@ namespace pi3hat_hw_interface
             att_req_ = std::stoi(info.hardware_parameters.at("attitude")) == 0 ? false : true;
             if(att_req_)
             {
-                imu_to_base_pos_ << std::stod(info.hardware_parameters.at("i2b_pos_x")),
-                                    std::stod(info.hardware_parameters.at("i2b_pos_y")) ,
-                                    std::stod(info.hardware_parameters.at("i2b_pos_z")) ;
+                imu_to_base_pos_ << std::stod(info.hardware_parameters.at("b2imu_pos_x")),
+                                    std::stod(info.hardware_parameters.at("b2imu_pos_y")) ,
+                                    std::stod(info.hardware_parameters.at("b2imu_pos_z")) ;
                 
-                orientation_ = Eigen::Quaternion( 
-                    std::stod(info.hardware_parameters.at("i2b_ori_w")),
-                    std::stod(info.hardware_parameters.at("i2b_ori_x")),
-                    std::stod(info.hardware_parameters.at("i2b_ori_y")),
-                    std::stod(info.hardware_parameters.at("i2b_ori_z")));
-
+                orientation_ =  Eigen::AngleAxisd(std::stod(info.hardware_parameters.at("b2imu_roll")),Eigen::Vector3d::UnitX()) *
+                                Eigen::AngleAxisd( std::stod(info.hardware_parameters.at("b2imu_pitch")),,Eigen::Vector3d::UnitX()) *
+                                Eigen::AngleAxisd( std::stod(info.hardware_parameters.at("b2imu_yaw")),,Eigen::Vector3d::UnitX()) ;
+                
+                acc_base_.resize(3,0.0); // x,y,z
+                vel_base_.resize(3,0.0); // x,y,z
+                quaternion_.resize(4,0.0);// w,x,y,z
+                acc_correction_ = std::stoi(info.hardware_parameters.at("acc_correction"));
             }
-            RCLCPP_INFO(rclcpp::get_logger("DIO"),"pass");
             try
             {
                 communication_thread_.set_options(CPU,m_to,c_to,r_to,att_req_);
@@ -377,18 +379,18 @@ namespace pi3hat_hw_interface
             }  
             if(att_req_)
             std::string name = "IMU_sensor";
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_LIN_ACC_X, &acc_imu_(0));
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_LIN_ACC_Y, &acc_imu_(1));
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_LIN_ACC_Z, &acc_imu_(2));
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_LIN_ACC_X, &acc_base_[0]);
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_LIN_ACC_Y, &acc_base_[1]);
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_LIN_ACC_Z, &acc_base_[2]);
 
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_ANG_SPD_X, &vel_imu_(0));
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_ANG_SPD_Y, &vel_imu_(0));
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_ANG_SPD_Z, &vel_imu_(0));
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_ANG_SPD_X, &vel_base_[0]);
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_ANG_SPD_Y, &vel_base_[1]);
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_ANG_SPD_Z, &vel_base_[2]);
 
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_W,orientation_());
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_X);
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_Y);
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_Z);
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_W, &quaternion_[0]);
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_X, &quaternion_[1]);
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_Y, &quaternion_[2]);
+            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_Z, &quaternion_[3]);
       
 
 
@@ -464,13 +466,40 @@ namespace pi3hat_hw_interface
                                                 (filtered_IMU_.rate_dps.z*180)/std::M_PI;
                 Eigen::Vector3d lin_acc_imu << filtered_IMU_.accel_mps2.x,filtered_IMU_.accel_mps2.y,filtered_IMU_.accel_mps2.z;
                 
-                // rotate angular velocity in base frame
-                vel_imu_= orientation_*(ang_vel_imu);
+                Eigen::Quaternion<double> read_or = Eigen::Quaternion<double>(
+                                                            filtered_IMU_.attitude.w,
+                                                            filtered_IMU_.attitude.x,
+                                                            filtered_IMU_.attitude.y,
+                                                            filtered_IMU_.attitude.z
+                                                            );
+                
+                // rotate angular velocity in base frame Rimu_base^T vel_imu
+                vel_imu_= orientation_.inverse()*(ang_vel_imu);
+                
+                // composite the orientation to have the world frame : Rworld_imunav * Rimu_nav_imu * Rimu_base
+                read_or = imuw2_nav_* read_or * orientation_;
+
+                quaternion_[0] = read_or.w();
+                quaternion_[1] = read_or.x();
+                quaternion_[2] = read_or.y();
+                quaternion_[3] = read_or.z();
 
                 // rotare the linear acceleration considering also the centripetalp effects, are not computed the angular acceleration components
-                acc_imu_ = orientation_*(lin_acc_imu + ang_vel_imu.cross3(ang_vel_imu.cross3(imu_to_base_pos_)));
+                if(acc_correction_ != 0)
+                 acc_imu_ = orientation_.inverse() *(lin_acc_imu - ang_vel_imu.cross3(ang_vel_imu.cross3(imu_to_base_pos_)));
+                else
+                    acc_imu_ = orientation_.inverse() *(lin_acc_imu);
 
-                state_interf
+                for(size_t i = 0; i< acc_base_.size();i++)
+                {
+                    vel_base_[i] = vel_imu_[i];
+                    acc_base_[i] = acc_base_[i];
+                }
+                
+
+                
+
+                
 
 
                 for(auto &motor : motors_)

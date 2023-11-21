@@ -6,7 +6,16 @@
             <param name="main_timeout">400000</param>
             <param name="can_timeout">20000</param>
             <param name="rcv_timeout">20000</param>
+            
             <param name="attitude">0</param> 
+
+            <param name="b2imu_pos_x">0</param> 
+            <param name="b2imu_pos_y">0</param> 
+            <param name="b2imu_pos_z">0</param> 
+
+            <param name="b2imu_roll">0</param> 
+            <param name="b2imu_pitch">0</param> 
+            <param name="b2imu_yaw">0</param> 
         </hardware>
         <joint name="joint1"> <!-- hip -->
             <param name="id">1</param>
