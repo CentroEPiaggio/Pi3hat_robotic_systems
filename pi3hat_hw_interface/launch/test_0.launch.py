@@ -16,7 +16,7 @@ def generate_launch_description():
 
     subprocess.run(["sudo",
                     "/home/jacopocioni/mul_env/bin/python3",
-                    "/home/jacopocioni/mulinex_ws/src/interface_node/launch/prova_set.py"])
+                    "/home/jacopocioni/mulinex_ws/src/pi3hat_hw_interface/launch/set_motor_params.py"])
     print("i' have executed the configuration process")
     moteus_pi3hat_path = get_package_share_path("pi3hat_hw_interface")
     moteus_pi3hat_path = os.path.join(moteus_pi3hat_path,"urdf/test_int.urdf.xacro") 

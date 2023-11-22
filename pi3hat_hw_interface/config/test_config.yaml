@@ -1,15 +1,14 @@
 controller_manager:
   ros__parameters:
-    update_rate: 1000 # hz tutto
+    update_rate: 100 # hz tutto
     state_broadcaster:
       type: pi3hat_state_broadcaster/Pi3Hat_State_Broadcaster # stampa roba su topic 
     joint_controller:
       type: pi3hat_joint_group_controller/Pi3Hat_Joint_Group_Controller # prende messaggi da topic 
-<<<<<<< HEAD
-=======
     OM_controller:
       type: pi3hat_vel_controller/Pi3Hat_Vel_Controller
->>>>>>> d274abb (fix bug on omnicontroller)
+    IMU_Broadcaster:
+      type: imu_sensor_broadcaster/IMUSensorBroadcaster
 state_broadcaster:
   ros__parameters:
     joints:
@@ -25,18 +24,12 @@ state_broadcaster:
     performance_index: true
 OM_controller:
   ros__parameters:
-<<<<<<< HEAD
-    joints:
-      - joint1
-      - joint2 
-      # - jnt_b9_1Hz_trq4_c2
-      # - jnt_b9_1Hz_trq4_c3
-      # - joinjoint1t3
-      # - joint4
-=======
     homing_duration: 5.0
     input_frequency: 100
->>>>>>> d274abb (fix bug on omnicontroller)
+IMU_Broadcaster:
+  ros__parameters:
+    sensor_name: "IMU"
+    frame_id: "IMU_NAV"
     
 
 

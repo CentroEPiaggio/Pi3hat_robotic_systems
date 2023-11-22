@@ -14,8 +14,8 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(moteus_pi3hat REQUIRED)
 find_package(pi3hat_moteus_int_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
-
-
+find_package(tf2_ros REQUIRED)
+find_package(tf2 REQUIRED)
 
 add_library(
   ${PROJECT_NAME}
@@ -40,6 +40,8 @@ ament_target_dependencies(
   moteus_pi3hat
   pi3hat_moteus_int_msgs
   Eigen3
+  tf2_ros
+  tf2
 )
 
 pluginlib_export_plugin_description_file(hardware_interface moteus_pi3hat_interface.xml)
@@ -99,6 +101,8 @@ ament_export_dependencies(
   moteus_pi3hat
   pi3hat_moteus_int_msgs
   Eigen3
+  tf2_ros
+  tf2
   
 )
 

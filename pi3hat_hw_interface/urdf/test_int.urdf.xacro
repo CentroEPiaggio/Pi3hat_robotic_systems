@@ -7,7 +7,7 @@
             <param name="can_timeout">20000</param>
             <param name="rcv_timeout">20000</param>
             
-            <param name="attitude">0</param> 
+            <param name="attitude">1</param> 
 
             <param name="b2imu_pos_x">0</param> 
             <param name="b2imu_pos_y">0</param> 
@@ -15,20 +15,10 @@
 
             <param name="b2imu_roll">0</param> 
             <param name="b2imu_pitch">0</param> 
-            <param name="b2imu_yaw">0</param> 
+            <param name="b2imu_yaw">90.0</param>
+            <param name="acc_correction">0</param> 
         </hardware>
-        <joint name="joint1"> <!-- hip -->
-            <param name="id">1</param>
-            <param name="bus">2</param>
-            <param name="motor_transmission">9.0</param> <!-- trasmissione primo motore link-->
-            <param name="sec_enc_transmission">2.96</param> <!-- trasmissione secondo motore2enc-->
-        </joint>
-        <joint name="joint2"> 
-           <param name="id">2</param>
-            <param name="bus">3</param>
-            <param name="motor_transmission">9.0</param>
-            <param name="sec_enc_transmission">2.87</param>
-        </joint>
+     
   
     </ros2_control>
 </robot>

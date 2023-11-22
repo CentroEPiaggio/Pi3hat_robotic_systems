@@ -14,6 +14,12 @@ namespace pi3hat_hw_interface
         MoteusPi3Hat_Interface::MoteusPi3Hat_Interface():
         communication_thread_()
         {
+            imuw2_nav_ = Eigen::AngleAxis<double>(-PI_,Eigen::Vector3d::UnitX()) * Eigen::AngleAxis<double>(-PI_/2,Eigen::Vector3d::UnitZ());
+            Eigen::Quaternion<double> prova;
+            prova = Eigen::AngleAxis<double>(-PI_,Eigen::Vector3d::UnitX());
+            prova = prova * imuw2_nav_;
+            Eigen::Vector3d Euler = prova.toRotationMatrix().eulerAngles(0, 1, 2);
+            RCLCPP_INFO(rclcpp::get_logger("IMUS"),"imu to nav ea [%f,%f,%f]",Euler(0),Euler(1),Euler(2));
             // create the comunnication thread_
             //communication_thread_ = new MoteusInterface(opt);
             gets_ = [] (std::vector<Reply>& replies,int bus,int id,int ,int& err, int  ) -> moteus::QueryResultV2
@@ -141,10 +147,9 @@ namespace pi3hat_hw_interface
                                     std::stod(info.hardware_parameters.at("b2imu_pos_y")) ,
                                     std::stod(info.hardware_parameters.at("b2imu_pos_z")) ;
                 
-                orientation_ =  Eigen::AngleAxisd(std::stod(info.hardware_parameters.at("b2imu_roll")),Eigen::Vector3d::UnitX()) *
-                                Eigen::AngleAxisd( std::stod(info.hardware_parameters.at("b2imu_pitch")),,Eigen::Vector3d::UnitX()) *
-                                Eigen::AngleAxisd( std::stod(info.hardware_parameters.at("b2imu_yaw")),,Eigen::Vector3d::UnitX()) ;
-                
+                orientation_ =  Eigen::AngleAxis<double>(std::stod(info.hardware_parameters.at("b2imu_roll")),Eigen::Vector3d::UnitX()) *
+                                Eigen::AngleAxis<double>( std::stod(info.hardware_parameters.at("b2imu_pitch")),Eigen::Vector3d::UnitY()) *
+                                Eigen::AngleAxis<double>( std::stod(info.hardware_parameters.at("b2imu_yaw")),Eigen::Vector3d::UnitZ()) ;
                 acc_base_.resize(3,0.0); // x,y,z
                 vel_base_.resize(3,0.0); // x,y,z
                 quaternion_.resize(4,0.0);// w,x,y,z
@@ -198,6 +203,7 @@ namespace pi3hat_hw_interface
             }
             data_.commands = {cmd_data_.data(),cmd_data_.size()};
             data_.replies = {msr_data_.data(),msr_data_.size()};
+        
              RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"INIT COMPLETED");
             return CallbackReturn::SUCCESS;
         };
@@ -378,20 +384,21 @@ namespace pi3hat_hw_interface
                 }
             }  
             if(att_req_)
-            std::string name = "IMU_sensor";
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_LIN_ACC_X, &acc_base_[0]);
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_LIN_ACC_Y, &acc_base_[1]);
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_LIN_ACC_Z, &acc_base_[2]);
+            {
+                std::string name = "IMU";
+                stt_int.emplace_back(name ,hardware_interface::HW_IF_LIN_ACC_X, &acc_base_[0]);
+                stt_int.emplace_back(name ,hardware_interface::HW_IF_LIN_ACC_Y, &acc_base_[1]);
+                stt_int.emplace_back(name ,hardware_interface::HW_IF_LIN_ACC_Z, &acc_base_[2]);
 
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_ANG_SPD_X, &vel_base_[0]);
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_ANG_SPD_Y, &vel_base_[1]);
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_ANG_SPD_Z, &vel_base_[2]);
+                stt_int.emplace_back(name ,hardware_interface::HW_IF_ANG_SPD_X, &vel_base_[0]);
+                stt_int.emplace_back(name ,hardware_interface::HW_IF_ANG_SPD_Y, &vel_base_[1]);
+                stt_int.emplace_back(name ,hardware_interface::HW_IF_ANG_SPD_Z, &vel_base_[2]);
 
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_W, &quaternion_[0]);
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_X, &quaternion_[1]);
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_Y, &quaternion_[2]);
-            stt_int.emplace_back(name_ ,hardware_interface::HW_IF_QUATERN_Z, &quaternion_[3]);
-      
+                stt_int.emplace_back(name ,hardware_interface::HW_IF_QUATERN_W, &quaternion_[0]);
+                stt_int.emplace_back(name ,hardware_interface::HW_IF_QUATERN_X, &quaternion_[1]);
+                stt_int.emplace_back(name ,hardware_interface::HW_IF_QUATERN_Y, &quaternion_[2]);
+                stt_int.emplace_back(name ,hardware_interface::HW_IF_QUATERN_Z, &quaternion_[3]);
+            }
 
 
 
@@ -460,44 +467,51 @@ namespace pi3hat_hw_interface
 
           
                 //get imu data from pi3hat in imu frame 
-                communication_thread_.getAttitude(filtered_IMU_);
-                Eigen::Vector3d ang_vel_imu <<  (filtered_IMU_.rate_dps.x*180)/std::M_PI,
-                                                (filtered_IMU_.rate_dps.y*180)/std::M_PI,
-                                                (filtered_IMU_.rate_dps.z*180)/std::M_PI;
-                Eigen::Vector3d lin_acc_imu << filtered_IMU_.accel_mps2.x,filtered_IMU_.accel_mps2.y,filtered_IMU_.accel_mps2.z;
-                
-                Eigen::Quaternion<double> read_or = Eigen::Quaternion<double>(
-                                                            filtered_IMU_.attitude.w,
-                                                            filtered_IMU_.attitude.x,
-                                                            filtered_IMU_.attitude.y,
-                                                            filtered_IMU_.attitude.z
-                                                            );
-                
-                // rotate angular velocity in base frame Rimu_base^T vel_imu
-                vel_imu_= orientation_.inverse()*(ang_vel_imu);
-                
-                // composite the orientation to have the world frame : Rworld_imunav * Rimu_nav_imu * Rimu_base
-                read_or = imuw2_nav_* read_or * orientation_;
-
-                quaternion_[0] = read_or.w();
-                quaternion_[1] = read_or.x();
-                quaternion_[2] = read_or.y();
-                quaternion_[3] = read_or.z();
-
-                // rotare the linear acceleration considering also the centripetalp effects, are not computed the angular acceleration components
-                if(acc_correction_ != 0)
-                 acc_imu_ = orientation_.inverse() *(lin_acc_imu - ang_vel_imu.cross3(ang_vel_imu.cross3(imu_to_base_pos_)));
-                else
-                    acc_imu_ = orientation_.inverse() *(lin_acc_imu);
-
-                for(size_t i = 0; i< acc_base_.size();i++)
+                if(att_req_)
                 {
-                    vel_base_[i] = vel_imu_[i];
-                    acc_base_[i] = acc_base_[i];
-                }
-                
+                    communication_thread_.getAttitude(filtered_IMU_);
+                    Eigen::Vector3d ang_vel_imu,lin_acc_imu;
+                    ang_vel_imu <<  (filtered_IMU_.rate_dps.x*180)/PI_,
+                                                    (filtered_IMU_.rate_dps.y*180)/PI_,
+                                                    (filtered_IMU_.rate_dps.z*180)/PI_;
+                    lin_acc_imu << filtered_IMU_.accel_mps2.x,filtered_IMU_.accel_mps2.y,filtered_IMU_.accel_mps2.z;
+                    
+                    Eigen::Quaternion<double> read_or = Eigen::Quaternion<double>(
+                                                                filtered_IMU_.attitude.w,
+                                                                filtered_IMU_.attitude.x,
+                                                                filtered_IMU_.attitude.y,
+                                                                filtered_IMU_.attitude.z
+                                                                );
+                    
+                    // rotate angular velocity in base frame Rimu_base^T vel_imu
+                    vel_imu_= orientation_.inverse()*(ang_vel_imu);
+                    // Eigen::Vector3d Euler = read_or.toRotationMatrix().eulerAngles(0, 1, 2);
+                    // RCLCPP_INFO(rclcpp::get_logger("IMUS"),"imu to nav ea1 [%f,%f,%f]",Euler(0),Euler(1),Euler(2));
+                    // RCLCPP_INFO(rclcpp::get_logger("IMUS"),"imu to nav q [%f,%f,%f,%f]",read_or.x(),read_or.y(),read_or.z(),read_or.w());
+                    // composite the orientation to have the world frame : Rworld_imunav * Rimu_nav_imu * Rimu_base
+                    // read_or = imuw2_nav_* read_or * orientation_;
+                    read_or = imuw2_nav_ * read_or * orientation_.inverse();
+                    
+                    // Euler = read_or.toRotationMatrix().eulerAngles(0, 1, 2);
+                    // RCLCPP_INFO(rclcpp::get_logger("IMUS"),"imu to nav ea2 [%f,%f,%f]",Euler(0),Euler(1),Euler(2));
+                    // RCLCPP_INFO(rclcpp::get_logger("IMUS"),"imu to nav q [%f,%f,%f,%f]",read_or.x(),read_or.y(),read_or.z(),read_or.w());
+                    quaternion_[0] = read_or.w();
+                    quaternion_[1] = read_or.x();
+                    quaternion_[2] = read_or.y();
+                    quaternion_[3] = read_or.z();
 
-                
+                    // rotare the linear acceleration considering also the centripetalp effects, are not computed the angular acceleration components
+                    if(acc_correction_ != 0)
+                    acc_imu_ = orientation_.inverse() *(lin_acc_imu - ang_vel_imu.cross(ang_vel_imu.cross(imu_to_base_pos_)));
+                    else
+                        acc_imu_ = orientation_.inverse() *(lin_acc_imu);
+                    for(size_t i = 0; i< acc_base_.size();i++)
+                    {
+                        vel_base_[i] = vel_imu_[i];
+                        acc_base_[i] = acc_base_[i];
+                    }
+                    
+                }    
 
                 
 
