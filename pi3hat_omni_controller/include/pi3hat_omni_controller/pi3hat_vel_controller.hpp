@@ -4,13 +4,8 @@
 #include <string>
 #include <vector>
 #include <map>
-<<<<<<< HEAD
-#include "eigen3/Eigen/Dense"
-#include <eigen3/Eigen/Core>
-=======
 
 #include <eigen3/Eigen/Dense>
->>>>>>> d274abb (fix bug on omnicontroller)
 #include <mutex>
 #include <array>
 
@@ -22,45 +17,29 @@
 #include "hardware_interface/loaned_command_interface.hpp"
 #include "hardware_interface/loaned_state_interface.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
-<<<<<<< HEAD
-
-=======
 #include "sensor_msgs/msg/joint_state.hpp"
->>>>>>> d274abb (fix bug on omnicontroller)
 #include "pi3hat_moteus_int_msgs/msg/joints_command.hpp"
 #include "pi3hat_moteus_int_msgs/msg/omni_mulinex_command.hpp" 
 #include "std_srvs/srv/set_bool.hpp"
 #include <mutex>
 
-<<<<<<< HEAD
-=======
-
->>>>>>> d274abb (fix bug on omnicontroller)
 #define LEG_NUM         4
 #define JNT_LEG_NUM     2      // 3 Revolute joints each leg 
 #define WHL_NUM         4      // 1 wheel for each leg
 #define LINK_LENGHT     0.18   // link lenght in m
-<<<<<<< HEAD
-#define RF_HFE_HOM - 0.785398163
-#define RF_KFE_HOM 1.570796326
-
-=======
 #define RF_HFE_HOM  -2.0071
 #define RF_KFE_HOM  0.8727
 #if __INTELLISENSE__
 #undef __ARM_NEON
 #undef __ARM_NEON__
 #endif
->>>>>>> d274abb (fix bug on omnicontroller)
+#define LEG_LENGTH 0.19 // [m]
 namespace pi3hat_vel_controller
 {
     using VectorXd = Eigen::VectorXd;
     using MatrixXd = Eigen::MatrixXd;
     using CmdMsgs = pi3hat_moteus_int_msgs::msg::OmniMulinexCommand;
-<<<<<<< HEAD
-=======
     using DebugMsgs = sensor_msgs::msg::JointState;
->>>>>>> d274abb (fix bug on omnicontroller)
     using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
     using TransactionService = std_srvs::srv::SetBool;
     using namespace std;
@@ -101,24 +80,20 @@ namespace pi3hat_vel_controller
 
             void compute_mecanum_speed(VectorXd& v_base, VectorXd& w_mecanum);
 
-<<<<<<< HEAD
-
-=======
->>>>>>> d274abb (fix bug on omnicontroller)
             void compute_leg_joints_vel_ref(VectorXd& q_leg, VectorXd& q_dot_leg, LEG_IND l_index, double height_rate_tmp);
 
             void homing_start_srv(const shared_ptr<TransactionService::Request> req, 
                                   const shared_ptr<TransactionService::Response> res);
             
             void emergency_srv(const shared_ptr<TransactionService::Request> req, 
-<<<<<<< HEAD
-
-=======
->>>>>>> d274abb (fix bug on omnicontroller)
                                   const shared_ptr<TransactionService::Response> res);
 
             // function to compute the next homing reference 
             void compute_homing_ref(LEG_IND l_i);
+
+            void IK_RF(double &q1, double &q2,double y);
+            
+            void update_base_height(double dh, double dur);
 
             // <<-------------------------->>
             // callback and service must be add, i will do it tomorrow
@@ -141,12 +116,8 @@ namespace pi3hat_vel_controller
             std::string logger_name_;
             std::map<std::string,double> position_cmd_, velocity_cmd_,effort_cmd_,kp_scale_cmd_,kd_scale_cmd_;
             std::map<std::string,double> position_out_, temperature_out_;
-<<<<<<< HEAD
-            
-=======
             rclcpp::Publisher<DebugMsgs>::SharedPtr pub_deb_,wheel_pub_;
             rclcpp::Service<TransactionService>::SharedPtr homing_serv_,emergency_serv_;
->>>>>>> d274abb (fix bug on omnicontroller)
             
             std::shared_ptr<CmdMsgs> vel_target_rcvd_msg_;
             bool default_init_pos_;
@@ -155,56 +126,31 @@ namespace pi3hat_vel_controller
             std::shared_ptr<rclcpp::Time> homing_start_ = nullptr;
 
             //robot parameter referring to https://ieeexplore.ieee.org/document/7827337
-<<<<<<< HEAD
-            double a_, b_, alpha_; 
-            // add mutex instance
-
-            std::mutex mutex_var_;
-            
-
-=======
             double a_, b_, alpha_,r_; 
             // add mutex instance
             std::mutex mutex_var_;
             
->>>>>>> d274abb (fix bug on omnicontroller)
             // controller state and and spline parameter declaration
             Controller_State state_ = Controller_State::PRE_HOMING;  
             // given the third order spline p(t) = a_3*t^3 + a_2*t^2 + a_1*t +a_0
             // the parameter contains a_3 and a_2 for RF hip and knee, the others are zero 
             std::array<double,4> spline_par_ = {0.0,0.0,0.0,0.0};
             double homing_dur_ = 0.0;
-<<<<<<< HEAD
-
-=======
->>>>>>> d274abb (fix bug on omnicontroller)
             std::mutex calbck_m_;
             int loss_counter_ = 0;
             const std::array<LEG_IND,4> legs_ = {RF,LF,LH,RH};
             // joint names has been added, check they are right // just an F instead of an H, for the rest all perfect
             const std::vector<std::string> joints_ = {
-<<<<<<< HEAD
-                                                    "RF_HFE","RF_HKE",
-                                                    "LF_HFE","LF_HKE",
-                                                    "LH_HFE","LH_HKE",
-                                                    "RH_HFE","RH_HKE",
-                                                    "RF_WHEEL","LF_WHEEL",
-                                                    "LH_WHEEL","LH_WHEEL"}; 
-
-=======
                                                     "RF_HFE","RF_KFE",
                                                     "LF_HFE","LF_KFE",
                                                     "LH_HFE","LH_KFE",
                                                     "RH_HFE","RH_KFE",
                                                     "RF_WHEEL","LF_WHEEL",
                                                     "LH_WHEEL","RH_WHEEL"}; 
->>>>>>> d274abb (fix bug on omnicontroller)
+            double init_height_,min_height_,max_height_, act_height_;
+            
     };
 };
 
 
-<<<<<<< HEAD
 #endif
-=======
-#endif
->>>>>>> d274abb (fix bug on omnicontroller)
