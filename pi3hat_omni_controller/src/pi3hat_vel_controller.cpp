@@ -240,6 +240,7 @@ namespace pi3hat_vel_controller
         for (auto &i:legs_)
         {   
             VectorXd q_leg(2), q_dot_leg(2);   //[ HFE, KFE]
+	    std::vector<double> q_leg = {0.0,0.0};
             
             //extract the i-th leg joint position info
             for (size_t j = 0; j < JNT_LEG_NUM; j++)
@@ -257,9 +258,11 @@ namespace pi3hat_vel_controller
             compute_leg_joints_vel_ref(q_leg, q_dot_leg, i, height_rate_tmp);
 
              // add compute IK separated per LEG
-            if(i == LEG_IND::RF || i == LEG_IND::LH)
+	    IK_RF(q_leg[0],q_leg[1],act_height_);
+            if(i == LEG_IND::RH || i == LEG_IND::LF)
             {
-
+		q_leg[0] *=-1;
+		q_leg[1] =*= -1;
             }
             
             //insert the i-th leg joint velocity reference
@@ -268,7 +271,7 @@ namespace pi3hat_vel_controller
                 try
                 {   
                     // add integration of pos with computed command vel, so we can send also position reference  
-                    position_cmd_.at(joints_[JNT_LEG_NUM*i + j]) += q_dot_leg(j) * dt ;
+                    position_cmd_.at(joints_[JNT_LEG_NUM*i + j]) = q_leg[j] ;
                     velocity_cmd_.at(joints_[JNT_LEG_NUM*i + j]) = q_dot_leg(j); 
                 }
                 catch(const std::exception& e)
