@@ -68,15 +68,15 @@ namespace pi3hat_vel_controller
         RCLCPP_INFO(get_node()->get_logger(),"homing dur is  %f",homing_dur_);
 
 
-        IK_RF(rf_hfe_hom_,rf_kfe_hom_,init_height_);
+        IK_RF(rf_hfe_hom,rf_kfe_hom,init_height_);
 
 
 
         // set spline parameters
-        spline_par_[0] = (3.0 * rf_hfe_hom_) / (homing_dur_*homing_dur_); // a_2_hip
-        spline_par_[1] = (-2.0 * rf_hfe_hom_ )/( homing_dur_*homing_dur_*homing_dur_); // a_3_hip
-        spline_par_[2] = (3.0 * rf_kfe_hom_ )/ (homing_dur_*homing_dur_); // a_2_knee
-        spline_par_[3] = (-2.0 * rf_kfe_hom_) /( homing_dur_*homing_dur_*homing_dur_); // a_3_knee
+        spline_par_[0] = (3.0 * rf_hfe_hom) / (homing_dur_*homing_dur_); // a_2_hip
+        spline_par_[1] = (-2.0 * rf_hfe_hom )/( homing_dur_*homing_dur_*homing_dur_); // a_3_hip
+        spline_par_[2] = (3.0 * rf_kfe_hom )/ (homing_dur_*homing_dur_); // a_2_knee
+        spline_par_[3] = (-2.0 * rf_kfe_hom) /( homing_dur_*homing_dur_*homing_dur_); // a_3_knee
 
         RCLCPP_INFO(get_node()->get_logger(),"the spline vars are %f,%f and %f",spline_par_[1],spline_par_[0],(3.0 * RF_HFE_HOM) / (homing_dur_*homing_dur_));
         
@@ -124,8 +124,8 @@ namespace pi3hat_vel_controller
                     vel_target_rcvd_msg_->set__v_x(msg->v_x);
                     vel_target_rcvd_msg_->set__v_y(msg->v_y);
                     vel_target_rcvd_msg_->set__omega(msg->omega);
-                   // vel_target_rcvd_msg_->set__height_rate(0.0);
-                    vel_target_rcvd_msg_->set__height_rate(msg->height_rate);
+                    vel_target_rcvd_msg_->set__height_rate(0.0);
+                    // vel_target_rcvd_msg_->set__height_rate(msg->height_rate);
                 }
             }
         );
@@ -196,13 +196,11 @@ namespace pi3hat_vel_controller
 
     void Pi3Hat_Vel_Controller::update_base_height(double dh, double dur)
     {
-        act_height_ = act_height_ +  dur*dh;
-	RCLCPP_INFO(get_node()->get_logger(),"the act h is %f",act_height_);
-        if(act_height_ < max_height_)
+        act_height_ += dur*dh;
+        if(act_height_ > max_height_)
             act_height_ = max_height_ ;
-        if(act_height_ > min_height_)
+        if(act_height_ < min_height_)
             act_height_ = min_height_;
-	RCLCPP_INFO(get_node()->get_logger(),"the act height is %f, the vel is %f and time is %f",act_height_,dh,dur);
     }
 
     bool Pi3Hat_Vel_Controller::compute_reference(double v_x_tmp, double v_y_tmp, double omega_tmp, double height_rate_tmp, double dt)// add duration as argument [s]
@@ -238,11 +236,11 @@ namespace pi3hat_vel_controller
                 return false;
             }            
         }
-        std::vector<double> q_l = {0.0,0.0};
+        
         for (auto &i:legs_)
         {   
             VectorXd q_leg(2), q_dot_leg(2);   //[ HFE, KFE]
-	        
+	    std::vector<double> q_leg = {0.0,0.0};
             
             //extract the i-th leg joint position info
             for (size_t j = 0; j < JNT_LEG_NUM; j++)
@@ -260,11 +258,11 @@ namespace pi3hat_vel_controller
             compute_leg_joints_vel_ref(q_leg, q_dot_leg, i, height_rate_tmp);
 
              // add compute IK separated per LEG
-	    IK_RF(q_l[0],q_l[1],act_height_);
+	    IK_RF(q_leg[0],q_leg[1],act_height_);
             if(i == LEG_IND::RH || i == LEG_IND::LF)
             {
-                q_l[0] *=-1;
-                q_l[1] *= -1;
+                q_leg[0] *=-1;
+                q_leg[1] =*= -1;
             }
             
             //insert the i-th leg joint velocity reference
@@ -273,7 +271,7 @@ namespace pi3hat_vel_controller
                 try
                 {   
                     // add integration of pos with computed command vel, so we can send also position reference  
-                    position_cmd_.at(joints_[JNT_LEG_NUM*i + j]) = q_l[j] ;
+                    position_cmd_.at(joints_[JNT_LEG_NUM*i + j]) = q_leg[j] ;
                     velocity_cmd_.at(joints_[JNT_LEG_NUM*i + j]) = q_dot_leg(j); 
                 }
                 catch(const std::exception& e)
@@ -414,8 +412,8 @@ namespace pi3hat_vel_controller
         {
             if(l_i == LEG_IND::RF || l_i == LEG_IND::LH)
             {
-                position_cmd_[joints_[2*l_i]] = rf_hfe_hom_;
-                position_cmd_[joints_[2*l_i+1]] = rf_kfe_hom_;
+                position_cmd_[joints_[2*l_i]] = RF_HFE_HOM;
+                position_cmd_[joints_[2*l_i+1]] = RF_KFE_HOM;
                 velocity_cmd_[joints_[2*l_i]] = 0.0;
                 velocity_cmd_[joints_[2*l_i+1]] = 0.0;
             }
@@ -423,8 +421,8 @@ namespace pi3hat_vel_controller
 
             if(l_i == LEG_IND::RH || l_i == LEG_IND::LF )
             {
-                position_cmd_[joints_[2*l_i]] = -rf_hfe_hom_;
-                position_cmd_[joints_[2*l_i+1]] = -rf_kfe_hom_;
+                position_cmd_[joints_[2*l_i]] = -RF_HFE_HOM;
+                position_cmd_[joints_[2*l_i+1]] = -RF_KFE_HOM;
                 velocity_cmd_[joints_[2*l_i]] = 0.0;
                 velocity_cmd_[joints_[2*l_i+1]] = 0.0;
             }

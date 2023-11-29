@@ -147,7 +147,7 @@ namespace pi3hat_vel_controller
                                                     "RH_HFE","RH_KFE",
                                                     "RF_WHEEL","LF_WHEEL",
                                                     "LH_WHEEL","RH_WHEEL"}; 
-            double init_height_,min_height_,max_height_, act_height_,rf_hfe_hom_,rf_kfe_hom_;
+            double init_height_,min_height_,max_height_, act_height_;
             
     };
 };

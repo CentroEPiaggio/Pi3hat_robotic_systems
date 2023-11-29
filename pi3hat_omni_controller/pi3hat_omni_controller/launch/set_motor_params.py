@@ -6,8 +6,8 @@ import moteus_pi3hat
 import time
 
 param_dict_leg = {
-	"kp":7.5,
-	"kd":0.025,
+	"kp":0.0,
+	"kd":0.0,
 	"max_vel":20,
 	"max_pow":450,
 	"max_cur":20,
@@ -17,8 +17,8 @@ param_dict_leg = {
     "pos_max":9
 }
 param_dict_wheel = {
-	"kp":5.0,
-	"kd":0.025,
+	"kp":0.0,
+	"kd":0.0,
 	"max_vel":200,
 	"max_pow":450,
 	"max_cur":80,

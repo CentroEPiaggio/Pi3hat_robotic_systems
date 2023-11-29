@@ -29,9 +29,7 @@ OM_controller:
     homing_duration: 10.0
     input_frequency: 100
     mecanum_angle: 135.0
-    init_height: -0.15
-    max_height: -0.20
-    min_height: -0.15
+    
     
 
 
