@@ -37,9 +37,9 @@ async def main():
     transport = moteus_pi3hat.Pi3HatRouter(
         servo_bus_map = {
             3:[1,2],
-	    4:[7,8],
+	    2:[7,8],
 	    1:[5,6],
-	    2:[3,4]
+	    4:[3,4]
         },
     )
 

@@ -471,9 +471,9 @@ namespace pi3hat_hw_interface
                 {
                     communication_thread_.getAttitude(filtered_IMU_);
                     Eigen::Vector3d ang_vel_imu,lin_acc_imu;
-                    ang_vel_imu <<  (filtered_IMU_.rate_dps.x*180)/PI_,
-                                                    (filtered_IMU_.rate_dps.y*180)/PI_,
-                                                    (filtered_IMU_.rate_dps.z*180)/PI_;
+                    ang_vel_imu <<  (filtered_IMU_.rate_dps.x*PI_)/180,
+                                                    (filtered_IMU_.rate_dps.y*PI_)/180,
+                                                    (filtered_IMU_.rate_dps.z*PI_)/180;
                     lin_acc_imu << filtered_IMU_.accel_mps2.x,filtered_IMU_.accel_mps2.y,filtered_IMU_.accel_mps2.z;
                     
                     Eigen::Quaternion<double> read_or = Eigen::Quaternion<double>(
@@ -508,7 +508,7 @@ namespace pi3hat_hw_interface
                     for(size_t i = 0; i< acc_base_.size();i++)
                     {
                         vel_base_[i] = vel_imu_[i];
-                        acc_base_[i] = acc_base_[i];
+                        acc_base_[i] = acc_imu_[i];
                     }
                     
                 }    
