@@ -32,6 +32,7 @@ OM_controller:
     init_height: -0.15
     max_height: -0.20
     min_height: -0.15
+    feet_type: 1      # 0 : Normal Feet,   1 : Generic Wheels, 2 : Mecanum Wheels 
     
 
 

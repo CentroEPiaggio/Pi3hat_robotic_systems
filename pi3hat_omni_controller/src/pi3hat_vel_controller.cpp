@@ -34,6 +34,7 @@ namespace pi3hat_vel_controller
             auto_declare<double>("init_height",-0.22);
             auto_declare<double>("max_heigth",-0.37);
             auto_declare<double>("min_height",-0-15);
+            auto_declare<int>("feet_type",1);
         }
          catch(const std::exception & e)
         {
@@ -57,6 +58,7 @@ namespace pi3hat_vel_controller
         b_ = get_node()->get_parameter("driveshaft_x").as_double();
         alpha_ = get_node()->get_parameter("mecanum_angle").as_double() *(M_PI/180.0);
 	    r_ = get_node()->get_parameter("wheel_rad").as_double();
+	    feet_type_ = get_node()->get_parameter("feet_type").as_int();
         init_height_ = get_node()->get_parameter("init_height").as_double();
         max_height_ = get_node()->get_parameter("max_heigth").as_double();
         min_height_ = get_node()->get_parameter("min_height").as_double();
@@ -208,24 +210,29 @@ namespace pi3hat_vel_controller
     bool Pi3Hat_Vel_Controller::compute_reference(double v_x_tmp, double v_y_tmp, double omega_tmp, double height_rate_tmp, double dt)// add duration as argument [s]
     {   
         VectorXd v_base(3);
-        VectorXd w_mecanum(4);
+        VectorXd w_wheels(4);
         v_base << v_x_tmp, v_y_tmp, omega_tmp;
 
 
         update_base_height(height_rate_tmp,dt);
 
+        if (feet_type_ == 1)
+            compute_truck_speed(v_base, w_wheels);
+        else if (feet_type_ == 2)
+            compute_mecanum_speed(v_base, w_wheels);
+        else
+            w_wheels << 0.0, 0.0, 0.0, 0.0;
+        
 
-
-        compute_mecanum_speed(v_base, w_mecanum);
-        // RCLCPP_INFO(get_node()->get_logger(),"the wheel is [%f,%f,%f,%f]",w_mecanum[0],w_mecanum[1],w_mecanum[2],w_mecanum[3]);
+        // RCLCPP_INFO(get_node()->get_logger(),"the wheel is [%f,%f,%f,%f]",w_wheels[0],w_wheels[1],w_wheels[2],w_wheels[3]);
         //update wheels_velocity_cmd map, last four elements of the joint list
         for (size_t i = LEG_NUM * JNT_LEG_NUM; i < LEG_NUM * JNT_LEG_NUM + WHL_NUM; i++)
         {
             try
             {   
-                velocity_cmd_.at(joints_[i]) = w_mecanum[i - JNT_LEG_NUM * LEG_NUM];
+                velocity_cmd_.at(joints_[i]) = w_wheels[i - JNT_LEG_NUM * LEG_NUM];
 
-                // RCLCPP_INFO(get_node()->get_logger(),"the %ld jnt is %s and the vel is %f",i,joints_[i].c_str(),w_mecanum[i - JNT_LEG_NUM * LEG_NUM]);
+                // RCLCPP_INFO(get_node()->get_logger(),"the %ld jnt is %s and the vel is %f",i,joints_[i].c_str(),w_wheels[i - JNT_LEG_NUM * LEG_NUM]);
                 #if VEL_CCM 
                     position_cmd_.at(joints_[i]) = std::nan();
                 #else
@@ -305,6 +312,25 @@ namespace pi3hat_vel_controller
         m(3,2) = (b_ + a_ * (1.0 / tan(alpha_)));
 
         w_mecanum =( m * v_base ) /r_;
+    }
+
+    void Pi3Hat_Vel_Controller::compute_truck_speed(VectorXd& v_base, VectorXd& w_truck)
+    {
+        MatrixXd m(4,3); //m(rows,columns)
+        m(0,0) = 1.0 / r_;
+        m(0,1) = 0.0;
+        m(0,2) = b_ / (2*r_);
+        m(1,0) = 1.0 / r_;
+        m(1,1) = 0.0;
+        m(1,2) = -b_ / (2*r_);
+        m(2,0) = 1.0 / r_;
+        m(2,1) = 0.0;
+        m(2,2) = -b_ / (2*r_);
+        m(3,0) = 1.0 / r_;
+        m(3,1) = 0.0;
+        m(3,2) = b_ / (2*r_);
+
+        w_truck =  m * v_base;
     }
 
     void  Pi3Hat_Vel_Controller::homing_start_srv(const shared_ptr<TransactionService::Request> req, 
@@ -502,7 +528,6 @@ namespace pi3hat_vel_controller
             case Controller_State::ACTIVE:
                 //get the velocity target from the specific topic
                 get_target(v_x, v_y, omega, height_rate);  
-
                 //compute the joints reference from velocity target
                 compute_reference(v_x, v_y, omega, height_rate, deltaT);
                 break;

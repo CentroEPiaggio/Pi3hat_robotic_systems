@@ -80,6 +80,8 @@ namespace pi3hat_vel_controller
 
             void compute_mecanum_speed(VectorXd& v_base, VectorXd& w_mecanum);
 
+            void compute_truck_speed(VectorXd& v_base, VectorXd& w_truck);
+
             void compute_leg_joints_vel_ref(VectorXd& q_leg, VectorXd& q_dot_leg, LEG_IND l_index, double height_rate_tmp);
 
             void homing_start_srv(const shared_ptr<TransactionService::Request> req, 
@@ -129,7 +131,8 @@ namespace pi3hat_vel_controller
             double a_, b_, alpha_,r_; 
             // add mutex instance
             std::mutex mutex_var_;
-            
+            //Type of feet used (no wheel, classic wheel, mecanum wheel)
+            int feet_type_;
             // controller state and and spline parameter declaration
             Controller_State state_ = Controller_State::PRE_HOMING;  
             // given the third order spline p(t) = a_3*t^3 + a_2*t^2 + a_1*t +a_0
