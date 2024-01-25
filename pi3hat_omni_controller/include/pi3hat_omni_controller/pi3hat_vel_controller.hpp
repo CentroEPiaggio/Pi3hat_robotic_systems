@@ -34,6 +34,7 @@
 #undef __ARM_NEON__
 #endif
 #define LEG_LENGTH 0.19 // [m]
+#define DEF_X_FEET_DISPLACEMENT 0.05 //[m] foot and hip distance on X_axes, usefull to enlarge the support polygon 
 namespace pi3hat_vel_controller
 {
     using VectorXd = Eigen::VectorXd;
@@ -80,6 +81,8 @@ namespace pi3hat_vel_controller
 
             void compute_mecanum_speed(VectorXd& v_base, VectorXd& w_mecanum);
 
+            void compute_truck_speed(VectorXd& v_base, VectorXd& w_truck);
+
             void compute_leg_joints_vel_ref(VectorXd& q_leg, VectorXd& q_dot_leg, LEG_IND l_index, double height_rate_tmp);
 
             void homing_start_srv(const shared_ptr<TransactionService::Request> req, 
@@ -91,7 +94,7 @@ namespace pi3hat_vel_controller
             // function to compute the next homing reference 
             void compute_homing_ref(LEG_IND l_i);
 
-            void IK_RF(double &q1, double &q2,double y);
+            void IK_RF(double &q1, double &q2,double y, double x);
             
             void update_base_height(double dh, double dur);
 
@@ -129,12 +132,14 @@ namespace pi3hat_vel_controller
             double a_, b_, alpha_,r_; 
             // add mutex instance
             std::mutex mutex_var_;
-            
+            //Type of feet used (no wheel, classic wheel, mecanum wheel)
+            int feet_type_;
             // controller state and and spline parameter declaration
             Controller_State state_ = Controller_State::PRE_HOMING;  
             // given the third order spline p(t) = a_3*t^3 + a_2*t^2 + a_1*t +a_0
             // the parameter contains a_3 and a_2 for RF hip and knee, the others are zero 
-            std::array<double,4> spline_par_ = {0.0,0.0,0.0,0.0};
+            std::array<double,4> spline_front_par_ = {0.0,0.0,0.0,0.0};
+            std::array<double,4> spline_hind_par_ = {0.0,0.0,0.0,0.0};
             double homing_dur_ = 0.0;
             std::mutex calbck_m_;
             int loss_counter_ = 0;
@@ -147,7 +152,7 @@ namespace pi3hat_vel_controller
                                                     "RH_HFE","RH_KFE",
                                                     "RF_WHEEL","LF_WHEEL",
                                                     "LH_WHEEL","RH_WHEEL"}; 
-            double init_height_,min_height_,max_height_, act_height_,rf_hfe_hom_,rf_kfe_hom_;
+            double init_x_displacement_,init_height_,min_height_,max_height_, act_height_,rf_hfe_hom_,rf_kfe_hom_,rh_hfe_hom_,rh_kfe_hom_;
             
     };
 };

@@ -29,7 +29,11 @@ OM_controller:
     homing_duration: 10.0
     input_frequency: 100
     mecanum_angle: 135.0
-    
+    wheel_rad: 0.03
+    init_height: -0.15
+    max_height: -0.20
+    min_height: -0.15
+    feet_type: 1      # 0 : Normal Feet,   1 : Generic Wheels, 2 : Mecanum Wheels 
     
 
 
