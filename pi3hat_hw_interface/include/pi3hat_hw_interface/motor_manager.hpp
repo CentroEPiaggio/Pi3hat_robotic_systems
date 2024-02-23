@@ -141,6 +141,9 @@ namespace pi3hat_hw_interface
                     double second_trans, 
                     uint8_t id, 
                     uint8_t bus, 
+                    double p_max,
+                    double p_min,
+                    double p_offset,
                     Policy_Function pl_fun,
                     Get_Function gt_fun)
                     {
@@ -151,6 +154,9 @@ namespace pi3hat_hw_interface
                         sec_enc_trans_ = second_trans;
                         id_ = id;
                         bus_ = bus;
+                        p_min_ = p_min;
+                        p_max_ = p_max;
+                        p_offset_ = p_offset;
                         get_callback_ = gt_fun;
                         pol_callback_ = std::bind(pl_fun,_1,_2,this->cmd_data_);
                          if(second_trans == 0.0)
@@ -371,6 +377,9 @@ namespace pi3hat_hw_interface
                 double sec_enc_off_ = 0.0, old_sec_enc_ = 0.0;
                 bool first_read_ = true;
                 int sec_enc_counter_ = 0;
+                double p_max_;
+                double p_min_;
+                double p_offset_;
                 
 
 

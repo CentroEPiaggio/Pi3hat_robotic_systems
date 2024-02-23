@@ -119,13 +119,27 @@ namespace pi3hat_hw_interface
 
         void Motor_Manager::make_position()
         {
+            double pos_des;
             if(msg_valid_)
             {
                 cmd_data_ -> id = id_;
                 cmd_data_ -> bus = bus_;
                 cmd_data_ -> mode = moteus::Mode::kPosition;
-                cmd_data_ -> position.position = (cmd_pos_ * motor_trans_) / (2*M_PI);
-                cmd_data_ -> position.velocity =  (cmd_vel_ * motor_trans_ )/(2*M_PI);
+                pos_des = (cmd_pos_ * motor_trans_) / (2*M_PI) - p_offset_;
+                if(pos_des < p_max_ && pos_des > p_min_)
+                {
+                    cmd_data_ -> position.position = pos_des;
+                    cmd_data_ -> position.velocity =  (cmd_vel_ * motor_trans_ )/(2*M_PI);
+                }
+                else 
+                {
+                    if(pos_des >= p_max_)
+                        cmd_data_ -> position.position = p_max_;
+                    else if(pos_des <= p_min_)
+                        cmd_data_ -> position.position = p_min_;    
+                    cmd_data_ -> position.velocity =  0.0;
+                }
+                
                 cmd_data_ -> position.feedforward_torque = cmd_trq_ / motor_trans_;
                 cmd_data_ -> position.kd_scale = cmd_kd_scale_;
                 cmd_data_ -> position.kp_scale = cmd_kp_scale_;
@@ -203,7 +217,7 @@ namespace pi3hat_hw_interface
             {
                 // RCLCPP_ERROR(rclcpp::get_logger("PP"),"the read is ok");
                 msg_complete_ = true;
-                msr_pos_ = (res.position/motor_trans_)*2*M_PI;
+                msr_pos_ = (res.position/motor_trans_)*2*M_PI + p_offset_;
                 msr_vel_ = (res.velocity/motor_trans_)*2*M_PI;
                 msr_trq_ = res.torque*motor_trans_;
                 msr_tmp_ = res.temperature;

@@ -4,25 +4,126 @@ import asyncio
 import moteus
 import moteus_pi3hat
 import time
+import xml.etree.ElementTree as el
+import os
+import datetime
+import yaml
+import sys
 
 
+def parse_jnt_param(jnt : el.Element):
+    get_req_par = [False,False]
+    jnt_name = jnt.attrib["name"]
+    ret_dict = {"params" :{"name": jnt_name,"bus": 0, "id": 0, "KP": 0.0, "KD": 0.0, "KI": 0.0, "i_limit" : 0.0}}
+    for jnt_par in jnt.iter("param"):
+        param_name = jnt_par.attrib["name"]
+        param_val = jnt_par.text
+        if(param_val == None):
+            raise Exception(f"the joint {jnt_name} parameter {param_name} is empty")
+        if param_name == "bus":
+            get_req_par[0] = True
+            ret_dict["params"]["bus"] = int(param_val)
+        elif param_name == "id":
+            get_req_par[1] = True
+            ret_dict["params"]["id"] = int(param_val)
+        elif param_name == "KP":
+            ret_dict["params"]["KP"] = float(param_val)
+        elif param_name == "KD":
+            ret_dict["params"]["KD"] = float(param_val)
+        elif param_name == "KI":
+            ret_dict["params"]["KI"] = float(param_val)
+        elif param_name == "i_limit":
+            ret_dict["params"]["i_limit"] = float(param_val)
+        elif param_name == "p_lim_max":
+            ret_dict["params"]["p_lim_max"] = float(param_val)
+        elif param_name == "p_lim_min":
+            ret_dict["params"]["p_lim_min"] = float(param_val)
+        elif param_name == "p_offset":
+            ret_dict["params"]["p_offset"] = float(param_val)
+        elif param_name == "motor_transmission":
+            ret_dict["params"]["motor_transmission"] = float(param_val)
+        elif param_name == "sec_enc_transmission":
+            ret_dict["params"]["sec_enc_transmission"] = float(param_val)
+            pass
+        else:
+            raise Exception("Unrecognize parameter in urdf") 
+   
+    if not (get_req_par[0] and get_req_par[1]):
+        raise Exception(f"Not provided the Mandatory joint {jnt_name} parameters")   
+    
+    return ret_dict
 
+def get_moteus_lists(params : dict):
+    moteus_dict = {1:[],2:[],3:[],4:[]}
+    
+    par_list = [[],[],[],[],[]]
+    joints = params["robot_param"]
+    for jnt in joints:
+        jnt_id = jnt["params"]["id"]
+        jnt_bus = jnt["params"]["bus"]
+        jnt_kp = jnt["params"]["KP"]
+        jnt_kd = jnt["params"]["KD"]
+        jnt_ki = jnt["params"]["KI"]
+        jnt_i_limit = jnt["params"]["i_limit"]
+        if jnt_id in par_list[0]:
+            raise Exception("All IDs must be unique")
+        if not (jnt_bus in [1,2,3,4]):
+            raise Exception("The bus value are out of range")
+        par_list[0].append(jnt_id)
+        par_list[1].append(jnt_kp)
+        par_list[2].append(jnt_kd)
+        par_list[3].append(jnt_ki)
+        par_list[4].append(jnt_i_limit)
+        moteus_dict[jnt_bus].append(jnt_id)
+    return [par_list,moteus_dict]
+
+    
 async def main():
+
+    robot_param = {"robot_param": []}
+# urdf_path = os.path.join("urdf","")
+    package_path = "/home/jacopocioni/mulinex_ws/src/pi3hat_hw_interface"
+    urdf_file_name = "test_int.urdf.xacro"
+    urdf_path = os.path.join(package_path,"urdf",urdf_file_name) 
+    # print(os.path.isfile(urdf_path))
+    root = el.parse(urdf_path).getroot()
+    for joint in root.iter("joint"):
+        try:
+            robot_param["robot_param"].append(parse_jnt_param(joint))
+        except:
+            return 1
+        
+    # build moteus data
+    try:
+        [m_pars,m_dict] = get_moteus_lists(robot_param)
+    except:
+        return 1
+
+    # save the robot parameter in yaml file
+    conf_file_name = "Joints_Prameter_" + datetime.datetime.today().strftime('%Y_%m_%d_%H_%M_%S')
+
+    file = open(
+        os.path.join(package_path,"mul_conf_file",conf_file_name),
+        "w"
+    )
+    yaml.dump(robot_param,file)
+    file.close()
+     
+
+    
 ######################################################################################################################################################################################
 #                                                                              SERVOS CONFIGURATION                                                                                  #
 ######################################################################################################################################################################################    
     # ids_leg = [1,2,3,4,5,6,7,8]#[2,1,3,4]
     # ids_wheel = [9,10,11,12]
     transport = moteus_pi3hat.Pi3HatRouter(
-        servo_bus_map = {
-	
-        }
+        servo_bus_map = m_dict
     )
 
-    # qr = moteus.QueryResolution()
-    # qr.q_current = moteus.F32
+    qr = moteus.QueryResolution()
+    qr.q_current = moteus.F32
     # ids = ids_leg + ids_wheel
-    # servos ={id: moteus.Controller(id=id, transport=transport, query_resolution = qr) for id in ids}
+    servos ={id: moteus.Controller(id=id, transport=transport, query_resolution = qr) for id in m_pars[0]}
 
     
     
@@ -62,10 +163,11 @@ async def main():
     #     await s.command(b'd index 0.0')
     #     await s.command(b'conf set servo.default_timeout_s ' + str(1).encode('utf-8'))
     
-    
+    return 0
         
 ######################################################################################################################################################################################
 #                                                                                        RUN                                                                                         #
 ######################################################################################################################################################################################   
 if __name__ == '__main__':
-    asyncio.run(main())
+   ret = asyncio.run(main())
+   sys.exit(ret)
