@@ -364,6 +364,7 @@ namespace pi3hat_hw_interface
                 double cmd_vel_ = 0.0;
                 double cmd_trq_ = 0.0;
                 double msr_cur_ = 0.0;
+                bool low_sat_ = false, high_sat_ = false;
                 Command* cmd_data_;
                 
                 uint8_t id_;
