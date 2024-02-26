@@ -781,6 +781,17 @@ struct DeviceAttitudeData {
   uint8_t padding[4] = {};
 } __attribute__((packed));
 
+struct DeviceImuRawData
+{
+  uint16_t present = 0;
+  float gx = 0;
+  float gy = 0;
+  float gz = 0;
+  float ax = 0;
+  float ay = 0;
+  float az = 0;
+}__attribute__((packed));
+
 struct DeviceImuConfiguration {
   float roll_deg = 0;
   float pitch_deg = 0;
