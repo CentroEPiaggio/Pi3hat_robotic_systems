@@ -185,8 +185,8 @@ namespace pi3hat_hw_interface
                                 hardware_interface::HW_IF_VELOCITY
                             };
                             RCLCPP_INFO(rclcpp::get_logger("DIO"),"MADONNA");
-
                         }
+                        cmd_pos_ = p_offset_;
                     };
                 // set and get the current command resolution
                 void set_command_resolution(moteus::PositionResolution res);

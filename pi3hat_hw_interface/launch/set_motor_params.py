@@ -11,6 +11,15 @@ import yaml
 import sys
 
 
+general_params = {
+    "max_vel":20,
+	"max_pow":450,
+	"max_cur":20,
+    "flux_min_v":27.5,
+}
+
+
+
 def parse_jnt_param(jnt : el.Element):
     get_req_par = [False,False]
     jnt_name = jnt.attrib["name"]
@@ -55,7 +64,7 @@ def parse_jnt_param(jnt : el.Element):
 
 def get_moteus_lists(params : dict):
     moteus_dict = {1:[],2:[],3:[],4:[]}
-    
+   
     par_list = [[],[],[],[],[]]
     joints = params["robot_param"]
     for jnt in joints:
@@ -86,13 +95,17 @@ async def main():
     urdf_file_name = "test_int.urdf.xacro"
     urdf_path = os.path.join(package_path,"urdf",urdf_file_name) 
     # print(os.path.isfile(urdf_path))
-    root = el.parse(urdf_path).getroot()
+    try:
+        root = el.parse(urdf_path).getroot()
+    except:
+        print("error in file opening")
+        return 1
     for joint in root.iter("joint"):
         try:
             robot_param["robot_param"].append(parse_jnt_param(joint))
-        except:
+        except Exception as e:
+            print(e)
             return 1
-        
     # build moteus data
     try:
         [m_pars,m_dict] = get_moteus_lists(robot_param)
@@ -125,7 +138,24 @@ async def main():
     # ids = ids_leg + ids_wheel
     servos ={id: moteus.Controller(id=id, transport=transport, query_resolution = qr) for id in m_pars[0]}
 
-    
+    for i in range(len(m_pars[0])):
+        id = m_pars[0][i]
+        print(f"execute stop id {id}")
+        s = moteus.Stream(servos[id],verbose=True)
+        #conf = await s.command(b'conf enumerate\n')
+        max_velocity = await s.command(b'conf set servo.max_velocity ' + str(general_params["max_vel"]).encode('utf-8'))
+        max_power = await s.command(b'conf set servo.max_power_W ' + str(general_params["max_pow"]).encode('utf-8'))
+        max_current = await s.command(b'conf set servo.max_current_A ' + str(general_params["max_cur"]).encode('utf-8'))
+        kp = await s.command(b'conf set servo.pid_position.kp ' + str(m_pars[1][i]).encode('utf-8'))
+        kd = await s.command(b'conf set servo.pid_position.kd ' + str(m_pars[2][i]).encode('utf-8')) 
+        ki = await s.command(b'conf set servo.pid_position.ki ' + str(m_pars[3][i]).encode('utf-8'))
+        ilimit = await s.command(b'conf set servo.pid_position.ilimit ' + str(m_pars[4][i]).encode('utf-8'))
+        await s.command(b'conf set servopos.position_min ' + str(-100).encode('utf-8'))
+        await s.command(b'conf set servopos.position_max ' + str(100).encode('utf-8'))
+
+        flux_brake_voltage = await s.command(b'conf set servo.flux_brake_min_voltage ' + str(general_params["flux_min_v"]).encode('utf-8'))
+        await s.command(b'd index 0.0')
+        await s.command(b'conf set servo.default_timeout_s ' + str(1).encode('utf-8'))
     
     # for id in ids_leg:
     #     print(f"execute stop id {id}")

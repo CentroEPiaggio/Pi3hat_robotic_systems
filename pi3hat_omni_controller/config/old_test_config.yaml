@@ -29,12 +29,11 @@ OM_controller:
     homing_duration: 10.0
     input_frequency: 100
     mecanum_angle: 135.0
-    init_x_displacement: 0.0 #[m]
-    init_height: -0.30
-    max_height: -0.5
-    min_height: 0.0
-    wheel_rad: 0.028  #0.028 for trucks, 0.05 for omniwheels
-    feet_type: 2     # 0 : Normal Feet,   1 : Generic Wheels, 2 : Mecanum Wheels 
+    wheel_rad: 0.03
+    init_height: -0.15
+    max_height: -0.20
+    min_height: -0.15
+    feet_type: 1      # 0 : Normal Feet,   1 : Generic Wheels, 2 : Mecanum Wheels 
     
 
 

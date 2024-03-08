@@ -56,10 +56,15 @@ def generate_launch_description():
     #          'solo12_broadcast'],
     #     output='screen'
     # )
+    joy_event_node = Node(
+	package="joy",
+	executable="joy_node",
+	output="screen")
 
     return LaunchDescription(
         [
-        #    moteus_pi3hat_model,
-        #     control_node
+           moteus_pi3hat_model,
+            control_node,
+            joy_event_node
         ]
     )

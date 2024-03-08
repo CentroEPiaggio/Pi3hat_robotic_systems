@@ -263,6 +263,8 @@ class Pi3HatMoteusInterface {
     input.min_tx_wait_ns = this->can_extra_timeout_;
     input.request_attitude = this->attitude_req_;
     input.attitude = &attitude_;
+    input.imu_raw_data = true;
+    input.wait_for_attitude = true;
     Options option_;
     Output result;
 

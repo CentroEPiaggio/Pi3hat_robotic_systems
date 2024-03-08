@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 100 # hz tutto
+    update_rate: 400 # hz tutto
     state_broadcaster:
       type: pi3hat_state_broadcaster/Pi3Hat_State_Broadcaster # stampa roba su topic 
     joint_controller:
@@ -12,24 +12,66 @@ controller_manager:
 state_broadcaster:
   ros__parameters:
     joints:
-      - joint1
-      - joint2 
+      - "LF_HFE"
+      - "LH_HFE"
+      - "RF_HFE"
+      - "RH_HFE"
+      - "LF_KFE"
+      - "LH_KFE"
+      - "RF_KFE"
+      - "RH_KFE"
+      - "RF_WHEEL"
+      - "RH_WHEEL"
+      - "LF_WHEEL"
+      - "LH_WHEEL"
+      # - "LH_HFE"
+      # - "LH_KFE"
+      # - "RH_HFE"
+      # - "RH_KFE"
       # - jnt_b9_1Hz_trq4_c2
       # - jnt_b9_1Hz_trq4_c3
       # - joinjoint1t3
       # - joint4
-    second_encoders:
-      - joint1
-      - joint2
+    
     performance_index: true
-OM_controller:
-  ros__parameters:
-    homing_duration: 5.0
-    input_frequency: 100
+# OM_controller:
+#   ros__parameters:
+#     homing_duration: 5.0
+#     input_frequency: 100
 IMU_Broadcaster:
   ros__parameters:
     sensor_name: "IMU"
     frame_id: "IMU_NAV"
-    
+joint_controller:
+  ros__parameters:
+    joints:
+      - "LF_HFE"
+      - "LH_HFE"
+      - "RF_HFE"
+      - "RH_HFE"
+      - "LF_KFE"
+      - "LH_KFE"
+      - "RF_KFE"
+      - "RH_KFE"
+      # - "RF_HFE"
+      # - "RF_KFE"
+      # - "LF_HFE"
+      # - "LF_KFE"
+      # - "LH_HFE"
+      # - "LH_KFE"
+      # - "RH_HFE"
+      # - "RH_KFE"
 
+    
+OM_controller:
+  ros__parameters:
+    homing_duration: 5.0
+    input_frequency: 100
+    mecanum_angle: 135.0
+    init_x_displacement: 0.0 #[m]
+    init_height: -0.30
+    max_height: -0.5
+    min_height: -0.10
+    wheel_rad: 0.028  #0.028 for trucks, 0.05 for omniwheels
+    feet_type: 2   
 

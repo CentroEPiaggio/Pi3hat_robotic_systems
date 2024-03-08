@@ -107,12 +107,6 @@ struct Attitude {
   Point3D bias_uncertainty_dps;
 };
 
-struct RawImuData
-{
-  Point3D rate_dps;
-  Point3D accel_mps2;
-}
-
 struct RfSlot {
   uint8_t slot = 0;
   uint32_t priority = 0;
@@ -225,7 +219,7 @@ class Pi3Hat {
     bool request_attitude_detail = false;
 
     // If no new attitude is available, wait for it.
-    bool wait_for_attitude = true;
+    bool wait_for_attitude = false;
 
     bool request_rf = false;
 
@@ -238,6 +232,7 @@ class Pi3Hat {
     Span<CanFrame> rx_can;
     Span<RfSlot> rx_rf;
     Attitude* attitude = nullptr;
+    bool imu_raw_data = false;
   };
 
   struct Output {

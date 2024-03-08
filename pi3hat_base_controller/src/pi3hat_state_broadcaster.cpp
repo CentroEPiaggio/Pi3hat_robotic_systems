@@ -183,6 +183,7 @@ namespace pi3hat_state_broadcaster
         for(size_t i = 0; i < sz; i++)
         {
             // RCLCPP_INFO(get_node()->get_logger(),"executing std stt for jnt %s",joints_[i].c_str());
+            stt_msg_.name[i] = joints_[i];
             // RCLCPP_INFO(get_node()->get_logger(),"temp ind is %ld",1 + sz + 4*i );
             stt_msg_.position[i] = state_interfaces_[2 + sz + 5*i ].get_value();
             // RCLCPP_INFO(get_node()->get_logger(),"temp ind is %ld",1 + sz + 4*i + 1);
