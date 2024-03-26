@@ -3,7 +3,9 @@
     <ros2_control name="MoteusPi3Hat_Interface" type="system">
         <hardware>
             <plugin>pi3hat_hw_interface/MoteusPi3Hat_Interface</plugin>
-            <param name="main_timeout">500000</param>
+
+            <param name="main_timeout">1000000</param>
+
             <param name="can_timeout">4000</param>
             <param name="rcv_timeout">4000</param>
             
@@ -15,7 +17,9 @@
 
             <param name="b2imu_roll">0</param> 
             <param name="b2imu_pitch">0</param> 
-            <param name="b2imu_yaw">90.0</param>
+
+            <param name="b2imu_yaw">-1.57</param>
+
             <param name="acc_correction">0</param> 
         </hardware>
         

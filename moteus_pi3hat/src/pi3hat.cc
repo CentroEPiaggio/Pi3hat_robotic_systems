@@ -781,6 +781,16 @@ struct DeviceAttitudeData {
   uint8_t padding[4] = {};
 } __attribute__((packed));
 
+struct DeviceImuRawData{
+  uint16_t present = 0.0;
+  float gx = 0.0;
+  float gy = 0.0;
+  float gz = 0.0;
+  float ax = 0.0;
+  float ay = 0.0; 
+  float az = 0.0;
+}__attribute__((packed));
+
 struct DeviceImuConfiguration {
   float roll_deg = 0;
   float pitch_deg = 0;
@@ -1176,9 +1186,9 @@ class Pi3Hat::Impl {
     }
   }
 
-  bool GetAttitude(Attitude* output, bool wait, bool detail) {
+  bool GetAttitude(Attitude* output, bool wait, bool detail, bool raw) {
     device_attitude_ = {};
-
+    device_imu_raw_data_ = {};
     // Busy loop until we get something.
     if (wait) {
       char buf[2] = {};
@@ -1190,35 +1200,80 @@ class Pi3Hat::Impl {
         BusyWaitUs(20);
       } while (true);
     }
+    if(!raw)
+    {
+      do {
+        
+        
+          primary_spi_.Read(
+            0, 34,
+            reinterpret_cast<char*>(&device_attitude_),
+            detail ? sizeof(device_attitude_) : 42);  
+      } while (wait && ((device_attitude_.present & 0x01) == 0));
 
-    do {
-      primary_spi_.Read(
-          0, 34,
-          reinterpret_cast<char*>(&device_attitude_),
-          detail ? sizeof(device_attitude_) : 42);
-    } while (wait && ((device_attitude_.present & 0x01) == 0));
-
-    if ((device_attitude_.present & 0x01) == 0) {
-      return false;
+      if ((device_attitude_.present & 0x01) == 0) {
+        return false;
+      }
     }
+    else
+    {
+      do {
+        
+          this->ReadSpi(
+            2, 33,
+            reinterpret_cast<char*>(&device_imu_raw_data_),
+            sizeof(device_imu_raw_data_));
+        
+      
+        
+      } while (wait && ((device_imu_raw_data_.present & 0x01) == 0));
 
-    const auto& da = device_attitude_;
-    auto& o = *output;
-    o.attitude = { da.w, da.x, da.y, da.z };
-    o.rate_dps = { da.x_dps, da.y_dps, da.z_dps };
-    o.accel_mps2 = { da.a_x_mps2, da.a_y_mps2, da.a_z_mps2 };
-    o.bias_dps = { da.bias_x_dps, da.bias_y_dps, da.bias_z_dps };
-    o.attitude_uncertainty = {
-      da.uncertainty_w,
-      da.uncertainty_x,
-      da.uncertainty_y,
-      da.uncertainty_z,
-    };
-    o.bias_uncertainty_dps = {
-      da.uncertainty_bias_x_dps,
-      da.uncertainty_bias_y_dps,
-      da.uncertainty_bias_z_dps,
-    };
+      if ((device_imu_raw_data_.present & 0x01) == 0) {
+        return false;
+      }
+    }
+    if(!raw)
+    {
+      const auto& da = device_attitude_;
+      
+      auto& o = *output;
+      o.attitude = { da.w, da.x, da.y, da.z };
+      o.rate_dps = { da.x_dps, da.y_dps, da.z_dps };
+      o.accel_mps2 = { da.a_x_mps2, da.a_y_mps2, da.a_z_mps2 };
+      o.bias_dps = { da.bias_x_dps, da.bias_y_dps, da.bias_z_dps };
+      o.attitude_uncertainty = {
+        da.uncertainty_w,
+        da.uncertainty_x,
+        da.uncertainty_y,
+        da.uncertainty_z,
+      };
+      o.bias_uncertainty_dps = {
+        da.uncertainty_bias_x_dps,
+        da.uncertainty_bias_y_dps,
+        da.uncertainty_bias_z_dps,
+      };
+    }
+    else
+    {
+      const auto& da = device_imu_raw_data_;
+      
+      auto& o = *output;
+      o.attitude = { 0.0,0.0,0.0,0.0 };
+      o.rate_dps = { da.gx, da.gy, da.gz };
+      o.accel_mps2 = { da.ax, da.ay, da.az };
+      o.bias_dps = { 0.0,0.0,0.0 };
+      o.attitude_uncertainty = {
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+      };
+      o.bias_uncertainty_dps = {
+        0.0,
+        0.0,
+        0.0,
+      };
+    }
 
     return true;
   }
@@ -1555,7 +1610,7 @@ class Pi3Hat::Impl {
     if (input.request_attitude) {
       result.attitude_present =
           GetAttitude(input.attitude, input.wait_for_attitude,
-                      input.request_attitude_detail);
+                      input.request_attitude_detail,input.imu_raw_data);
     }
 
     ReadCan(input, expected_replies, &result);
@@ -1576,6 +1631,7 @@ class Pi3Hat::Impl {
   AuxSpi aux_spi_;
 
   DeviceAttitudeData device_attitude_;
+  DeviceImuRawData device_imu_raw_data_;
 
   // This is a member variable purely so that in steady state we don't
   // have to allocate memory.

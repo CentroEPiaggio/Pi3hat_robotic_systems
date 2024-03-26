@@ -43,6 +43,11 @@ def generate_launch_description():
         
     )
 
+    joy_event_node = Node(
+	package="joy",
+	executable="joy_node",
+	output="screen")
+
     # load_cont_lh = ExecuteProcess(
     #     cmd=['ros2', 'control', 'load_controller', '--set-state', 'start',
     #          'wb_forward_position_controller'],
@@ -59,6 +64,7 @@ def generate_launch_description():
         [
            moteus_pi3hat_model,
            #robot_state_pub_node,
-            control_node
+            control_node,
+	   joy_event_node
         ]
     )

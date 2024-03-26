@@ -232,6 +232,7 @@ class Pi3Hat {
     Span<CanFrame> rx_can;
     Span<RfSlot> rx_rf;
     Attitude* attitude = nullptr;
+    bool imu_raw_data = false;
   };
 
   struct Output {

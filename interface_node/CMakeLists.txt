@@ -14,17 +14,25 @@ find_package(moteus_pi3hat REQUIRED)
 
 add_executable(interface_node_v1 
                 src/int_node_v1.cpp)
+add_executable(raw_data 
+                src/imu_raw_data.cpp)
 
-
-target_link_libraries(interface_node_v1
+target_link_libraries(raw_data
                       bcm_host
                       )
+target_link_libraries(interface_node_v1
+                  bcm_host
+                      )
 ament_target_dependencies(interface_node_v1 rclcpp std_msgs sensor_msgs moteus_pi3hat)
-
+ament_target_dependencies(raw_data rclcpp std_msgs sensor_msgs moteus_pi3hat)
 install(TARGETS
   interface_node_v1 
   DESTINATION lib/${PROJECT_NAME})
-	
+
+install(TARGETS
+  raw_data 
+  DESTINATION lib/${PROJECT_NAME})
+  
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

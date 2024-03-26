@@ -781,5 +781,6 @@ int do_main(int argc, char** argv) {
 }  // namespace mjbots
 
 int main(int argc, char** argv) {
+  std::cout << argc <<std::endl;
   return mjbots::pi3hat::do_main(argc, argv);
 }

@@ -180,6 +180,9 @@ namespace pi3hat_hw_interface
                         std::stod(joint.parameters.at("sec_enc_transmission")),
                         id,
                         bus,
+                        std::stod(joint.parameters.at("p_lim_max")),
+                        std::stod(joint.parameters.at("p_lim_min")),
+                        std::stod(joint.parameters.at("p_offset")),
                         poly_,
                         gets_
                     );
@@ -523,7 +526,7 @@ namespace pi3hat_hw_interface
                     i = motor.get_motor_state(motor.get_msg_arrived());
                     if(i > 10)
                     {
-                        RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Raised error %d",i);
+                        RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"motor %d raised error %d",motor.get_id(),i);
                         return hardware_interface::return_type::ERROR;
                     }
                     // motor.print_pl();

@@ -119,14 +119,35 @@ namespace pi3hat_hw_interface
 
         void Motor_Manager::make_position()
         {
+            double pos_des;
             if(msg_valid_)
             {
                 cmd_data_ -> id = id_;
                 cmd_data_ -> bus = bus_;
                 cmd_data_ -> mode = moteus::Mode::kPosition;
-                cmd_data_ -> position.position = (cmd_pos_ * motor_trans_) / (2*M_PI);
-                cmd_data_ -> position.velocity =  (cmd_vel_ * motor_trans_ )/(2*M_PI);
-                cmd_data_ -> position.feedforward_torque = cmd_trq_ / motor_trans_;
+                if(low_sat_ && !high_sat_)
+                {
+                    cmd_data_ -> position.position = (p_min_* motor_trans_) / (2*M_PI) ;
+                    cmd_data_ -> position.velocity = 0;
+                    cmd_data_ -> position.feedforward_torque = 0;
+                }
+                else if( high_sat_ && !low_sat_)
+                {
+                    cmd_data_ -> position.position = (p_max_* motor_trans_) / (2*M_PI) ;
+                    cmd_data_ -> position.velocity = 0;
+                    cmd_data_ -> position.feedforward_torque = 0;
+                }
+                else if(!high_sat_ && !low_sat_)
+                {
+                    cmd_data_ -> position.position = ((cmd_pos_ - p_offset_) * motor_trans_) / (2*M_PI) ;
+//                    RCLCPP_INFO(rclcpp::get_logger("motor_manager"),"the commanded pos of joint %d is %f",id_,cmd_data_->position.position);
+                    cmd_data_ -> position.velocity =  (cmd_vel_ * motor_trans_ )/(2*M_PI);
+                    cmd_data_ -> position.feedforward_torque = cmd_trq_ / motor_trans_;
+                }
+                else
+                    assert(false);
+                
+               
                 cmd_data_ -> position.kd_scale = cmd_kd_scale_;
                 cmd_data_ -> position.kp_scale = cmd_kp_scale_;
                 cmd_data_ -> query = qry_res_;
@@ -203,7 +224,18 @@ namespace pi3hat_hw_interface
             {
                 // RCLCPP_ERROR(rclcpp::get_logger("PP"),"the read is ok");
                 msg_complete_ = true;
-                msr_pos_ = (res.position/motor_trans_)*2*M_PI;
+                msr_pos_ = (res.position/motor_trans_)*2*M_PI + p_offset_;
+                if(msr_pos_ < p_min_ && p_min_ != 0.0)
+                    low_sat_ = true;
+                else if (msr_pos_ > p_max_ && p_max_ != 0.0) 
+                    high_sat_ = true;
+                else
+                {
+                    if(msr_pos_ < p_max_*0.95)
+                        high_sat_ = false;
+                    if(msr_pos_ > p_min_ * 0.95)
+                        low_sat_ = false;
+                }
                 msr_vel_ = (res.velocity/motor_trans_)*2*M_PI;
                 msr_trq_ = res.torque*motor_trans_;
                 msr_tmp_ = res.temperature;

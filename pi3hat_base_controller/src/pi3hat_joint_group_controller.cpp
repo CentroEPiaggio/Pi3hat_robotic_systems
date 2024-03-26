@@ -139,7 +139,10 @@ namespace pi3hat_joint_group_controller
                     if(joints_rcvd_msg_->position.size() == 0 || joints_rcvd_msg_->position.size() != joints_rcvd_msg_->name.size())
                         position_cmd_.at(joints_rcvd_msg_->name[i]) = 0.0;
                     else
+		    {
                         position_cmd_.at(joints_rcvd_msg_->name[i]) = joints_rcvd_msg_->position[i];
+			// RCLCPP_INFO(get_node()->get_logger(),"the %s joint  pos is %f",joints_rcvd_msg_->name[i].c_str(),joints_rcvd_msg_->position[i]);
+		    }
                     if(joints_rcvd_msg_->velocity.size() == 0 || joints_rcvd_msg_->velocity.size() != joints_rcvd_msg_->name.size())
                         velocity_cmd_.at(joints_rcvd_msg_->name[i]) = 0.0;
                     else
@@ -199,7 +202,7 @@ namespace pi3hat_joint_group_controller
                     cmd_int.set_value(kd_scale_cmd_.at(cmd_int.get_prefix_name()));
                 else
                 {
-                    RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"Interface name not correspond to the declared one");
+                    // RCLCPP_ERROR(rclcpp::get_logger(logger_name_),"Interface name not correspond to the declared one");
                     return controller_interface::return_type::ERROR;
                 }
             }
