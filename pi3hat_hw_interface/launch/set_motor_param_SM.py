@@ -6,8 +6,10 @@ import moteus_pi3hat
 import time
 
 param_dict_hfe = {
+
 	"kp":5.0,
 	"kd":0.025,
+
 	"max_vel":20,
 	"max_pow":450,
 	"max_cur":20,

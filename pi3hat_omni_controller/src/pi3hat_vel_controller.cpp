@@ -3,7 +3,7 @@
 #include "pi3hat_hw_interface/motor_manager.hpp"
 #include <cstdint>
 #include "eigen3/Eigen/Core"
-#define VEL_CMD true
+#define VEL_CMD false
 #define MAX_LOSS 20
 #define DEBUG true
 #include <cmath>
@@ -35,7 +35,9 @@ namespace pi3hat_vel_controller
             auto_declare<double>("init_x_displacement",0.0);
             auto_declare<double>("max_heigth",-0.37);
             auto_declare<double>("min_height",-0.15);
+
             auto_declare<int>("feet_type",2);
+
         }
          catch(const std::exception & e)
         {
@@ -208,12 +210,16 @@ namespace pi3hat_vel_controller
     void Pi3Hat_Vel_Controller::update_base_height(double dh, double dur)
     {
         act_height_ = act_height_ +  dur*dh;
+
 	//RCLCPP_INFO(get_node()->get_logger(),"the act h is %f",act_height_);
+
         if(act_height_ < max_height_)
             act_height_ = max_height_ ;
         if(act_height_ > min_height_)
             act_height_ = min_height_;
+
 	//RCLCPP_INFO(get_node()->get_logger(),"the act height is %f, the vel is %f and time is %f",act_height_,dh,dur);
+
     }
 
     bool Pi3Hat_Vel_Controller::compute_reference(double v_x_tmp, double v_y_tmp, double omega_tmp, double height_rate_tmp, double dt)// add duration as argument [s]
@@ -233,7 +239,9 @@ namespace pi3hat_vel_controller
             w_wheels << 0.0, 0.0, 0.0, 0.0;
         
 
+
         //RCLCPP_INFO(get_node()->get_logger(),"the wheel is [%f,%f,%f,%f]",w_wheels[0],w_wheels[1],w_wheels[2],w_wheels[3]);
+
         //update wheels_velocity_cmd map, last four elements of the joint list
         for (size_t i = LEG_NUM * JNT_LEG_NUM; i < LEG_NUM * JNT_LEG_NUM + WHL_NUM; i++)
         {
@@ -243,7 +251,9 @@ namespace pi3hat_vel_controller
 
                 // RCLCPP_INFO(get_node()->get_logger(),"the %ld jnt is %s and the vel is %f",i,joints_[i].c_str(),w_wheels[i - JNT_LEG_NUM * LEG_NUM]);
                 #if VEL_CMD 
+
                     position_cmd_.at(joints_[i]) = std::nan("1");
+
                 #else
                     position_cmd_.at(joints_[i]) += dt* velocity_cmd_.at(joints_[i]);
                 #endif 
@@ -336,12 +346,14 @@ namespace pi3hat_vel_controller
         m(0,0) = 1.0 / r_;
         m(0,1) = 0.0;
         m(0,2) = b_ / (2*r_);
+
         m(1,0) = -1.0 / r_;
         m(1,1) = 0.0;
         m(1,2) = b_ / (2*r_);
         m(2,0) = -1.0 / r_;
         m(2,1) = 0.0;
         m(2,2) = b_ / (2*r_);
+
         m(3,0) = 1.0 / r_;
         m(3,1) = 0.0;
         m(3,2) = b_ / (2*r_);

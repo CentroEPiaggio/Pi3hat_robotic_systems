@@ -35,6 +35,7 @@ OM_controller:
     min_height: 0.0
     wheel_rad: 0.028  #0.028 for trucks, 0.05 for omniwheels
     feet_type: 2     # 0 : Normal Feet,   1 : Generic Wheels, 2 : Mecanum Wheels 
+
     
 
 

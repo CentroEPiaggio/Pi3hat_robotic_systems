@@ -12,6 +12,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 import subprocess
 def generate_launch_description():
 
+
     #get solo12 urdf with system HW interface 
 
     res = subprocess.run(["sudo",
@@ -20,8 +21,9 @@ def generate_launch_description():
     
     assert res.returncode == 0 , "raised error in configuration process"
     # print("i' have executed the configuration process")
+
     moteus_pi3hat_path = get_package_share_path("pi3hat_hw_interface")
-    moteus_pi3hat_path = os.path.join(moteus_pi3hat_path,"urdf/test_int.urdf.xacro") 
+    moteus_pi3hat_path = os.path.join(moteus_pi3hat_path,"urdf/mulinex_urdf.urdf.xacro") 
     moteus_pi3hat_model = DeclareLaunchArgument(
         name="moteus_pi3hat_urdf",
         default_value=str(moteus_pi3hat_path)

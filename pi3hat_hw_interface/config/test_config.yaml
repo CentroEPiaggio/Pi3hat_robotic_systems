@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 400 # hz tutto
+    update_rate: 500 # hz tutto
     state_broadcaster:
       type: pi3hat_state_broadcaster/Pi3Hat_State_Broadcaster # stampa roba su topic 
     joint_controller:
@@ -20,10 +20,10 @@ state_broadcaster:
       - "LH_KFE"
       - "RF_KFE"
       - "RH_KFE"
-      - "RF_WHEEL"
-      - "RH_WHEEL"
-      - "LF_WHEEL"
-      - "LH_WHEEL"
+      # - "RF_HFE"
+      # - "RF_KFE"
+      # - "LF_HFE"
+      # - "LF_KFE"
       # - "LH_HFE"
       # - "LH_KFE"
       # - "RH_HFE"
@@ -61,6 +61,7 @@ joint_controller:
       # - "LH_KFE"
       # - "RH_HFE"
       # - "RH_KFE"
+
 
     
 OM_controller:
