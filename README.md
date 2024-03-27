@@ -51,7 +51,7 @@ install ros2 control framework and xacro
 
 ```  sudo apt-get install ros-humble-ros2-controllers```
 
-``` sudo apt-get install ros-huble xacro ```
+``` sudo apt install ros-humble-xacro  ```
 </li>
 
 <li> 
