@@ -7,7 +7,7 @@
             <param name="can_timeout">20000</param>
             <param name="rcv_timeout">20000</param>
             
-            <param name="attitude">1</param> 
+            <param name="attitude">0</param> 
 
             <param name="b2imu_pos_x">0</param> 
             <param name="b2imu_pos_y">0</param> 
@@ -19,7 +19,7 @@
             <param name="acc_correction">0</param> 
         </hardware>
 
-        <joint name="RF_HFE"> 
+        <!-- <joint name="RF_HFE"> 
             <param name="id">3</param>
             <param name="bus">4</param>
             <param name="motor_transmission">9.0</param>
@@ -179,7 +179,7 @@
             <param name="p_lim_max">5000</param> 
             <param name="p_lim_min">-5000</param> 
             <param name="p_offset">0.0</param>
-        </joint>
+        </joint> -->
      
   
     </ros2_control>

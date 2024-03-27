@@ -1,4 +1,4 @@
-#! /home/jacopocioni/mul_env/bin/python3.9
+
 import math
 import asyncio
 import moteus
@@ -118,10 +118,10 @@ def from_jnt_to_motor(val, motor_trans):
 	 
     
 async def main():
-
+    
     robot_param = {"robot_param": []}
 # urdf_path = os.path.join("urdf","")
-    package_path = "/home/jacopocioni/mulinex_ws/src/pi3hat_hw_interface"
+    package_path = "/home/mulsbc/ros2_ws/src/pi3hat_hw_interface"
     urdf_file_name = "test_int.urdf.xacro"
     urdf_path = os.path.join(package_path,"urdf",urdf_file_name) 
     # print(os.path.isfile(urdf_path))
@@ -194,42 +194,6 @@ async def main():
         flux_brake_voltage = await s.command(b'conf set servo.flux_brake_min_voltage ' + str(general_params["flux_min_v"]).encode('utf-8'))
         await s.command(b'd index 0.0')
         await s.command(b'conf set servo.default_timeout_s ' + str(1).encode('utf-8'))
-    
-    # for id in ids_leg:
-    #     print(f"execute stop id {id}")
-    #     s = moteus.Stream(servos[id],verbose=True)
-    #     #conf = await s.command(b'conf enumerate\n')
-    #     max_velocity = await s.command(b'conf set servo.max_velocity ' + str(param_dict_leg["max_vel"]).encode('utf-8'))
-    #     max_power = await s.command(b'conf set servo.max_power_W ' + str(param_dict_leg["max_pow"]).encode('utf-8'))
-    #     max_current = await s.command(b'conf set servo.max_current_A ' + str(param_dict_leg["max_cur"]).encode('utf-8'))
-    #     kp = await s.command(b'conf set servo.pid_position.kp ' + str(param_dict_leg["kp"]).encode('utf-8'))
-    #     kd = await s.command(b'conf set servo.pid_position.kd ' + str(param_dict_leg["kd"]).encode('utf-8')) 
-    #     ilimit = await s.command(b'conf set servo.pid_position.ilimit 0')
-    #     ki = await s.command(b'conf set servo.pid_position.ki ' + str(param_dict_leg["ki"]).encode('utf-8'))
-    #     await s.command(b'conf set servopos.position_min ' + str(param_dict_leg["pos_min"]).encode('utf-8'))
-    #     await s.command(b'conf set servopos.position_max ' + str(param_dict_leg["pos_max"]).encode('utf-8'))
-
-    #     flux_brake_voltage = await s.command(b'conf set servo.flux_brake_min_voltage ' + str(param_dict_leg["flux_min_v"]).encode('utf-8'))
-    #     await s.command(b'd index 0.0')
-    #     await s.command(b'conf set servo.default_timeout_s ' + str(1).encode('utf-8'))
-
-    # for id in ids_wheel:
-    #     print(f"execute stop id {id}")
-    #     s = moteus.Stream(servos[id],verbose=True)
-    #     #conf = await s.command(b'conf enumerate\n')
-    #     max_velocity = await s.command(b'conf set servo.max_velocity ' + str(param_dict_wheel["max_vel"]).encode('utf-8'))
-    #     max_power = await s.command(b'conf set servo.max_power_W ' + str(param_dict_wheel["max_pow"]).encode('utf-8'))
-    #     max_current = await s.command(b'conf set servo.max_current_A ' + str(param_dict_wheel["max_cur"]).encode('utf-8'))
-    #     kp = await s.command(b'conf set servo.pid_position.kp ' + str(param_dict_wheel["kp"]).encode('utf-8'))
-    #     kd = await s.command(b'conf set servo.pid_position.kd ' + str(param_dict_wheel["kd"]).encode('utf-8')) 
-    #     ilimit = await s.command(b'conf set servo.pid_position.ilimit 0')
-    #     ki = await s.command(b'conf set servo.pid_position.ki ' + str(param_dict_wheel["ki"]).encode('utf-8'))
-    #     await s.command(b'conf set servopos.position_min ' + str(param_dict_wheel["pos_min"]).encode('utf-8'))
-    #     await s.command(b'conf set servopos.position_max ' + str(param_dict_wheel["pos_max"]).encode('utf-8'))
-
-    #     flux_brake_voltage = await s.command(b'conf set servo.flux_brake_min_voltage ' + str(param_dict_wheel["flux_min_v"]).encode('utf-8'))
-    #     await s.command(b'd index 0.0')
-    #     await s.command(b'conf set servo.default_timeout_s ' + str(1).encode('utf-8'))
     
     return 0
         

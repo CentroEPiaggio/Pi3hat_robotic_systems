@@ -120,7 +120,7 @@ namespace pi3hat_hw_interface
         CallbackReturn MoteusPi3Hat_Interface::on_init(const hardware_interface::HardwareInfo & info)
         {
             // get jnt number and resize my structure
-            uint32_t m_to = 0,c_to = 0,r_to = 0 ,att = false;
+            uint32_t m_to = 0,c_to = 0,r_to = 0;
             info_.name = info.name;
             auto n_jnt = info.joints.size();
              RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"joint number is %ld",
@@ -157,7 +157,7 @@ namespace pi3hat_hw_interface
             }
             try
             {
-                communication_thread_.set_options(CPU,m_to,c_to,r_to,att_req_);
+                communication_thread_.set_options(CPU,m_to,c_to,r_to,att_req_,acc_correction_);
             }
             catch(std::logic_error &e)
             {
@@ -244,9 +244,7 @@ namespace pi3hat_hw_interface
                     PQ.sec_enc_vel = moteus::Resolution::kFloat;
                 }
                 motor.set_query_resolution(PQ);
-                // RCLCPP_INFO(rclcpp::get_logger("TEST___"),"Quesy resolution encoder is %d %d",PQ.sec_enc_pos,PQ.sec_enc_vel);
-                // auto pp = motor.get_qry_res();
-                // RCLCPP_INFO(rclcpp::get_logger("TEST___TEST"),"Quesy resolution encoder is %d %d",pp.sec_enc_pos,pp.sec_enc_vel);
+                
             } 
             communication_thread_.start_communication();
 
@@ -266,22 +264,14 @@ namespace pi3hat_hw_interface
 
             for(int i = 0; i < NUM_STOP; i++)
             {
-                // for(int i = 0; i < cmd_data_.size(); i++)
-                // {
-                //     cmd_data_[i].id = 9;
-                // }
+        
                 for(auto motor : motors_)
                 {
                     motor.make_stop();
                     //RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "the motor id is %d",motor.get_id());
                 }   
                 
-                // for(int i = 0; i < cmd_data_.size(); i++)
-                // {                   
-                //     RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "%d the pos and vel data are %lf and %lf",i,cmd_data_[i].position.position,cmd_data_[i].position.velocity);
-                //     RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "%d the id and bus data are %d and %d",i,cmd_data_[i].id,cmd_data_[i].bus);
-                //     RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "%d the kp_scale and kd_scale data are %lf and %lf",i,cmd_data_[i].position.kp_scale,cmd_data_[i].position.kd_scale);
-                // }
+            
                 try
                 {
                     cycle();
@@ -304,23 +294,13 @@ namespace pi3hat_hw_interface
         
         CallbackReturn MoteusPi3Hat_Interface::on_deactivate(const rclcpp_lifecycle::State&)
         {
+            // send stop to the motor to deactivate the MJBOT driver
             for(int i = 0; i < NUM_STOP; i++)
             {
                 for(auto motor : motors_)
                 {
                     motor.make_stop();
                 }  
-                // for(auto cmd:data_.commands)
-                // {
-                
-                //     RCLCPP_INFO(rclcpp::get_logger("LIV20"),"value of data is %d",cmd.query.sec_enc_pos);
-    
-                // }
-                // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Stop command %d",i);
-
-                // rclcpp::sleep_for(a);
-                // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Stop command %d",i);
-
                 cycle();
                 can_recvd_.wait();
                 RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Pass Deactvate");
@@ -360,8 +340,7 @@ namespace pi3hat_hw_interface
             num_stt_int_ = 2;
             for(auto &motor : motors_)
             {
-                // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"insert joint name %s and [id,bus] :: [%d,%d]",
-                // motor.get_name(false).c_str(),motor.get_id(),motor.get_bus());
+              
                 i = 0;
                 int_type = motor.get_state_type();
 
@@ -438,7 +417,7 @@ namespace pi3hat_hw_interface
         hardware_interface::return_type MoteusPi3Hat_Interface::read(const rclcpp::Time & , const rclcpp::Duration & ) 
         {
             Output out;
-            double perc;
+            // double perc;
             int i = 0;
             count_ ++;
             // if( count_ %1 00 == 0)
@@ -562,7 +541,9 @@ namespace pi3hat_hw_interface
                 }
                 //RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "Not valid msg percentage is %d/ %d",not_val_cycle_,count_);
                 
-                perc = valid_loss_ * MAX_COUNT * (epoch_count_ );
+                // perc = valid_loss_ * MAX_COUNT * (epoch_count_ );
+
+
 
                 valid_loss_ = not_val_cycle_; //(perc + static_cast<double>(not_val_cycle_))/static_cast<double>((epoch_count_ +1 )*MAX_COUNT);
                 epoch_count_++;
