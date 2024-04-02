@@ -89,9 +89,9 @@ def get_moteus_lists(params : dict):
             raise Exception("The bus value are out of range")
         print(f"the motor with id-bus: {jnt_id}-{jnt_bus} has position offset {pos_offset}")
         par_list[0].append(jnt_id)
-        par_list[1].append(jnt_kp)
-        par_list[2].append(jnt_kd)
-        par_list[3].append(jnt_ki)
+        par_list[1].append(from_jnt_to_motor(jnt_kp,mot_trans))
+        par_list[2].append(from_jnt_to_motor(jnt_kd,mot_trans))
+        par_list[3].append(from_jnt_to_motor(jnt_ki,mot_trans))
         par_list[4].append(jnt_i_limit)
         if max_pos == 0.0: 
            par_list[5].append(math.nan)
