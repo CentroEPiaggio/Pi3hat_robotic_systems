@@ -89,9 +89,9 @@ def get_moteus_lists(params : dict):
             raise Exception("The bus value are out of range")
         print(f"the motor with id-bus: {jnt_id}-{jnt_bus} has position offset {pos_offset}")
         par_list[0].append(jnt_id)
-        par_list[1].append(from_jnt_to_motor(jnt_kp,mot_trans))
-        par_list[2].append(from_jnt_to_motor(jnt_kd,mot_trans))
-        par_list[3].append(from_jnt_to_motor(jnt_ki,mot_trans))
+        par_list[1].append(from_jnt_to_motor_gain(jnt_kp,mot_trans))
+        par_list[2].append(from_jnt_to_motor_gain(jnt_kd,mot_trans))
+        par_list[3].append(from_jnt_to_motor_gain(jnt_ki,mot_trans))
         par_list[4].append(jnt_i_limit)
         if max_pos == 0.0: 
            par_list[5].append(math.nan)
@@ -116,12 +116,19 @@ def from_jnt_to_motor(val, motor_trans):
         ret = pow(2,16) - 1
     return ret
 	 
+def from_jnt_to_motor_gain(val, motor_trans):
+    ret = (2*math.pi)*(val / pow(motor_trans,2) )
+    if ret >= pow(2,16):
+        ret = pow(2,16) - 1
+    elif ret <= - pow(2,16):
+        ret = pow(2,16) - 1
+    return ret
     
 async def main():
     
     robot_param = {"robot_param": []}
 # urdf_path = os.path.join("urdf","")
-    package_path = "/home/mulsbc/ros2_ws/src/pi3hat_hw_interface"
+    package_path = "/home/jacopocioni/mulinex_ws/src/pi3hat_hw_interface"
     urdf_file_name = "test_int.urdf.xacro"
     urdf_path = os.path.join(package_path,"urdf",urdf_file_name) 
     # print(os.path.isfile(urdf_path))

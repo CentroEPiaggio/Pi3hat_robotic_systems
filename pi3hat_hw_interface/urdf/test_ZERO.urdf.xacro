@@ -7,7 +7,7 @@
             <param name="can_timeout">20000</param>
             <param name="rcv_timeout">20000</param>
             
-            <param name="attitude">0</param> 
+            <param name="attitude">1</param> 
 
             <param name="b2imu_pos_x">0</param> 
             <param name="b2imu_pos_y">0</param> 
@@ -16,22 +16,22 @@
             <param name="b2imu_roll">0</param> 
             <param name="b2imu_pitch">0</param> 
             <param name="b2imu_yaw">90.0</param>
-            <param name="acc_correction">1</param> 
+            <param name="acc_correction">0</param> 
         </hardware>
 
-        <joint name="RF_HFE"> 
+    	 <joint name="RF_HFE"> 
             <param name="id">3</param>
             <param name="bus">4</param>
             <param name="motor_transmission">9.0</param>
             <param name="sec_enc_transmission">0.0</param> 
-            <param name="KP">70.9</param> 
-            <param name="KD">0.4</param> 
+            <param name="KP">0.0</param> 
+            <param name="KD">0.0</param> 
             <param name="KI">0.0</param> 
             <param name="i_limit">0.0</param>
             <param name="p_lim_max">3.14</param> 
             <param name="p_lim_min">-3.14</param>
             <param name="p_offset">0.0</param>
-            <param name="max_vel">10.0</param>
+            <param name="max_vel">20.0</param>
         </joint>
 
         <joint name="RF_KFE">  
@@ -39,112 +39,113 @@
             <param name="bus">4</param>
             <param name="motor_transmission">9.0</param>  
             <param name="sec_enc_transmission">0.0</param>  
-            <param name="KP">70.9</param> 
-            <param name="KD">0.4</param>
+            <param name="KP">0.0</param> 
+            <param name="KD">0.0</param> 
             <param name="KI">0.0</param> 
             <param name="i_limit">0.0</param>
             <param name="p_lim_max">3.14</param> 
             <param name="p_lim_min">-3.14</param>
             <param name="p_offset">0.0</param>
-            <param name="max_vel">10.0</param>
+            <param name="max_vel">20.0</param>
         </joint>
         <joint name="LF_HFE">  
             <param name="id">1</param>
             <param name="bus">3</param>
             <param name="motor_transmission">9.0</param>  
             <param name="sec_enc_transmission">0.0</param>  
-            <param name="KP">70.9</param> 
-            <param name="KD">0.4</param>
+            <param name="KP">0.0</param> 
+            <param name="KD">0.0</param> 
             <param name="KI">0.0</param> 
             <param name="i_limit">0.0</param>
             <param name="p_lim_max">3.14</param> 
             <param name="p_lim_min">-3.14</param>
             <param name="p_offset">0.0</param>
-            <param name="max_vel">10.0</param>
+            <param name="max_vel">20.0</param>
         </joint>
         <joint name="LF_KFE">  
             <param name="id">2</param>
             <param name="bus">3</param>
             <param name="motor_transmission">9.0</param>  
             <param name="sec_enc_transmission">0.0</param>  
-            <param name="KP">70.9</param> 
-            <param name="KD">0.4</param>
+            <param name="KP">0.0</param> 
+            <param name="KD">0.0</param> 
             <param name="KI">0.0</param> 
             <param name="i_limit">0.0</param>
             <param name="p_lim_max">3.14</param> 
             <param name="p_lim_min">-3.14</param>
-            <param name="p_offset">0.0</param>
-            <param name="max_vel">10.0</param>
-        </joint>
+            <param name="p_offset">0.0</param> 
+            <param name="max_vel">20.0</param>
+        </joint> 
         <joint name="LH_HFE">  
             <param name="id">5</param>
             <param name="bus">1</param>
             <param name="motor_transmission">9.0</param>  
             <param name="sec_enc_transmission">0.0</param>  
-            <param name="KP">70.9</param> 
-            <param name="KD">0.4</param>
+            <param name="KP">0.0</param> 
+            <param name="KD">0.0</param> 
             <param name="KI">0.0</param> 
             <param name="i_limit">0.0</param>
            <param name="p_lim_max">3.14</param> 
             <param name="p_lim_min">-3.14</param> 
             <param name="p_offset">0.0</param>
-            <param name="max_vel">10.0</param>
+            <param name="max_vel">20.0</param>
         </joint>
         <joint name="LH_KFE">  
             <param name="id">6</param>
             <param name="bus">1</param>
             <param name="motor_transmission">9.0</param>  
             <param name="sec_enc_transmission">0.0</param>  
-            <param name="KP">70.9</param> 
-            <param name="KD">0.4</param>
+            <param name="KP">0.0</param> 
+            <param name="KD">0.0</param> 
             <param name="KI">0.0</param> 
             <param name="i_limit">0.0</param>
             <param name="p_lim_max">3.14</param> 
             <param name="p_lim_min">-3.14</param> 
             <param name="p_offset">0.0</param>
-            <param name="max_vel">10.0</param>
+            <param name="max_vel">20.0</param>
         </joint>
         <joint name="RH_HFE">  
             <param name="id">7</param>
             <param name="bus">2</param>
             <param name="motor_transmission">9.0</param>  
             <param name="sec_enc_transmission">0.0</param>  
-            <param name="KP">70.9</param> 
-            <param name="KD">0.4</param>
+            <param name="KP">0.0</param> 
+            <param name="KD">0.0</param> 
             <param name="KI">0.0</param> 
             <param name="i_limit">0.0</param>
             <param name="p_lim_max">3.14</param> 
             <param name="p_lim_min">-3.14</param> 
             <param name="p_offset">0.0</param>
-            <param name="max_vel">10.0</param>
+            <param name="max_vel">20.0</param>
         </joint>
         <joint name="RH_KFE">  
             <param name="id">8</param>
             <param name="bus">2</param>
             <param name="motor_transmission">9.0</param>  
             <param name="sec_enc_transmission">0.0</param>  
-            <param name="KP">70.9</param> 
-            <param name="KD">0.4</param>
+            <param name="KP">0.0</param> 
+            <param name="KD">0.0</param> 
             <param name="KI">0.0</param> 
             <param name="i_limit">0.0</param>
             <param name="p_lim_max">3.14</param> 
             <param name="p_lim_min">-3.14</param> 
             <param name="p_offset">0.0</param>
-            <param name="max_vel">10.0</param>
+            <param name="max_vel">20.0</param>
         </joint>
         
-       <!-- <joint name="RH_WHEEL">  
+       <!--  <joint name="RH_WHEEL">  
             <param name="id">12</param>
             <param name="bus">2</param>
             <param name="motor_transmission">15.0</param>  
             <param name="sec_enc_transmission">0.0</param>  
-            <param name="KP">0.0</param> 
-            <param name="KD">0.0</param> 
+            <param name="KP">5.0</param> 
+            <param name="KD">0.025</param> 
             <param name="KI">0.0</param> 
             <param name="i_limit">0.0</param>
-            <param name="p_lim_max">5000</param> 
-            <param name="p_lim_min">-5000</param> 
+            <param name="p_lim_max">0.0</param> 
+            <param name="p_lim_min">0.0</param> 
             <param name="p_offset">0.0</param>
+            <param name="max_vel">50.0</param>
         </joint>
         
         <joint name="LH_WHEEL">  
@@ -156,23 +157,25 @@
             <param name="KD">0.025</param> 
             <param name="KI">0.0</param> 
             <param name="i_limit">0.0</param>
-            <param name="p_lim_max">5000</param> 
-            <param name="p_lim_min">-5000</param> 
+            <param name="p_lim_max">0.0</param> 
+            <param name="p_lim_min">0.0</param> 
             <param name="p_offset">0.0</param>
+            <param name="max_vel">50.0</param>
         </joint>
         
-        <joint name="LF_WHEEL">  
+         <joint name="LF_WHEEL">  
             <param name="id">9</param>
             <param name="bus">3</param>
             <param name="motor_transmission">15.0</param>  
             <param name="sec_enc_transmission">0.0</param>  
-            <param name="KP">0.0</param> 
-            <param name="KD">0.0</param> 
+            <param name="KP">5.0</param> 
+            <param name="KD">0.025</param> 
             <param name="KI">0.0</param> 
             <param name="i_limit">0.0</param>
-            <param name="p_lim_max">5000</param> 
-            <param name="p_lim_min">-5000</param> 
+            <param name="p_lim_max">0.0</param> 
+            <param name="p_lim_min">0.0</param> 
             <param name="p_offset">0.0</param>
+            <param name="max_vel">50.0</param>
         </joint>
         
         <joint name="RF_WHEEL">  
@@ -180,15 +183,15 @@
             <param name="bus">4</param>
             <param name="motor_transmission">15.0</param>  
             <param name="sec_enc_transmission">0.0</param>  
-            <param name="KP">0.0</param> 
-            <param name="KD">0.0</param> 
+            <param name="KP">5.0</param> 
+            <param name="KD">0.025</param> 
             <param name="KI">0.0</param> 
             <param name="i_limit">0.0</param>
-            <param name="p_lim_max">5000</param> 
-            <param name="p_lim_min">-5000</param> 
+            <param name="p_lim_max">0.0</param> 
+            <param name="p_lim_min">0.0</param> 
             <param name="p_offset">0.0</param>
-        </joint>-->
-     
+            <param name="max_vel">50.0</param>
+        </joint> -->
   
     </ros2_control>
 </robot>
