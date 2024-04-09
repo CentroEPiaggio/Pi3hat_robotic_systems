@@ -130,7 +130,7 @@ class Pi3HatMoteusInterface {
   ///
   /// All memory pointed to by @p data must remain valid until the
   /// callback is invoked.
-  void set_options(int cpu, uint32_t m_to, uint32_t c_to, uint32_t r_to , bool att)
+  void set_options(int cpu, uint32_t m_to, uint32_t c_to, uint32_t r_to , bool att,bool att_raw)
   {
     if(!std::isnan(cpu) && cpu >0 && cpu < 4)
       options_.cpu = cpu;
@@ -142,6 +142,7 @@ class Pi3HatMoteusInterface {
       can_extra_timeout_ = c_to;
       rx_extra_timeout_ = r_to;
       attitude_req_ = att;
+      attitude_raw_ = att_raw;
     }
     else  
       throw std::logic_error("All timeout should be greater than zero");
@@ -263,7 +264,7 @@ class Pi3HatMoteusInterface {
     input.min_tx_wait_ns = this->can_extra_timeout_;
     input.request_attitude = this->attitude_req_;
     input.attitude = &attitude_;
-    input.imu_raw_data = true;
+    input.imu_raw_data = this->attitude_raw_;
     input.wait_for_attitude = true;
     Options option_;
     Output result;
@@ -298,7 +299,7 @@ class Pi3HatMoteusInterface {
   uint32_t main_timeout_;
   uint32_t rx_extra_timeout_;
   uint32_t can_extra_timeout_;
-  bool attitude_req_;
+  bool attitude_req_, attitude_raw_;
   mjbots::pi3hat::Attitude attitude_;
 
 
