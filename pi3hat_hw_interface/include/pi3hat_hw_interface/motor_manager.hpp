@@ -144,6 +144,7 @@ namespace pi3hat_hw_interface
                     double p_max,
                     double p_min,
                     double p_offset,
+                    double max_eff,
                     Policy_Function pl_fun,
                     Get_Function gt_fun)
                     {
@@ -157,6 +158,7 @@ namespace pi3hat_hw_interface
                         p_min_ = p_min;
                         p_max_ = p_max;
                         p_offset_ = p_offset;
+                        max_trq_ = max_eff;
                         get_callback_ = gt_fun;
                         pol_callback_ = std::bind(pl_fun,_1,_2,this->cmd_data_);
                          if(second_trans == 0.0)
@@ -364,6 +366,7 @@ namespace pi3hat_hw_interface
                 double cmd_vel_ = 0.0;
                 double cmd_trq_ = 0.0;
                 double msr_cur_ = 0.0;
+                double max_trq_ = 0.0;
                 bool low_sat_ = false, high_sat_ = false;
                 Command* cmd_data_;
                 

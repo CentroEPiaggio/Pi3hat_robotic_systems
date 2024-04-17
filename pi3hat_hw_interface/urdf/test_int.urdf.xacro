@@ -32,6 +32,7 @@
             <param name="p_lim_min">-3.14</param>
             <param name="p_offset">0.0</param>
             <param name="max_vel">10.0</param>
+            <param name="max_torque">10.0</param>
         </joint>
 
         <joint name="RF_KFE">  
@@ -47,6 +48,7 @@
             <param name="p_lim_min">-3.14</param>
             <param name="p_offset">0.0</param>
             <param name="max_vel">10.0</param>
+            <param name="max_torque">10.0</param>
         </joint>
         <joint name="LF_HFE">  
             <param name="id">1</param>
@@ -61,6 +63,7 @@
             <param name="p_lim_min">-3.14</param>
             <param name="p_offset">0.0</param>
             <param name="max_vel">10.0</param>
+            <param name="max_torque">10.0</param>
         </joint>
         <joint name="LF_KFE">  
             <param name="id">2</param>
@@ -75,6 +78,7 @@
             <param name="p_lim_min">-3.14</param>
             <param name="p_offset">0.0</param>
             <param name="max_vel">10.0</param>
+            <param name="max_torque">10.0</param>
         </joint>
         <joint name="LH_HFE">  
             <param name="id">5</param>
@@ -89,6 +93,7 @@
             <param name="p_lim_min">-3.14</param> 
             <param name="p_offset">0.0</param>
             <param name="max_vel">10.0</param>
+            <param name="max_torque">10.0</param>
         </joint>
         <joint name="LH_KFE">  
             <param name="id">6</param>
@@ -103,6 +108,7 @@
             <param name="p_lim_min">-3.14</param> 
             <param name="p_offset">0.0</param>
             <param name="max_vel">10.0</param>
+            <param name="max_torque">10.0</param>
         </joint>
         <joint name="RH_HFE">  
             <param name="id">7</param>
@@ -117,6 +123,7 @@
             <param name="p_lim_min">-3.14</param> 
             <param name="p_offset">0.0</param>
             <param name="max_vel">10.0</param>
+            <param name="max_torque">10.0</param>
         </joint>
         <joint name="RH_KFE">  
             <param name="id">8</param>
@@ -131,6 +138,7 @@
             <param name="p_lim_min">-3.14</param> 
             <param name="p_offset">0.0</param>
             <param name="max_vel">10.0</param>
+            <param name="max_torque">10.0</param>
         </joint>
         
        <!-- <joint name="RH_WHEEL">  
