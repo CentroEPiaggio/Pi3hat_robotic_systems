@@ -15,7 +15,7 @@ find_package(pluginlib REQUIRED)
 find_package(pi3hat_moteus_int_msgs REQUIRED)
 find_package(realtime_tools REQUIRED)
 find_package(pi3hat_hw_interface REQUIRED)
-
+find_package(pi3hat_moteus_int_msgs REQUIRED)
 add_library(
   ${PROJECT_NAME}
   SHARED

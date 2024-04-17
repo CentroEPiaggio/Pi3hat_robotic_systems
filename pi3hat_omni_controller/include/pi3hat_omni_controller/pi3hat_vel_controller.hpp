@@ -34,9 +34,7 @@
 #undef __ARM_NEON__
 #endif
 #define LEG_LENGTH 0.19 // [m]
-
 #define DEF_X_FEET_DISPLACEMENT 0.0 //[m] foot and hip distance on X_axes, usefull to enlarge the support polygon 
-
 namespace pi3hat_vel_controller
 {
     using VectorXd = Eigen::VectorXd;

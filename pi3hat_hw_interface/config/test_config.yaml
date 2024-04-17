@@ -9,16 +9,19 @@ controller_manager:
       type: pi3hat_vel_controller/Pi3Hat_Vel_Controller
     IMU_Broadcaster:
       type: imu_sensor_broadcaster/IMUSensorBroadcaster
+    ilc_sig_controller:
+      type: pi3hat_ilc_sig_controller/Pi3Hat_Ilc_Sig_Controller
+
 state_broadcaster:
   ros__parameters:
     joints:
       - "LF_HFE"
-      - "LH_HFE"
-      - "RF_HFE"
-      - "RH_HFE"
       - "LF_KFE"
+      - "LH_HFE"
       - "LH_KFE"
+      - "RF_HFE"
       - "RF_KFE"
+      - "RH_HFE"
       - "RH_KFE"
       # - "RF_HFE"
       # - "RF_KFE"
@@ -75,4 +78,29 @@ OM_controller:
     min_height: -0.10
     wheel_rad: 0.028  #0.028 for trucks, 0.05 for omniwheels
     feet_type: 2   
+    
+ilc_sig_controller:
+   ros__parameters:
+      period: 0.002
+      file_homing: "/home/jacopocioni/mulinex_ws/src/Ilc_sig_ROS2_controller/csv_task/init.csv"
+      file_name: "/home/jacopocioni/mulinex_ws/src/Ilc_sig_ROS2_controller/csv_task/task.csv"
+      T_init: 3.0 # time duration of the homing phase       
+      T_init_rest: 5.0 
+      T_task: 1.0
+      T_rest: 0.1
+      Task_rep: 30
+      ILC_kp: 0.5
+      ILC_kd: 0.075
+      KI: 0.0
+      topic_name: "ILC_ref"
+      use_sim_time: False
+      joints:
+      - "LF_HFE"
+      - "LF_KFE"
+      - "LH_HFE"
+      - "LH_KFE"
+      - "RF_HFE"
+      - "RF_KFE"
+      - "RH_HFE"
+      - "RH_KFE"
 
