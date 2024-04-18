@@ -540,7 +540,7 @@ struct PositionCommand {
   double feedforward_torque = 0.0;
   double kp_scale = 1.0;
   double kd_scale = 1.0;
-  double maximum_torque = 0.0;
+  double maximum_torque = 5.0;
   double stop_position = std::numeric_limits<double>::quiet_NaN();
   double watchdog_timeout = 0.0;
 };
@@ -551,7 +551,7 @@ struct PositionResolution {
   Resolution feedforward_torque = Resolution::kFloat;
   Resolution kp_scale = Resolution::kFloat;
   Resolution kd_scale = Resolution::kFloat;
-  Resolution maximum_torque = Resolution::kIgnore;
+  Resolution maximum_torque = Resolution::kFloat;
   Resolution stop_position = Resolution::kFloat;
   Resolution watchdog_timeout = Resolution::kFloat;
 

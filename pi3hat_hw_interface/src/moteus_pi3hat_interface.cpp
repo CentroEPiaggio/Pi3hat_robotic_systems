@@ -183,6 +183,7 @@ namespace pi3hat_hw_interface
                         std::stod(joint.parameters.at("p_lim_max")),
                         std::stod(joint.parameters.at("p_lim_min")),
                         std::stod(joint.parameters.at("p_offset")),
+                        std::stod(joint.parameters.at("max_torque")),
                         poly_,
                         gets_
                     );

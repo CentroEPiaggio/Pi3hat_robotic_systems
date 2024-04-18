@@ -147,7 +147,7 @@ namespace pi3hat_hw_interface
                 else
                     assert(false);
                 
-               
+                cmd_data_ -> position.maximum_torque = max_trq_;
                 cmd_data_ -> position.kd_scale = cmd_kd_scale_;
                 cmd_data_ -> position.kp_scale = cmd_kp_scale_;
                 cmd_data_ -> query = qry_res_;
