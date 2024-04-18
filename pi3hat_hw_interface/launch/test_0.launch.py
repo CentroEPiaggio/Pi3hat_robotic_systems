@@ -16,8 +16,8 @@ def generate_launch_description():
     #get solo12 urdf with system HW interface 
 
     res = subprocess.run(["sudo",
-                    "/home/jacopocioni/mul_env/bin/python3",
-                    "/home/jacopocioni/mulinex_ws/src/pi3hat_hw_interface/launch/set_motor_params.py"])
+                    "python3",
+                    "/home/mulsbc/mulinex_ws/src/pi3hat_hw_interface/launch/set_motor_params.py"])
     
     assert res.returncode == 0 , "raised error in configuration process"
     # print("i' have executed the configuration process")

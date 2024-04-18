@@ -54,6 +54,8 @@ def parse_jnt_param(jnt : el.Element):
             ret_dict["params"]["sec_enc_transmission"] = float(param_val)
         elif param_name == "max_vel":
             ret_dict["params"]["max_vel"] = float(param_val)
+        elif param_name == "max_torque":
+            print("the max torque is ", float(param_val))
         else:
             raise Exception("Unrecognize parameter in urdf") 
    
@@ -128,7 +130,7 @@ async def main():
     
     robot_param = {"robot_param": []}
 # urdf_path = os.path.join("urdf","")
-    package_path = "/home/jacopocioni/mulinex_ws/src/pi3hat_hw_interface"
+    package_path = "/home/mulsbc/mulinex_ws/src/pi3hat_hw_interface"
     urdf_file_name = "test_int.urdf.xacro"
     urdf_path = os.path.join(package_path,"urdf",urdf_file_name) 
     # print(os.path.isfile(urdf_path))

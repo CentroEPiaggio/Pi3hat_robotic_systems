@@ -158,7 +158,16 @@ namespace pi3hat_hw_interface
                         p_min_ = p_min;
                         p_max_ = p_max;
                         p_offset_ = p_offset;
-                        max_trq_ = max_eff;
+                        if(motor_trans_ != 0.0)
+                        {
+                            max_trq_ = max_eff/motor_trans_;
+                            // RCLCPP_INFO(rclcpp::get_logger("Moteus_Pi3hat_HW_Interface"),"the max effort for motor %s is %f",name_.c_str(),max_trq_);
+                        }
+                        else 
+                        {   
+                            RCLCPP_ERROR(rclcpp::get_logger("Moteus_Pi3hat_HW_Interface"),"motor transmission can not be zero, max effort is set to zero");
+                            max_trq_ = 0.0;
+                        }
                         get_callback_ = gt_fun;
                         pol_callback_ = std::bind(pl_fun,_1,_2,this->cmd_data_);
                          if(second_trans == 0.0)
@@ -186,7 +195,6 @@ namespace pi3hat_hw_interface
                                 hardware_interface::HW_IF_POSITION,
                                 hardware_interface::HW_IF_VELOCITY
                             };
-                            RCLCPP_INFO(rclcpp::get_logger("DIO"),"MADONNA");
                         }
                         cmd_pos_ = p_offset_;
                     };

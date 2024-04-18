@@ -23,18 +23,15 @@ state_broadcaster:
       - "RF_KFE"
       - "RH_HFE"
       - "RH_KFE"
-      # - "RF_HFE"
-      # - "RF_KFE"
-      # - "LF_HFE"
-      # - "LF_KFE"
-      # - "LH_HFE"
-      # - "LH_KFE"
-      # - "RH_HFE"
-      # - "RH_KFE"
-      # - jnt_b9_1Hz_trq4_c2
-      # - jnt_b9_1Hz_trq4_c3
-      # - joinjoint1t3
-      # - joint4
+    second_encoders:
+      - "LF_HFE"
+      - "LF_KFE"
+      - "LH_HFE"
+      - "LH_KFE"
+      - "RF_HFE"
+      - "RF_KFE"
+      - "RH_HFE"
+      - "RH_KFE"
     
     performance_index: true
 # OM_controller:
