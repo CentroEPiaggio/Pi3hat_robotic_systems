@@ -13,7 +13,7 @@ import sys
 
 general_params = {
 	"max_pow":450,
-	"max_cur":20,
+	"max_cur":40,
     "flux_min_v":27.5,
 }
 
@@ -126,13 +126,20 @@ def from_jnt_to_motor_gain(val, motor_trans):
         ret = pow(2,16) - 1
     return ret
     
-async def main():
+async def main(argv):
     
     robot_param = {"robot_param": []}
 # urdf_path = os.path.join("urdf","")
-    package_path = "/home/mulsbc/mulinex_ws/src/pi3hat_hw_interface"
-    urdf_file_name = "test_int.urdf.xacro"
-    urdf_path = os.path.join(package_path,"urdf",urdf_file_name) 
+    if (len(argv) == 3):
+        urdf_path = argv[1]
+        package_path = argv[2]
+        print(argv[1],argv[2])
+    else:
+        print("ERROR: the urdf path is not provided")
+        return 1
+    # package_path = "/home/jacopocioni/mulinex_ws/src/pi3hat_hw_interface"
+    # urdf_file_name = "test_int.urdf.xacro"
+    # urdf_path = os.path.join(package_path,"urdf",urdf_file_name) 
     # print(os.path.isfile(urdf_path))
     try:
         root = el.parse(urdf_path).getroot()
@@ -154,9 +161,13 @@ async def main():
     	
         return 1
     
-    a = input("confirm the chosen condfiguration digiting 'y': \n")
+    # a = input("confirm the chosen condfiguration digiting 'y': \n")
+    print("block the script in 5sec if there is a not correct params: \n")
+    time.sleep(5)
+    a='y'
     if a != "y":
-    	return 1
+        print("interrupt launch file")
+        return 1
     print("save data in file")
     # save the robot parameter in yaml file
     conf_file_name = "Joints_Prameter_" + datetime.datetime.today().strftime('%Y_%m_%d_%H_%M_%S')
@@ -210,5 +221,5 @@ async def main():
 #                                                                                        RUN                                                                                         #
 ######################################################################################################################################################################################   
 if __name__ == '__main__':
-   ret = asyncio.run(main())
+   ret = asyncio.run(main(sys.argv))
    sys.exit(ret)

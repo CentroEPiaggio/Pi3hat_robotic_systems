@@ -107,7 +107,7 @@ ament_export_dependencies(
 )
 
 install(
-  DIRECTORY launch urdf config
+  DIRECTORY launch urdf config mul_conf_file
   DESTINATION share/${PROJECT_NAME}
 )
 ament_package()

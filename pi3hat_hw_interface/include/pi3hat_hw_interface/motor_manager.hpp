@@ -161,7 +161,7 @@ namespace pi3hat_hw_interface
                         if(motor_trans_ != 0.0)
                         {
                             max_trq_ = max_eff/motor_trans_;
-                            // RCLCPP_INFO(rclcpp::get_logger("Moteus_Pi3hat_HW_Interface"),"the max effort for motor %s is %f",name_.c_str(),max_trq_);
+                            RCLCPP_INFO(rclcpp::get_logger("Moteus_Pi3hat_HW_Interface"),"the max effort for motor %s is %f",name_.c_str(),max_trq_);
                         }
                         else 
                         {   
