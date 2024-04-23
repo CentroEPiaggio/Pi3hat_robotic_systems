@@ -1,0 +1,27 @@
+<?xml version="1.0" ?>
+
+<robot name="softleg_cart"  xmlns:xacro="http://ros.org/wiki/xacro">
+    <ros2_control name="MoteusPi3Hat_Interface" type="system">
+        <xacro:arg name="use_imu" default="1" />
+        <xacro:arg name="main_t_arg" default="500000" />
+        <xacro:arg name="can_t_arg" default="20000" />
+        <xacro:arg name="rec_t_arg" default="40000" />
+        <hardware>
+            <plugin>pi3hat_hw_interface/MoteusPi3Hat_Interface</plugin>
+            <param name="main_timeout">$(arg main_t_arg)</param>
+            <param name="can_timeout">$(arg can_t_arg)</param>
+            <param name="rcv_timeout">$(arg rec_t_arg)</param>
+            
+            <param name="attitude">$(arg use_imu)</param> 
+
+            <param name="b2imu_pos_x">0</param> 
+            <param name="b2imu_pos_y">0</param> 
+            <param name="b2imu_pos_z">0</param> 
+
+            <param name="b2imu_roll">0</param> 
+            <param name="b2imu_pitch">0</param> 
+            <param name="b2imu_yaw">90.0</param>
+            <param name="acc_correction">1</param> 
+        </hardware>
+    </ros2_control>
+</robot>

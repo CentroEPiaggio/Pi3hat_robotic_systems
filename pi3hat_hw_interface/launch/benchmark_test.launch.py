@@ -21,17 +21,20 @@ def generate_launch_description():
 
     moteus_pi3hat_pkg_path = get_package_share_path("pi3hat_hw_interface")
    
-    urdf_name_val = LaunchConfiguration("urdf_file")
-    conf_name_val = LaunchConfiguration("conf_file")
-
-    urdf_name_arg = DeclareLaunchArgument("urdf_file",default_value="8DOF_mul_off.urdf.xacro")
-    conf_name_arg = DeclareLaunchArgument("conf_file",default_value="test_config.yaml")
-   
     
+    use_imu_value = LaunchConfiguration("use_imu")
+    main_t_value = LaunchConfiguration("main_t")
+    can_t_value = LaunchConfiguration("can_t")
+    rec_t_value = LaunchConfiguration("rec_t")
+   
+    use_imu_arg = DeclareLaunchArgument("use_imu",default_value="0")
+    main_t_arg = DeclareLaunchArgument("main_t",default_value="500000")
+    can_t_arg = DeclareLaunchArgument("can_t",default_value="2000")
+    rec_t_arg = DeclareLaunchArgument("rec_t",default_value="2000")
     moteus_pi3hat_path = PathJoinSubstitution([
         FindPackageShare("pi3hat_hw_interface"),
         "urdf",
-       urdf_name_val
+       "bench_test.urdf.xacro"
        ]
     )
     moteus_pi3hat_pkg_path = PathJoinSubstitution([
@@ -56,7 +59,7 @@ def generate_launch_description():
     
 
     robot_description = ParameterValue(
-        Command(["xacro ",moteus_pi3hat_path]),
+        Command(["xacro ",moteus_pi3hat_path, " use_imu:=",use_imu_value," main_t_arg:=",main_t_value," can_t_arg:=",can_t_value," rec_t_arg:=",rec_t_value]),
         value_type=str
     )
 
@@ -64,8 +67,9 @@ def generate_launch_description():
     # controller_path = get_package_share_path("pi3hat_hw_interface")
     
     # controller_path = os.path.join(controller_path,'config','test_config.yaml')
-    controller_param = PathJoinSubstitution([FindPackageShare("pi3hat_hw_interface"),"config",conf_name_val])
-
+    controller_param = PathJoinSubstitution([FindPackageShare("pi3hat_hw_interface"),"config","bench_controller.yaml"])
+    
+    # print(controller_path)
     control_node = Node(
         package="controller_manager",
         executable="ros2_control_node",
@@ -85,9 +89,12 @@ def generate_launch_description():
         [
         #    moteus_pi3hat_model,
         #     control_node,
-            urdf_name_arg,
-            conf_name_arg,
-
+            # urdf_name_arg,
+            # conf_name_arg,
+            use_imu_arg,
+            main_t_arg,
+            can_t_arg,
+            rec_t_arg,
             init_proc,
             exec_node
         ]

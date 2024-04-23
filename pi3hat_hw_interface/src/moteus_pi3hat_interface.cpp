@@ -141,6 +141,11 @@ namespace pi3hat_hw_interface
             c_to = std::stoi(info.hardware_parameters.at("can_timeout"));
             r_to = std::stoi(info.hardware_parameters.at("rcv_timeout"));
             att_req_ = std::stoi(info.hardware_parameters.at("attitude")) == 0 ? false : true;
+            RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"the Central unit Parameters are:");
+            RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"use IMU %s", att_req_ ? "true" : " false");
+            RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"the main timeout is %d",m_to);
+            RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"the can timeout is %d",c_to);
+            RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"the recieve timeout is %d",r_to);
             if(att_req_)
             {
                 imu_to_base_pos_ << std::stod(info.hardware_parameters.at("b2imu_pos_x")),
@@ -514,8 +519,8 @@ namespace pi3hat_hw_interface
 
             }
             
-            if(count_ % MAX_COUNT == 0)
-            {
+            // if(count_ % MAX_COUNT == 0)
+            // {
                 // int lost_pkt ;
                 for(size_t j = 0; j < pkt_loss_.size(); j++)
                 {
@@ -551,14 +556,14 @@ namespace pi3hat_hw_interface
                // RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "Not valid msg count is %d",not_val_cycle_);
                 count_ = 0;
                 not_val_cycle_ = 0;
-                RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"the validity loss is %lf",valid_loss_);
-                i = 0;
-                for(auto motor : motors_)
-                {
-                    RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"the package loss  of motor %d is %d",motor.get_id(),motor.get_pkg_loss());
-                    i++;
-                }
-            }
+                // RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"the validity loss is %lf",valid_loss_);
+                // i = 0;
+                // for(auto motor : motors_)
+                // {
+                //     RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"the package loss  of motor %d is %d",motor.get_id(),motor.get_pkg_loss());
+                //     i++;
+                // }
+            // }
             return hardware_interface::return_type::OK;
         };
 

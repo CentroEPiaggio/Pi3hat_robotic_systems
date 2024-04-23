@@ -1,0 +1,13 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 50
+    state_broadcaster:
+      type: pi3hat_state_broadcaster/Pi3Hat_State_Broadcaster 
+ 
+
+state_broadcaster:
+  ros__parameters:    
+    performance_index: true
+
+
+
