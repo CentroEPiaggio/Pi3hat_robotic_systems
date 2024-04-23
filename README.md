@@ -55,16 +55,15 @@ install ros2 control framework and xacro
 </li>
 
 <li> 
-    install the python 3.9 to use the MJBots library to set up the driver at the interface starting
+    install pip3 and the moteus libraries:
 
     
- ```  sudo add-apt-repository ppa:deadsnakes/ppa  ```
+ ```  sudo apt install python3-pip  ```
 
-  ```   sudo apt install python3.9  ```
+  ```   sudo pip3 moteus  ```
 
- ```   sudo apt-get install python3.9-venv  ```
+ ```   sudo pip3 moteus_pi3hat  ```
 
-then create a new venv in the ~/ directory called "mul_env", if you are in trouble using venv [look at this](https://tellor.io/blog/how-to-install-python-3-9-and-venv-on-ubuntu/)
 
 </li> 
 
@@ -85,7 +84,7 @@ then create a new venv in the ~/ directory called "mul_env", if you are in troub
     pi3hat_moteus_int_msgs: contains the interfaces to use all the controllers available in this repository.
     <ol>
     <li>
-        JointCOmmand: is a message used by the joint_controller, it is a sort of sensor_msgs/JointStates message contains also the scales associate with the proportional and the derivative gains.
+        JointCommand: is a message used by the joint_controller, it is a sort of sensor_msgs/JointStates message contains also the scales associate with the proportional and the derivative gains.
     </li>
     <li>
         JointStates: is a message used by the state_broadcaster, it is a sort of sensor_msgs/JointStates message contains also the temperature, the current and eventually the second encoder position and velocity.
@@ -108,7 +107,7 @@ then create a new venv in the ~/ directory called "mul_env", if you are in troub
 </li>
 </ol>
 
-## Controller and Interface configuration file
+## Interface configuration file
 The [ROS2 Control](https://control.ros.org/master/index.html) framework must be known to understand this part.
 
 The Interfaces parameters can be divided into two groups:
@@ -158,6 +157,8 @@ An example of the URDF file is:
             <param name="p_lim_max">0.0</param> 
             <param name="p_lim_min">0.0</param> 
             <param name="p_offset">0.0</param>
+            <param name="max_vel">10.0</param>
+            <param name="max_torque">5.0</param>
         </joint>
 
     </ros2_control>
@@ -218,10 +219,59 @@ An example of the URDF file is:
         <li>
             p_offset: joint level offset position of the actuator in radians.
         </li>
+        <li>
+            max_vel: joint level velocity saturarion.
+        </li>
+        <li>
+            max_torque: joint level torque saturation.
+        </li>
     </ul>
     </li>
 </ol>
 
+## Joints_Controller 
+### Parameters
+<ul>
+    <li>joints: the list of all joint</li>
+    <li>init_pos: the list of all joints start position, if not provided it will be zero at all joints</li>
+    
+</ul>
+
+### Topic 
+joint_controller/command: Message type pi3hat_moteus_int_msgs/JointCommand. 
+<ul>
+    <li>Joints Name, list of joints name</li>
+    <li>Positions reference, if NaN the PI control is disabled</li>
+    <li>Velocities reference, if NaN the D control is disabled</li>
+    <li>Torques reference, if NaN the motor will fault</li>
+    <li>kp_gain_scale, base propotional gain scale factor </li>
+    <li>kd_gain_scale, base derivative gain scale factor</li>
+</ul>
+
+## State_Broadcaster
+### Parameters
+<ul>
+    <li>joints: the list of all joint</li>
+    <li>second_encoders: list of joint equipped with second encoder</li>
+    <li>performance_index: If true will be open also the low level communication performance indexes</li>
+    
+</ul>
+### Topic 
+joint_controller/command: Message type pi3hat_moteus_int_msgs/JointCommand. 
+<ul>
+    <li>Joints Name, list of joints name</li>
+    <li>Positions reference, if NaN the PI control is disabled</li>
+    <li>Velocities reference, if NaN the D control is disabled</li>
+    <li>Torques reference, if NaN the motor will fault</li>
+    <li>kp_gain_scale, base propotional gain scale factor </li>
+    <li>kd_gain_scale, base derivative gain scale factor</li>
+</ul>
+
+## Launch Interface
+
+``` ros2 launch pi3hat_hw_interface start_MJBots_Pi3Hat_hw_Interface.launch.py urdf_file:=<filename> conf_file:=<filename>  ```
+
+the configuration and urdf file must be contained respectively in  pi3hat_hw_interface/config and  pi3hat_hw_interface/urdf.  
 ## References
 [Moteus Dirver](https://github.com/mjbots/moteus/blob/main/docs/reference.md)
 
