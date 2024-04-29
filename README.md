@@ -256,18 +256,48 @@ joint_controller/command: Message type pi3hat_moteus_int_msgs/JointCommand.
     <li>performance_index: If true will be open also the low level communication performance indexes</li>
     
 </ul>
-### Topic 
-joint_controller/command: Message type pi3hat_moteus_int_msgs/JointCommand. 
+
+### Topic
+
+state_broadcaster/joints_state: Message type pi3hat_moteus_int_msgs/JointStates. 
 <ul>
     <li>Joints Name, list of joints name</li>
-    <li>Positions reference, if NaN the PI control is disabled</li>
-    <li>Velocities reference, if NaN the D control is disabled</li>
-    <li>Torques reference, if NaN the motor will fault</li>
-    <li>kp_gain_scale, base propotional gain scale factor </li>
-    <li>kd_gain_scale, base derivative gain scale factor</li>
+    <li>Positions measured</li>
+    <li>Velocities measured</li>
+    <li>Torques measured</li>
+    <li>Current measured </li>
+    <li>Driver Temperature measured</li>
+    <li>Second Encoder Position, if needed</li>
+    <li>Second Encoder Velocity, if needed </li>
+</ul>
+
+state_broadcaster/performance_indexes: Message type pi3hat_moteus_int_msgs/PacketPass. 
+<ul>
+    <li>Pi3Hat Cycle time </li>
+    <li>Cycle Validation, if one then the system has lost a cycle</li>
+    <li>Joints name list/li>
+    <li>Joints Packet loss, if one then the low level communication has lost a motor package</li>
+
 </ul>
 
 ## Launch Interface
+
+Set up the robot terminal:
+
+- go into the mulinex_ws folder and make the global and local ros2 source
+ ``` cd mulinex_ws ```
+
+``` source /opt/ros/humble/setup.bash ```
+
+
+``` source install/local_setup.bash ```
+
+If a communication with opc are needed also the ROS_DOMAIN_ID must be set, the id value must be the same for both robot and OPC.
+
+``` export ROS_DOMAIN_ID=<ID> ```
+
+To launch the interface use the command:
+
 
 ``` ros2 launch pi3hat_hw_interface start_MJBots_Pi3Hat_hw_Interface.launch.py urdf_file:=<filename> conf_file:=<filename>  ```
 
