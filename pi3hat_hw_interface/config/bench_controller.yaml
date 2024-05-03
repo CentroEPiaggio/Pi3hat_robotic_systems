@@ -6,7 +6,26 @@ controller_manager:
  
 
 state_broadcaster:
-  ros__parameters:    
+  ros__parameters:
+    joints:
+      - "LF_HFE"
+      - "LF_KFE"
+      - "LH_HFE"
+      - "LH_KFE"
+      - "RF_HFE"
+      - "RF_KFE"
+      - "RH_HFE"
+      - "RH_KFE"
+    # second_encoders:
+    #   - "LF_HFE"
+    #   - "LF_KFE"
+    #   - "LH_HFE"
+    #   - "LH_KFE"
+    #   - "RF_HFE"
+    #   - "RF_KFE"
+    #   - "RH_HFE"
+    #   - "RH_KFE"
+    
     performance_index: true
 
 

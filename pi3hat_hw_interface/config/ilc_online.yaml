@@ -2,16 +2,16 @@ controller_manager:
   ros__parameters:
     update_rate: 500 # hz tutto
     state_broadcaster:
-      type: pi3hat_state_broadcaster/Pi3Hat_State_Broadcaster # stampa roba su topic 
+      type: pi3hat_state_broadcaster/Pi3Hat_State_Broadcaster # stampa roba su topic
     joint_controller:
-      type: pi3hat_joint_group_controller/Pi3Hat_Joint_Group_Controller # prende messaggi da topic 
+      type: pi3hat_joint_group_controller/Pi3Hat_Joint_Group_Controller # prende messaggi da topic
     OM_controller:
       type: pi3hat_vel_controller/Pi3Hat_Vel_Controller
     IMU_Broadcaster:
       type: imu_sensor_broadcaster/IMUSensorBroadcaster
     ilc_sig_controller:
       type: pi3hat_ilc_sig_controller/Pi3Hat_Ilc_Sig_Controller
-
+ 
 state_broadcaster:
   ros__parameters:
     joints:
@@ -23,15 +23,19 @@ state_broadcaster:
       - "RF_KFE"
       - "RH_HFE"
       - "RH_KFE"
-    second_encoders:
-      - "LF_HFE"
-      - "LF_KFE"
-      - "LH_HFE"
-      - "LH_KFE"
-      - "RF_HFE"
-      - "RF_KFE"
-      - "RH_HFE"
-      - "RH_KFE"
+      # - "LF_WHEEL"
+      # - "LH_WHEEL"
+      # - "RF_WHEEL"
+      # - "RH_WHEEL"
+    # second_encoders:
+    #   - "LF_HFE"
+    #   - "LF_KFE"
+    #   - "LH_HFE"
+    #   - "LH_KFE"
+    #   - "RF_HFE"
+    #   - "RF_KFE"
+    #   - "RH_HFE"
+    #   - "RH_KFE"
     
     performance_index: true
 # OM_controller:
@@ -53,6 +57,10 @@ joint_controller:
       - "LH_KFE"
       - "RF_KFE"
       - "RH_KFE"
+      # - "LF_WHEEL"
+      # - "LH_WHEEL"
+      # - "RF_WHEEL"
+      # - "RH_WHEEL"
       # - "RF_HFE"
       # - "RF_KFE"
       # - "LF_HFE"
@@ -61,8 +69,8 @@ joint_controller:
       # - "LH_KFE"
       # - "RH_HFE"
       # - "RH_KFE"
-
-
+ 
+ 
     
 OM_controller:
   ros__parameters:
@@ -73,19 +81,19 @@ OM_controller:
     init_height: -0.30
     max_height: -0.5
     min_height: -0.10
-    wheel_rad: 0.028  #0.028 for trucks, 0.05 for omniwheels
+    wheel_rad: 0.05  #0.028 for trucks, 0.05 for omniwheels
     feet_type: 2   
     
 ilc_sig_controller:
    ros__parameters:
       period: 0.002
-      file_homing: "/home/jacopocioni/mulinex_ws/src/Ilc_sig_ROS2_controller/csv_task/init.csv"
-      file_name: "/home/jacopocioni/mulinex_ws/src/Ilc_sig_ROS2_controller/csv_task/task.csv"
+      file_homing: "/home/mulsbc/mulinex_ws/src/Ilc_sig_ROS2_controller/csv_task/init.csv"
+      file_name: "/home/mulsbc/mulinex_ws/src/Ilc_sig_ROS2_controller/csv_task/task.csv"
       T_init: 3.0 # time duration of the homing phase       
-      T_init_rest: 5.0 
+      T_init_rest: 5.0
       T_task: 1.0
-      T_rest: 0.1
-      Task_rep: 30
+      T_rest: 0.2
+      Task_rep: 1
       ILC_kp: 0.5
       ILC_kd: 0.075
       KI: 0.0
