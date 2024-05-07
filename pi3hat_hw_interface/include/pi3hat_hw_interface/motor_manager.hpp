@@ -35,6 +35,7 @@ namespace hardware_interface
     constexpr char HW_IF_VALIDITY_LOSS[] = "validity_loss";
     constexpr char HW_IF_PACKAGE_LOSS[] = "package_loss";
     constexpr char HW_IF_CYCLE_DUR[] = "cycle_duration";
+    constexpr char HW_IF_W2R_DUR[] = "write2read_duration";
     constexpr char HW_IF_CURRENT[] = "current";
 
 

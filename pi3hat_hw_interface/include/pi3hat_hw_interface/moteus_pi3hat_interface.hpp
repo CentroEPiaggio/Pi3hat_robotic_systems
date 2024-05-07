@@ -167,7 +167,9 @@ namespace pi3hat_hw_interface
                 int acc_correction_ = 0;
                 tf2::Quaternion imu_pose_;
                 std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
-
+                std::chrono::_V2::system_clock::time_point t_e_write_ , t_s_read_;
+                double w2r_dur_;
+                bool first_cycle_ = true;
         };
     }
 }

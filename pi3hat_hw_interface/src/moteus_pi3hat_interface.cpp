@@ -343,7 +343,11 @@ namespace pi3hat_hw_interface
                         info_.name,
                         hardware_interface::HW_IF_CYCLE_DUR,
                         &cycle_dur_);
-            num_stt_int_ = 2;
+            stt_int.emplace_back(
+                        info_.name,
+                        hardware_interface::HW_IF_W2R_DUR,
+                        &w2r_dur_);
+            num_stt_int_ = 3;
             for(auto &motor : motors_)
             {
               
@@ -428,7 +432,7 @@ namespace pi3hat_hw_interface
             count_ ++;
             // if( count_ %1 00 == 0)
             //     RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "100");
-            
+            t_s_read_ = std::chrono::high_resolution_clock::now();
             if(can_recvd_.wait_for(10us) != std::future_status::ready)
             {
                 not_val_cycle_++;
@@ -437,6 +441,8 @@ namespace pi3hat_hw_interface
                     motor.set_msg_valid(false);
                 // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "Not valid msg");
                 valid_ = false;
+                cycle_dur_ = std::nan("1");
+                w2r_dur_ = std::nan("1");
             }
             else
             {
@@ -452,7 +458,8 @@ namespace pi3hat_hw_interface
                 // }
                 valid_ = true;
                 cycle_dur_ = out.cycle_s;
-
+                if(!first_cycle_)
+                    w2r_dur_ = std::chrono::duration<double>(t_s_read_-t_e_write_).count();
           
                 //get imu data from pi3hat in imu frame 
                 if(att_req_)
@@ -569,7 +576,8 @@ namespace pi3hat_hw_interface
 
         hardware_interface::return_type MoteusPi3Hat_Interface::write(const rclcpp::Time & , const rclcpp::Duration & ) 
         {
-            
+            if(first_cycle_)
+                first_cycle_ = false;   
             if(valid_)
             {
                 for(auto &motor : motors_)
@@ -600,6 +608,7 @@ namespace pi3hat_hw_interface
                     assert(false);
                 }
             }
+            t_e_write_ = std::chrono::high_resolution_clock::now();
             return hardware_interface::return_type::OK;
         };
 

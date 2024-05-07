@@ -132,6 +132,7 @@ namespace pi3hat_state_broadcaster
         std::string int_name = "MoteusPi3Hat_Interface";
         stt_int_cnf.names.push_back(int_name + "/" + hardware_interface::HW_IF_VALIDITY_LOSS);
         stt_int_cnf.names.push_back(int_name + "/" + hardware_interface::HW_IF_CYCLE_DUR);
+        stt_int_cnf.names.push_back(int_name + "/" + hardware_interface::HW_IF_W2R_DUR);
         for(size_t i = 0; i < joints_.size(); i++)
             stt_int_cnf.names.push_back(joints_[i] + "/" + hardware_interface::HW_IF_PACKAGE_LOSS);
         for(size_t i = 0; i < joints_.size(); i++)
@@ -169,9 +170,11 @@ namespace pi3hat_state_broadcaster
             per_msg_.header.set__stamp(time);
             per_msg_.set__valid(state_interfaces_[0].get_value());
             per_msg_.set__cycle_dur(state_interfaces_[1].get_value());
+            per_msg_.set__write2read_dur(state_interfaces_[2].get_value());
+            // RCLCPP_INFO_STREAM(get_node()->get_logger(),state_interfaces_[2].get_value());
             for(size_t i = 0; i < sz; i++)
             {
-                per_msg_.pack_loss[i] = state_interfaces_[i + 2].get_value();
+                per_msg_.pack_loss[i] = state_interfaces_[i + 3].get_value();
             }
 
             per_pub_->publish(per_msg_);
@@ -185,15 +188,15 @@ namespace pi3hat_state_broadcaster
             // RCLCPP_INFO(get_node()->get_logger(),"executing std stt for jnt %s",joints_[i].c_str());
             stt_msg_.name[i] = joints_[i];
             // RCLCPP_INFO(get_node()->get_logger(),"temp ind is %ld",1 + sz + 4*i );
-            stt_msg_.position[i] = state_interfaces_[2 + sz + 5*i ].get_value();
+            stt_msg_.position[i] = state_interfaces_[3 + sz + 5*i ].get_value();
             // RCLCPP_INFO(get_node()->get_logger(),"temp ind is %ld",1 + sz + 4*i + 1);
-            stt_msg_.velocity[i] = state_interfaces_[2 + sz + 5*i + 1].get_value();
+            stt_msg_.velocity[i] = state_interfaces_[3 + sz + 5*i + 1].get_value();
             // RCLCPP_INFO(get_node()->get_logger(),"temp ind is %ld",1 + sz + 4*i + 2);
-            stt_msg_.effort[i] = state_interfaces_[2 + sz + 5*i + 2].get_value();
+            stt_msg_.effort[i] = state_interfaces_[3 + sz + 5*i + 2].get_value();
             // RCLCPP_INFO(get_node()->get_logger(),"temp ind is %ld",1 + sz + 4*i + 3);
-            stt_msg_.temperature[i] = state_interfaces_[2 + sz + 5*i + 3].get_value();
+            stt_msg_.temperature[i] = state_interfaces_[3 + sz + 5*i + 3].get_value();
 
-            stt_msg_.current[i] = state_interfaces_[2 + sz + 5*i + 4].get_value();
+            stt_msg_.current[i] = state_interfaces_[3 + sz + 5*i + 4].get_value();
             
         }
     
@@ -202,8 +205,8 @@ namespace pi3hat_state_broadcaster
             if(se_flag_[i])
             {
                 // RCLCPP_INFO(get_node()->get_logger(),"executing se stt for jnt %s",joints_[i].c_str());
-                stt_msg_.sec_enc_pos[i] = state_interfaces_[ 2 + sz*6 + 2*i ].get_value();
-                stt_msg_.sec_enc_vel[i] = state_interfaces_[ 2 + sz*6 + 2*i +1].get_value();
+                stt_msg_.sec_enc_pos[i] = state_interfaces_[ 3 + sz*6 + 2*i ].get_value();
+                stt_msg_.sec_enc_vel[i] = state_interfaces_[ 3 + sz*6 + 2*i +1].get_value();
             }
         }
         stt_pub_->publish(stt_msg_);
