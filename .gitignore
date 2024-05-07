@@ -4,3 +4,5 @@
 /install/
 /log/
 /build/
+/pi3hat_hw_interface/urdf/
+/pi3hat_hw_interface/config/
