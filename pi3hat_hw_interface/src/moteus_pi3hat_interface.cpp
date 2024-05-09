@@ -14,12 +14,14 @@ namespace pi3hat_hw_interface
         MoteusPi3Hat_Interface::MoteusPi3Hat_Interface():
         communication_thread_()
         {
-            imuw2_nav_ = Eigen::AngleAxis<double>(-PI_,Eigen::Vector3d::UnitX()) * Eigen::AngleAxis<double>(-PI_/2,Eigen::Vector3d::UnitZ());
-            Eigen::Quaternion<double> prova;
-            prova = Eigen::AngleAxis<double>(-PI_,Eigen::Vector3d::UnitX());
-            prova = prova * imuw2_nav_;
-            Eigen::Vector3d Euler = prova.toRotationMatrix().eulerAngles(0, 1, 2);
-            RCLCPP_INFO(rclcpp::get_logger("IMUS"),"imu to nav ea [%f,%f,%f]",Euler(0),Euler(1),Euler(2));
+            //imuw2_nav_ = Eigen::AngleAxis<double>(-PI_,Eigen::Vector3d::UnitX()) * Eigen::AngleAxis<double>(-PI_/2,Eigen::Vector3d::UnitZ());
+            
+            // Eigen::Quaternion<double> prova;
+            // prova = Eigen::AngleAxis<double>(-PI_,Eigen::Vector3d::UnitX());
+            // prova = prova * imuw2_nav_;
+            // Eigen::Vector3d Euler = prova.toRotationMatrix().eulerAngles(0, 1, 2);
+            // RCLCPP_INFO(rclcpp::get_logger("IMUS"),"imu to nav ea [%f,%f,%f]",Euler(0),Euler(1),Euler(2));
+
             // create the comunnication thread_
             //communication_thread_ = new MoteusInterface(opt);
             gets_ = [] (std::vector<Reply>& replies,int bus,int id,int ,int& err, int  ) -> moteus::QueryResultV2
@@ -159,6 +161,9 @@ namespace pi3hat_hw_interface
                 vel_base_.resize(3,0.0); // x,y,z
                 quaternion_.resize(4,0.0);// w,x,y,z
                 acc_correction_ = std::stoi(info.hardware_parameters.at("acc_correction"));
+
+                imuw2_nav_ = orientation_ *  Eigen::AngleAxis<double>(-PI_,Eigen::Vector3d::UnitX());
+
             }
             try
             {
@@ -479,14 +484,17 @@ namespace pi3hat_hw_interface
                                                                 );
                     
                     // rotate angular velocity in base frame Rimu_base^T vel_imu
-                    vel_imu_= orientation_.inverse()*(ang_vel_imu);
+                    //vel_imu_= orientation_.inverse()*(ang_vel_imu);
+                    vel_imu_= orientation_*(ang_vel_imu);
+
                     // Eigen::Vector3d Euler = read_or.toRotationMatrix().eulerAngles(0, 1, 2);
                     // RCLCPP_INFO(rclcpp::get_logger("IMUS"),"imu to nav ea1 [%f,%f,%f]",Euler(0),Euler(1),Euler(2));
                     // RCLCPP_INFO(rclcpp::get_logger("IMUS"),"imu to nav q [%f,%f,%f,%f]",read_or.x(),read_or.y(),read_or.z(),read_or.w());
                     // composite the orientation to have the world frame : Rworld_imunav * Rimu_nav_imu * Rimu_base
                     // read_or = imuw2_nav_* read_or * orientation_;
+
                     read_or = imuw2_nav_ * read_or * orientation_.inverse();
-                    
+
                     // Euler = read_or.toRotationMatrix().eulerAngles(0, 1, 2);
                     // RCLCPP_INFO(rclcpp::get_logger("IMUS"),"imu to nav ea2 [%f,%f,%f]",Euler(0),Euler(1),Euler(2));
                     // RCLCPP_INFO(rclcpp::get_logger("IMUS"),"imu to nav q [%f,%f,%f,%f]",read_or.x(),read_or.y(),read_or.z(),read_or.w());
@@ -496,10 +504,14 @@ namespace pi3hat_hw_interface
                     quaternion_[3] = read_or.z();
 
                     // rotare the linear acceleration considering also the centripetalp effects, are not computed the angular acceleration components
-                    if(acc_correction_ != 0)
-                    acc_imu_ = orientation_.inverse() *(lin_acc_imu - ang_vel_imu.cross(ang_vel_imu.cross(imu_to_base_pos_)));
-                    else
-                        acc_imu_ = orientation_.inverse() *(lin_acc_imu);
+                    // if(acc_correction_ != 0)
+                    //     acc_imu_ = orientation_.inverse() *(lin_acc_imu - ang_vel_imu.cross(ang_vel_imu.cross(imu_to_base_pos_)));
+                    // else
+
+                    // I SASSI:
+                    acc_imu_ = orientation_*(lin_acc_imu);
+                    
+                    
                     for(size_t i = 0; i< acc_base_.size();i++)
                     {
                         vel_base_[i] = vel_imu_[i];
