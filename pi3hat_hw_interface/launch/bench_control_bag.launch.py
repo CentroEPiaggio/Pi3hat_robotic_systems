@@ -48,7 +48,7 @@ def generate_launch_description():
 
     )
         end_bench = TimerAction(
-        period=600.0,
+        period=300.0,
         actions=[
             EmitEvent(event=Shutdown(reason="End Benchmarking Experiments"))
         ]

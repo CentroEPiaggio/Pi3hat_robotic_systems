@@ -1,0 +1,9 @@
+<library path="omni_vel_controller">
+  <class name="omni_vel_controller/Omni_Vel_Controller" 
+    type="omni_vel_controller::Omni_Vel_Controller"
+    base_class_type="controller_interface::ControllerInterface">
+    <description>
+    Omni Wheels driven base velocity controller
+    </description>
+  </class>
+</library>
