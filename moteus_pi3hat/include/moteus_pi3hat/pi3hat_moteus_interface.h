@@ -265,7 +265,7 @@ class Pi3HatMoteusInterface {
     input.request_attitude = this->attitude_req_;
     input.attitude = &attitude_;
     input.imu_raw_data = this->attitude_raw_;
-    input.wait_for_attitude = true;
+    input.wait_for_attitude = this->attitude_req_;
     Options option_;
     Output result;
 

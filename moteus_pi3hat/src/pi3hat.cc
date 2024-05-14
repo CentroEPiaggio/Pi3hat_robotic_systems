@@ -1200,7 +1200,7 @@ class Pi3Hat::Impl {
         BusyWaitUs(20);
       } while (true);
     }
-    if(!raw)
+    if(raw)
     {
       do {
         
@@ -1232,7 +1232,7 @@ class Pi3Hat::Impl {
         return false;
       }
     }
-    if(!raw)
+    if(raw)
     {
       const auto& da = device_attitude_;
       
