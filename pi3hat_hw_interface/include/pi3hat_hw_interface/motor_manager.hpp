@@ -13,7 +13,7 @@
 // #define NULL __null
 
 #define MAX_COUNT 100
-#define MIN_STT_INT 6
+#define MIN_STT_INT 7
 
 using namespace mjbots;
 using namespace std;
@@ -37,6 +37,7 @@ namespace hardware_interface
     constexpr char HW_IF_CYCLE_DUR[] = "cycle_duration";
     constexpr char HW_IF_W2R_DUR[] = "write2read_duration";
     constexpr char HW_IF_CURRENT[] = "current";
+    constexpr char HW_IF_ELECT_POWER[] = "electrical_power";
 
 
 }
@@ -180,7 +181,8 @@ namespace pi3hat_hw_interface
                                 hardware_interface::HW_IF_EFFORT,
                                 hardware_interface::HW_IF_TEMPERATURE,
                                 hardware_interface::HW_IF_CURRENT,
-                                hardware_interface::HW_IF_PACKAGE_LOSS
+                                hardware_interface::HW_IF_PACKAGE_LOSS,
+                                hardware_interface::HW_IF_ELECT_POWER
                             
                             };
                         }
@@ -193,6 +195,7 @@ namespace pi3hat_hw_interface
                                 hardware_interface::HW_IF_TEMPERATURE,
                                 hardware_interface::HW_IF_CURRENT,
                                 hardware_interface::HW_IF_PACKAGE_LOSS,
+                                hardware_interface::HW_IF_ELECT_POWER,
                                 hardware_interface::HW_IF_POSITION,
                                 hardware_interface::HW_IF_VELOCITY
                             };
@@ -376,6 +379,7 @@ namespace pi3hat_hw_interface
                 double cmd_trq_ = 0.0;
                 double msr_cur_ = 0.0;
                 double max_trq_ = 0.0;
+                double elect_power_ = 0.0;
                 bool low_sat_ = false, high_sat_ = false;
                 Command* cmd_data_;
                 

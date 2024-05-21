@@ -74,6 +74,7 @@ enum Register : uint32_t {
   kTorque = 0x003,
   kQCurrent = 0x004,
   kDCurrent = 0x005,
+  kElectPower = 0x007,
   kRezeroState = 0x00c,
   kVoltage = 0x00d,
   kTemperature = 0x00e,
@@ -509,6 +510,10 @@ class MultiplexParser {
     return ReadMapped(res, 1.0, 0.1, 0.001);
   }
 
+   double ReadPower(Resolution res) {
+    return ReadMapped(res, 10.0, 0.05, 0.0001);
+  }
+
   void Ignore(Resolution res) {
     offset_ += ResolutionSize(res);
   }
@@ -659,7 +664,7 @@ struct QueryCommand {
         d_current != Resolution::kIgnore ||
         rezero_state != Resolution::kIgnore ||
         voltage != Resolution::kIgnore ||
-        temperature != Resolution::kIgnore ||
+        temperature != Resolution::kIgnore ||    
         fault != Resolution::kIgnore;
   }
 
@@ -679,6 +684,8 @@ struct QueryCommandV2 {
   Resolution fault = Resolution::kInt8;
   Resolution sec_enc_pos = Resolution::kIgnore;
   Resolution sec_enc_vel = Resolution::kIgnore;
+  Resolution elect_power = Resolution::kInt16;
+
 
   bool any_set() const {
     return mode != Resolution::kIgnore ||
@@ -692,6 +699,7 @@ struct QueryCommandV2 {
         temperature != Resolution::kIgnore ||
         fault != Resolution::kIgnore ||
         sec_enc_pos != Resolution::kIgnore ||
+        elect_power != Resolution::kIgnore ||
         sec_enc_vel != Resolution::kIgnore;
   }
   bool operator==(const QueryCommandV2 a)
@@ -707,7 +715,8 @@ struct QueryCommandV2 {
         voltage == a.voltage &&
         temperature == a.temperature &&
         sec_enc_pos == a.sec_enc_pos &&
-        sec_enc_vel == a.sec_enc_vel
+        sec_enc_vel == a.sec_enc_vel &&
+        elect_power ==a.elect_power
     );
   };
   void operator=(const QueryCommandV2 a)
@@ -724,6 +733,7 @@ struct QueryCommandV2 {
       fault = a.fault;
       sec_enc_pos = a.sec_enc_pos;
       sec_enc_vel = a.sec_enc_vel;
+      elect_power = a.elect_power;
   };
 };
 
@@ -739,6 +749,7 @@ inline void EmitQueryCommand(
             command.torque,
             command.q_current,
             command.d_current,
+            
             });
     for (int i = 0; i < 6; i++) {
       combiner.MaybeWrite();
@@ -767,9 +778,17 @@ inline void EmitQueryCommandV2(
             command.velocity,
             command.torque,
             command.q_current,
-            command.d_current,
+            command.d_current
             });
     for (int i = 0; i < 6; i++) {
+      combiner.MaybeWrite();
+    }
+  }
+  {
+    WriteCombiner<1> combiner(frame, 0x10, Register::kElectPower,{
+      command.elect_power
+    });
+    for (int i = 0; i < 1; i++) {
       combiner.MaybeWrite();
     }
   }
@@ -882,6 +901,7 @@ struct QueryResultV2 {
   double temperature = std::numeric_limits<double>::quiet_NaN();
   double sec_enc_pos = std::numeric_limits<double>::quiet_NaN();
   double sec_enc_vel = std::numeric_limits<double>::quiet_NaN();
+  double elect_power = std::numeric_limits<double>::quiet_NaN();
   int fault = 0;
 };
 
@@ -916,6 +936,10 @@ inline QueryResultV2 ParseQueryResultV2(const uint8_t* data, size_t size) {
       }
       case Register::kDCurrent: {
         result.d_current = parser.ReadCurrent(res);
+        break;
+      }
+      case Register::kElectPower: {
+        result.elect_power = parser.ReadPower(res);
         break;
       }
       case Register::kRezeroState: {

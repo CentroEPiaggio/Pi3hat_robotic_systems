@@ -81,6 +81,8 @@ namespace pi3hat_hw_interface
                     return &msr_cur_;
                 else if(type == hardware_interface::HW_IF_PACKAGE_LOSS)
                     return &loss_var_;
+                else if(type == hardware_interface::HW_IF_ELECT_POWER)
+                    return &elect_power_;
                 else
                     throw std::invalid_argument("The passsed interface state type has not the correct type");
             }
@@ -240,6 +242,7 @@ namespace pi3hat_hw_interface
                 msr_trq_ = res.torque*motor_trans_;
                 msr_tmp_ = res.temperature;
                 msr_cur_ = res.q_current;
+                elect_power_ = res.elect_power;
 
                 if(sec_enc_trans_ != 0.0)
                 {

@@ -7,4 +7,5 @@ float64[] effort
 float64[] current  
 float64[] temperature
 float64[] sec_enc_pos
-float64[] sec_enc_vel  
+float64[] sec_enc_vel 
+float64[] elect_power 
