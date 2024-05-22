@@ -20,6 +20,7 @@ namespace pi3hat_state_broadcaster
             auto_declare<std::vector<std::string>>("joints",std::vector<std::string>());
             auto_declare<std::vector<std::string>>("second_encoders",std::vector<std::string>());
             auto_declare<bool>("performance_index",true);
+            auto_declare<bool>("debug",true);
         }
          catch(const std::exception & e)
         {
@@ -34,6 +35,7 @@ namespace pi3hat_state_broadcaster
     {
         bool per_ind, err_se_name=false, se_prov;
         std::vector<std::string> sec_enc;
+        debug_ = get_node()->get_parameter("debug").as_bool();
         joints_ = get_node()->get_parameter("joints").as_string_array();
         if(joints_.empty())
         {
@@ -72,6 +74,8 @@ namespace pi3hat_state_broadcaster
         } 
         per_ind = get_node()->get_parameter("performance_index").as_bool();
 
+
+
         stt_msg_.name.resize(joints_.size());
         stt_msg_.position.resize(joints_.size());
         stt_msg_.velocity.resize(joints_.size());
@@ -100,6 +104,17 @@ namespace pi3hat_state_broadcaster
             per_pub_ = get_node()->create_publisher<LossMsgs>(
                 "~/performance_indexes",
                 5
+            );
+        }
+        if(debug)
+        {
+            per_msg_.name.resize(joints_.size());
+            per_msg_.pack_loss.resize(joints_.size());
+            per_msg_.elect_power.resize(joints.size());
+            
+            deb_pub_  get_node()->create_publisher<DebMsgs>(
+                "~/debug_msgs",
+                10
             );
         }
         RCLCPP_INFO(get_node()->get_logger(),"configurated succesfully");
@@ -189,6 +204,7 @@ namespace pi3hat_state_broadcaster
         {
             // RCLCPP_INFO(get_node()->get_logger(),"executing std stt for jnt %s",joints_[i].c_str());
             stt_msg_.name[i] = joints_[i];
+            
             // RCLCPP_INFO(get_node()->get_logger(),"temp ind is %ld",1 + sz + 4*i );
             stt_msg_.position[i] = state_interfaces_[3 + sz + 6*i ].get_value();
             // RCLCPP_INFO(get_node()->get_logger(),"temp ind is %ld",1 + sz + 4*i + 1);
@@ -199,7 +215,11 @@ namespace pi3hat_state_broadcaster
             stt_msg_.temperature[i] = state_interfaces_[3 + sz + 6*i + 3].get_value();
 
             stt_msg_.current[i] = state_interfaces_[3 + sz + 6*i + 4].get_value();
-            stt_msg_.elect_power[i] = state_interfaces_[3 + sz + 6*i + 5].get_value();
+            if(debug_)
+            {
+                deb_msgs_.name[i] = joint_[i];
+                deb_msgs_.elect_power[i] = state_interfaces_[3 + sz + 6*i + 5].get_value();
+            }
         }
     
         for(size_t i = 0; i < sz; i++)
@@ -212,6 +232,8 @@ namespace pi3hat_state_broadcaster
             }
         }
         stt_pub_->publish(stt_msg_);
+        if(debug_)
+            per_pub_->publish(deb_msgs_);
 
         return controller_interface::return_type::OK;
 

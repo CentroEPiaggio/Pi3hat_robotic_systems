@@ -14,14 +14,18 @@
 #include "hardware_interface/loaned_state_interface.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 
+
+
 #include "pi3hat_moteus_int_msgs/msg/joints_states.hpp"
 #include "pi3hat_moteus_int_msgs/msg/packet_pass.hpp"
+#include "pi3hat_moteus_int_msgs/msg/joint_debug_utils.hpp"
 
 
 namespace pi3hat_state_broadcaster
 {
     using LossMsgs = pi3hat_moteus_int_msgs::msg::PacketPass;
     using StateMsgs = pi3hat_moteus_int_msgs::msg::JointsStates;
+    using DebMsgs =  pi3hat_moteus_int_msgs::msg::JointDebugUtils;
     using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
     class Pi3Hat_State_Broadcaster : public controller_interface::ControllerInterface
     {
@@ -54,8 +58,11 @@ namespace pi3hat_state_broadcaster
             std::string logger_name_;
             LossMsgs per_msg_;
             StateMsgs stt_msg_;
+            DebMsgs deb_msgs_;
             rclcpp::Publisher<LossMsgs>::SharedPtr per_pub_;
             rclcpp::Publisher<StateMsgs>::SharedPtr stt_pub_;
+            rclcpp::Publisher<DebMsgs>::SharedPtr deb_pub_;
+            bool debug_
 
     };
 };
