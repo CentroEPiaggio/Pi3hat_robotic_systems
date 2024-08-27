@@ -13,7 +13,9 @@
 #include "pi3hat_moteus_int_msgs/msg/omni_mulinex_command.hpp"
 #include "pi3hat_moteus_int_msgs/msg/joints_command.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "geometry_msgs/msg/joint_state.hpp"
 #include "std_srvs/srv/set_bool.hpp"
+#include "geometry_msgs/msg/twist_stamped.hpp"
 
 #include <chrono>
 #include <mutex>
@@ -66,6 +68,8 @@ namespace omni_vel_controller
             controller_interface::return_type update(
                 const rclcpp::Time & time, const rclcpp::Duration & period
             ) override;
+
+            void omni_fk();
 
         private:
 
@@ -154,16 +158,22 @@ namespace omni_vel_controller
 
             }
             rclcpp::Publisher<SttMsg>::SharedPtr joints_cmd_pub_;
+            rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr odom_pub_;
             rclcpp::Subscription<CmdMsg>::SharedPtr cmd_sub_;
             double base2Wheel_matrix_[4][3];
+            double odom_matrix_[3][4];
             double base_vel_[3] = {0.0,0.0,0.0};
+            double wheel_vel_[4];
+            double odom_vel_[3] = {0.0,0.0,0.0};
             SttMsg joint_cmd_;
             std::string logger_name_;
             std::mutex var_mutex_;
             duration<double,std::milli> deadmis_to_;
             Controller_State c_stt_ = Controller_State::INACTIVE;
             int dl_miss_count_ = 0;
+            bool odom_flag_;
             std::vector<std::string> wheels_name_ = {"RF_WHEEL","LF_WHEEL","LH_WHEEL","RH_WHEEL"};
+            geometry_msgs::msg::TwistStamped odom_msg_;
            
             rclcpp::Service<TransactionService>::SharedPtr homing_serv_,emergency_serv_;
     };

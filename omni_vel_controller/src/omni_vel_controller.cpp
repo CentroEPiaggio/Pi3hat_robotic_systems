@@ -9,6 +9,7 @@
 #include "hardware_interface/loaned_command_interface.hpp"
 #include "hardware_interface/loaned_state_interface.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
+
 #include <cmath>
 
 using namespace std::chrono;
@@ -27,6 +28,7 @@ namespace omni_vel_controller
             auto_declare<bool>("BestEffort_QOS",true);
             auto_declare<bool>("DeadMiss_event",false);
             auto_declare<bool>("call_dm",false);
+            auto_declare<bool>("pub_odom",false);
         }
          catch(const std::exception & e)
         {
@@ -39,6 +41,7 @@ namespace omni_vel_controller
     };
     CallbackReturn Omni_Vel_Controller::on_configure(const rclcpp_lifecycle::State & )
     {
+        
         double ds_y,ds_x,ma,wr;
         rclcpp::QoS out_qos(10),in_qos(10);
         // get parameters
@@ -46,8 +49,8 @@ namespace omni_vel_controller
         ds_x = get_node()->get_parameter("driveshaft_x").as_double();
         ma = get_node()->get_parameter("mecanum_angle").as_double() *(M_PI/180.0);
         wr = get_node()->get_parameter("wheel_rad").as_double();
+        odom_flag_ = get_node()->get_parameter("pub_odom").as_bool();
 
-        
         milliseconds dur{get_node()->get_parameter("input_frequency").as_int() + 5};
         deadmis_to_ = dur;
 
@@ -68,6 +71,22 @@ namespace omni_vel_controller
         base2Wheel_matrix_[3][0] = 1.0/wr;
         base2Wheel_matrix_[3][1] = 1.0/wr;
         base2Wheel_matrix_[3][2] = -(ds_x + ds_y*(1/std::tan(ma)))/wr;
+
+
+        odom_matrix_[0][0] = (rw /4);
+        odom_matrix_[0][1] = -(rw /4);
+        odom_matrix_[0][2] = -(rw /4);
+        odom_matrix_[0][3] = (rw /4);
+
+        odom_matrix_[1][0] = -(rw /4);
+        odom_matrix_[1][1] = -(rw /4);
+        odom_matrix_[1][2] = (rw /4);
+        odom_matrix_[1][3] = (rw /4);
+
+        odom_matrix_[1][0] = -(rw /(4*(ds_x + ds_y*(1/std::tan(ma)))));
+        odom_matrix_[1][1] = -(rw /(4*(ds_x + ds_y*(1/std::tan(ma)))));
+        odom_matrix_[1][2] = -(rw /(4*(ds_x + ds_y*(1/std::tan(ma)))));
+        odom_matrix_[1][3] = -(rw /(4*(ds_x + ds_y*(1/std::tan(ma)))));
 
         joint_cmd_.name.resize(WHEELS);
         joint_cmd_.set__name(wheels_name_);
@@ -111,7 +130,8 @@ namespace omni_vel_controller
                 &Omni_Vel_Controller::cmd_callback,this,std::placeholders::_1),sub_opt);
 
         joints_cmd_pub_ = get_node()->create_publisher<SttMsg>("~/joints_reference",out_qos);
-
+        if(odom_flag_)
+            odom_pub_ = get_node()->create_publisher<geometry_msgs::msg::TwistStamped>("~/wheel_odom");
 
         // create servicies 
 
@@ -151,7 +171,11 @@ namespace omni_vel_controller
    controller_interface::InterfaceConfiguration Omni_Vel_Controller::state_interface_configuration() const
     {
         controller_interface::InterfaceConfiguration stt_int_cnf;
-        stt_int_cnf.type = controller_interface::interface_configuration_type::NONE;
+        stt_int_cnf.type = controller_interface::interface_configuration_type::INDIVIDUAL;
+        for( auto & w_name : wheels_name_)
+        {
+            cmd_int_cnf.names.push_back(it + "/" + hardware_interface::HW_IF_VELOCITY);
+        }
         return stt_int_cnf;
     }
 
@@ -171,9 +195,26 @@ namespace omni_vel_controller
     }
 
     controller_interface::return_type Omni_Vel_Controller::update(
-                const rclcpp::Time & , const rclcpp::Duration & 
+                const rclcpp::Time & time, const rclcpp::Duration & 
             )
     {
+        //get wheel velocity and compute the mecanum wheel FK in base frame if requested
+        if(odom_flag_)
+        {
+            for(size_t i = 0; i < wheels_name_.size(); i++)
+                wheel_vel_[i] = state_interfaces_[i].get_value();
+            omni_fk();
+            odom_msg_.header.set__stamp(time);
+            odom_msg_.twist.linear.set__x(odom_vel_[0]);
+            odom_msg_.twist.linear.set__y(odom_vel_[1]);
+            odom_msg_.twist.linear.set__z(0.0);
+            odom_msg_.twist.angular.set__x(0.0);
+            odom_msg_.twist.angular.set__y(0.0);
+            odom_msg_.twist.angular.set__z(odom_vel_[2]);
+            odom_pub_->publish(odom_msg_);
+            
+        }
+        // comute the joint wheel velocity reference
         std::lock_guard<std::mutex> lg(var_mutex_);
         switch (c_stt_)
         {
@@ -203,6 +244,17 @@ namespace omni_vel_controller
         return controller_interface::return_type::OK;
     }
     
+    Omni_Vel_Controller::omni_fk()
+    {
+        for( int i = 0; i < 3; i++)
+        {
+            odom_vel_[i] = 0.0;
+            for(int j =0; j < 4; j++)
+            {
+                odom_vel_[i] += odom_matrix_[i][j] * wheel_vel_[j];
+            }
+        }
+    }
 
 }; // namespace name
 PLUGINLIB_EXPORT_CLASS(
