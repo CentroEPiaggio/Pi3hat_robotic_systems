@@ -226,19 +226,19 @@ namespace pi3hat_hw_interface
         {
             // set command and query resolution
             moteus::PositionResolution PC;
-            PC.position = moteus::Resolution::kFloat;
-            PC.velocity = moteus::Resolution::kFloat;
-            PC.feedforward_torque = moteus::Resolution::kFloat;
+            PC.position = moteus::Resolution::kInt32;
+            PC.velocity = moteus::Resolution::kInt32;
+            PC.feedforward_torque = moteus::Resolution::kInt32;
             PC.kp_scale = moteus::Resolution::kInt16;
             PC.kd_scale = moteus::Resolution::kInt16;
             
 
             moteus::QueryCommandV2 PQ;
-            PQ.position = moteus::Resolution::kFloat;
-            PQ.velocity = moteus::Resolution::kFloat;
-            PQ.torque = moteus::Resolution::kFloat;
-            PQ.temperature = moteus::Resolution::kFloat;
-            PQ.q_current = moteus::Resolution::kFloat;
+            PQ.position = moteus::Resolution::kInt32;
+            PQ.velocity = moteus::Resolution::kInt32;
+            PQ.torque = moteus::Resolution::kInt32;
+            PQ.temperature = moteus::Resolution::kInt32;
+            PQ.q_current = moteus::Resolution::kInt32;
             PQ.fault = moteus::Resolution::kInt8;
 
             for(auto &motor : motors_)

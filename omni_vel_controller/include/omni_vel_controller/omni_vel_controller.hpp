@@ -13,7 +13,6 @@
 #include "pi3hat_moteus_int_msgs/msg/omni_mulinex_command.hpp"
 #include "pi3hat_moteus_int_msgs/msg/joints_command.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
-#include "geometry_msgs/msg/joint_state.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
 
@@ -83,6 +82,7 @@ namespace omni_vel_controller
                     base_vel_[1] = msg->v_y;
                     base_vel_[2] = msg->omega;
                 }
+
             }
             void set_cmd2jnt()
             {

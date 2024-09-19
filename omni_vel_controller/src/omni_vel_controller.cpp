@@ -57,36 +57,36 @@ namespace omni_vel_controller
         // fill base to wheel kin matrix
 
         base2Wheel_matrix_[0][0] = 1.0/wr;
-        base2Wheel_matrix_[0][1] = -1.0/wr;
-        base2Wheel_matrix_[0][2] = -(ds_x + ds_y*(1/std::tan(ma)))/wr;
+        base2Wheel_matrix_[0][1] = 1.0/wr;
+        base2Wheel_matrix_[0][2] = -(ds_x - ds_y*(1/std::tan(ma)))/wr;
         
+
         base2Wheel_matrix_[1][0] = -1.0/wr;
-        base2Wheel_matrix_[1][1] = -1.0/wr;
-        base2Wheel_matrix_[1][2] = -(ds_x + ds_y*(1/std::tan(ma)))/wr;
+        base2Wheel_matrix_[1][1] = 1.0/wr;
+        base2Wheel_matrix_[1][2] = -(ds_x - ds_y*(1/std::tan(ma)))/wr;
 
         base2Wheel_matrix_[2][0] = -1.0/wr;
-        base2Wheel_matrix_[2][1] = 1.0/wr;
-        base2Wheel_matrix_[2][2] = -(ds_x + ds_y*(1/std::tan(ma)))/wr;
+        base2Wheel_matrix_[2][1] = -1.0/wr;
+        base2Wheel_matrix_[2][2] = -(ds_x - ds_y*(1/std::tan(ma)))/wr;
 
         base2Wheel_matrix_[3][0] = 1.0/wr;
-        base2Wheel_matrix_[3][1] = 1.0/wr;
-        base2Wheel_matrix_[3][2] = -(ds_x + ds_y*(1/std::tan(ma)))/wr;
+        base2Wheel_matrix_[3][1] = -1.0/wr;
+        base2Wheel_matrix_[3][2] = -(ds_x - ds_y*(1/std::tan(ma)))/wr;
 
+        odom_matrix_[0][0] = (wr /4);
+        odom_matrix_[0][1] = -(wr /4);
+        odom_matrix_[0][2] = -(wr /4);
+        odom_matrix_[0][3] = (wr /4);
 
-        odom_matrix_[0][0] = (rw /4);
-        odom_matrix_[0][1] = -(rw /4);
-        odom_matrix_[0][2] = -(rw /4);
-        odom_matrix_[0][3] = (rw /4);
+        odom_matrix_[1][0] =  (wr /4);
+        odom_matrix_[1][1] = (wr /4);
+        odom_matrix_[1][2] = -(wr /4);
+        odom_matrix_[1][3] = -(wr /4);
 
-        odom_matrix_[1][0] = -(rw /4);
-        odom_matrix_[1][1] = -(rw /4);
-        odom_matrix_[1][2] = (rw /4);
-        odom_matrix_[1][3] = (rw /4);
-
-        odom_matrix_[1][0] = -(rw /(4*(ds_x + ds_y*(1/std::tan(ma)))));
-        odom_matrix_[1][1] = -(rw /(4*(ds_x + ds_y*(1/std::tan(ma)))));
-        odom_matrix_[1][2] = -(rw /(4*(ds_x + ds_y*(1/std::tan(ma)))));
-        odom_matrix_[1][3] = -(rw /(4*(ds_x + ds_y*(1/std::tan(ma)))));
+        odom_matrix_[2][0] = -(wr /(4*(ds_x - ds_y*(1/std::tan(ma)))));
+        odom_matrix_[2][1] = -(wr /(4*(ds_x - ds_y*(1/std::tan(ma)))));
+        odom_matrix_[2][2] = -(wr /(4*(ds_x - ds_y*(1/std::tan(ma)))));
+        odom_matrix_[2][3] = -(wr /(4*(ds_x - ds_y*(1/std::tan(ma)))));
 
         joint_cmd_.name.resize(WHEELS);
         joint_cmd_.set__name(wheels_name_);
@@ -131,7 +131,7 @@ namespace omni_vel_controller
 
         joints_cmd_pub_ = get_node()->create_publisher<SttMsg>("~/joints_reference",out_qos);
         if(odom_flag_)
-            odom_pub_ = get_node()->create_publisher<geometry_msgs::msg::TwistStamped>("~/wheel_odom");
+            odom_pub_ = get_node()->create_publisher<geometry_msgs::msg::TwistStamped>("~/wheel_odom",10);
 
         // create servicies 
 
@@ -174,7 +174,7 @@ namespace omni_vel_controller
         stt_int_cnf.type = controller_interface::interface_configuration_type::INDIVIDUAL;
         for( auto & w_name : wheels_name_)
         {
-            cmd_int_cnf.names.push_back(it + "/" + hardware_interface::HW_IF_VELOCITY);
+            stt_int_cnf.names.push_back(w_name + "/" + hardware_interface::HW_IF_VELOCITY);
         }
         return stt_int_cnf;
     }
@@ -244,7 +244,7 @@ namespace omni_vel_controller
         return controller_interface::return_type::OK;
     }
     
-    Omni_Vel_Controller::omni_fk()
+	void    Omni_Vel_Controller::omni_fk()
     {
         for( int i = 0; i < 3; i++)
         {

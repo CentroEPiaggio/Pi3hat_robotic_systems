@@ -220,10 +220,10 @@ An example of the URDF file is:
             sec_enc_transmission: value of the transmission between actiator joint and the second encoder, the second encoder quantities take into account  this value. if set to zero the the interface do not provide the second econder measures.
         </li>
         <li>
-            p_lim_max,p_lim_min: joint level saturarion position of the actuator in radians.
+            p_lim_max,p_lim_min: joint level saturarion position of the actuator in radians, if set to zero  the limit is disabled.
         </li>
         <li>
-            p_offset: joint level offset position of the actuator in radians.
+            p_offset: joint level offset position of the actuator in radians, if set to zero  the limit is disabled.
         </li>
         <li>
             max_vel: joint level velocity saturarion.

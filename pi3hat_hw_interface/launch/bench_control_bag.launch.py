@@ -47,8 +47,12 @@ def generate_launch_description():
         )
 
     )
-        end_bench = TimerAction(
-        period=300.0,
+#        dealy_exec_all = TimerAction(
+#        period=5.0,
+#        actions=[start_controller
+#        ]
+#    )
+        end_bench = TimerAction(        period=300.0,
         actions=[
             EmitEvent(event=Shutdown(reason="End Benchmarking Experiments"))
         ]
@@ -62,7 +66,8 @@ def generate_launch_description():
                                 cu_param_arg,
                                 exec_bag,
                                 bag_name_arg,
-                                end_bench
+                                end_bench,
+#                                dealy_exec_all
 
                         ]
                         )

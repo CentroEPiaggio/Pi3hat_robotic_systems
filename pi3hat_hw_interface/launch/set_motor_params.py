@@ -163,7 +163,7 @@ async def main(argv):
     
     # a = input("confirm the chosen condfiguration digiting 'y': \n")
     print("block the script in 5sec if there is a not correct params: \n")
-    time.sleep(5)
+    
     a='y'
     if a != "y":
         print("interrupt launch file")
