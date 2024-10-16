@@ -5,6 +5,7 @@
 #define LOGGER_NAME "MoteusPi3Hat_Interface"
 #define CPU 1
 using namespace rclcpp;
+#define G 9.81
 namespace pi3hat_hw_interface
 {
     namespace moteus_pi3hat_interface
@@ -509,9 +510,10 @@ namespace pi3hat_hw_interface
                     // else
 
                     // I SASSI:
-                    acc_imu_ = orientation_*(lin_acc_imu);
-                    
-                    
+                    if(! acc_correction_)
+                        acc_imu_ = orientation_*(lin_acc_imu);
+                    else    
+                        acc_imu_ = orientation_*(lin_acc_imu) + (read_or.inverse() * (Eigen::Vector3d::UnitZ() * G));
                     for(size_t i = 0; i< acc_base_.size();i++)
                     {
                         vel_base_[i] = vel_imu_[i];
