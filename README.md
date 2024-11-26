@@ -147,7 +147,7 @@ An example of the URDF file is:
 
             <param name="b2imu_roll">0</param> 
             <param name="b2imu_pitch">0</param> 
-            <param name="b2imu_yaw">90.0</param>
+            <param name="b2imu_yaw">PI/2</param>
             <param name="acc_correction">0</param> 
         </hardware>
 
