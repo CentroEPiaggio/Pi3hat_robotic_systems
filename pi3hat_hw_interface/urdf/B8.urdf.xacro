@@ -1,0 +1,85 @@
+<?xml version="1.0" ?>
+<robot name="B-8"  xmlns:xacro="http://ros.org/wiki/xacro">
+    <ros2_control name="MoteusPi3Hat_Interface" type="system">
+        <hardware>
+            <plugin>pi3hat_hw_interface/MoteusPi3Hat_Interface</plugin>
+            <param name="main_timeout">1000000</param>
+            <param name="can_timeout">40000</param>
+            <param name="rcv_timeout">40000</param>
+            
+            <param name="attitude">0</param> 
+
+            <param name="b2imu_pos_x">0</param> 
+            <param name="b2imu_pos_y">0</param> 
+            <param name="b2imu_pos_z">0</param> 
+
+            <param name="b2imu_roll">0</param> 
+            <param name="b2imu_pitch">0</param> 
+            <param name="b2imu_yaw">1.57</param>
+            <param name="acc_correction">1</param> 
+        </hardware>
+
+        <joint name="RIGHT_ELBOW"> 
+            <param name="id"></param>
+            <param name="bus"></param>
+            <param name="motor_transmission">9.0</param>  
+            <param name="sec_enc_transmission">0.0</param>  
+            <param name="KP">100</param> 
+            <param name="KD">0.95</param> 
+            <param name="KI">0.0</param> 
+            <param name="i_limit">0.0</param>
+            <param name="p_lim_max"></param> 
+            <param name="p_lim_min"></param>
+            <param name="p_offset">0.0</param>
+            <param name="max_vel">3.0</param>
+            <param name="max_torque">15.0</param>
+        </joint>
+
+        <joint name="RIGHT_THRUSTER">  
+            <param name="id"></param>
+            <param name="bus"></param>
+            <param name="motor_transmission">9.0</param>  
+            <param name="sec_enc_transmission">0.0</param>  
+            <param name="KP">0.0</param> 
+            <param name="KD">2.0</param> 
+            <param name="KI">0.0</param> 
+            <param name="i_limit">0.0</param>
+            <param name="p_lim_max">0.0</param> 
+            <param name="p_lim_min">0.0</param>
+            <param name="p_offset">0.0</param>
+            <param name="max_vel">100.0</param>
+            <param name="max_torque">15.0</param>
+        </joint>
+        <joint name="LEFT_ELBOW">  
+            <param name="id"></param>
+            <param name="bus"></param>
+            <param name="motor_transmission">9.0</param>  
+            <param name="sec_enc_transmission">0.0</param>  
+            <param name="KP">100</param> 
+            <param name="KD">0.95</param> 
+            <param name="KI">0.0</param> 
+            <param name="i_limit">0.0</param>
+            <param name="p_lim_max"></param> 
+            <param name="p_lim_min"></param>
+            <param name="p_offset">0.0</param>
+            <param name="max_vel">3.0</param>
+            <param name="max_torque">15.0</param>
+        </joint>
+        <joint name="LEFT_THRUSTER">  
+            <param name="id"></param>
+            <param name="bus"></param>
+            <param name="motor_transmission">9.0</param>  
+            <param name="sec_enc_transmission">0.0</param>  
+            <param name="KP">0.0</param> 
+            <param name="KD">2.0</param> 
+            <param name="KI">0.0</param> 
+            <param name="i_limit">0.0</param>
+            <param name="p_lim_max">0.0</param> 
+            <param name="p_lim_min">0.0</param>
+            <param name="p_offset">0.0</param>
+            <param name="max_vel">100.0</param>
+            <param name="max_torque">15.0</param>
+        </joint>
+
+    </ros2_control>
+</robot>

@@ -1,0 +1,29 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 500 
+    state_broadcaster:
+      type: pi3hat_state_broadcaster/Pi3Hat_State_Broadcaster 
+    thruster_controller:
+      type: pi3hat_joint_group_controller/Pi3Hat_Joint_Group_Controller 
+    elbows_controller:
+      type: pi3hat_joint_group_controller/Pi3Hat_Joint_Group_Controller 
+ 
+state_broadcaster:
+  ros__parameters:
+    joints:
+      - "RIGHT_ELBOW"
+      - "LEFT_ELBOW"
+      - "RIGHT_THRUSTER"
+      - "LEFT_THRUSTER"
+    performance_index: true
+
+thruster_controller:
+  ros__parameters:
+    joints:
+      - "RIGHT_THRUSTER"
+      - "LEFT_THRUSTER"
+elbows_controller:
+  ros__parameters:
+    joints:
+      - "RIGHT_ELBOW"
+      - "LEFT_ELBOW"
