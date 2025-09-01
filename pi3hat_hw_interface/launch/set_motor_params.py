@@ -13,8 +13,10 @@ import sys
 
 general_params = {
 	"max_pow":450,
-	"max_cur":40,
+	"max_cur":80,
     "flux_min_v":27.5,
+    #"max_voltage":34    , # da decide se mettere ma 27.5 V = maz_voltage -flux_margin_v
+    "flux_margin_v":18.5, #se max voltage è = 46V
 }
 
 
@@ -163,7 +165,7 @@ async def main(argv):
     
     # a = input("confirm the chosen condfiguration digiting 'y': \n")
     print("block the script in 5sec if there is a not correct params: \n")
-    
+    time.sleep(5)
     a='y'
     if a != "y":
         print("interrupt launch file")
@@ -210,9 +212,14 @@ async def main(argv):
         ilimit = await s.command(b'conf set servo.pid_position.ilimit ' + str(m_pars[4][i]).encode('utf-8'))
         await s.command(b'conf set servopos.position_min ' + str(m_pars[6][i]).encode('utf-8'))
         await s.command(b'conf set servopos.position_max ' + str(m_pars[5][i]).encode('utf-8'))
+        # version ok per fw <30/04/2025
+        #flux_brake_voltage = await s.command(b'conf set servo.flux_brake_min_voltage ' + str(general_params["flux_min_v"]).encode('utf-8'))
+        #await s.command(b'd index 0.0')
 
-        flux_brake_voltage = await s.command(b'conf set servo.flux_brake_min_voltage ' + str(general_params["flux_min_v"]).encode('utf-8'))
-        await s.command(b'd index 0.0')
+        # versione ok per fw >= 30/04/2025
+        #max_voltage = await s.command (b'conf set servo.ma_voltage ' + str(general_params["max_voltage"]).encode('utf-8'))
+        flux_brake_margin_voltage = await s.command(b'conf set servo.flux_brake_margin_voltage ' + str(general_params["flux_margin_v"]).encode('utf-8'))
+        await s.command(b'd exact 0.0')
         await s.command(b'conf set servo.default_timeout_s ' + str(1).encode('utf-8'))
     
     return 0
