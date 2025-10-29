@@ -96,7 +96,7 @@ def get_moteus_lists(params : dict):
         par_list[1].append(from_jnt_to_motor_gain(jnt_kp,mot_trans))
         par_list[2].append(from_jnt_to_motor_gain(jnt_kd,mot_trans))
         par_list[3].append(from_jnt_to_motor_gain(jnt_ki,mot_trans))
-        par_list[4].append(jnt_i_limit)
+        par_list[4].append(jnt_i_limit/mot_trans)
         if max_pos == 0.0: 
            par_list[5].append(math.nan)
         else:
