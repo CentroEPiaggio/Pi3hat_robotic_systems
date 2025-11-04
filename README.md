@@ -60,12 +60,13 @@ install ros2 control framework and xacro
     
  ```  sudo apt install python3-pip  ```
 
-  ```   sudo pip3 install moteus  ```
+  ```   sudo pip3 install moteus==0.3.67  ```
 
  ```   sudo pip3 install moteus_pi3hat  ```
 
 
 </li> 
+
 
 <li>
     Optional: install the Network-Manager to use the Raspberry PI4 as Access Point
