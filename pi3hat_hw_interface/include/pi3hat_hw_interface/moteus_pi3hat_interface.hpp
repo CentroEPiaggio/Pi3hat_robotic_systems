@@ -7,7 +7,7 @@
 #include "hardware_interface/types/lifecycle_state_names.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "hardware_interface/types/hardware_interface_return_values.hpp"
-#include "pi3hat_hw_interface/motor_manager.hpp"
+// #include "pi3hat_hw_interface/motor_manager.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -32,10 +32,10 @@
 #include "rclcpp_lifecycle/state.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
-#include "rclcpp_lifecycle/lifecycle_publisher.hpp"
-#include "pi3hat_hw_interface/motor_manager.hpp"
-#include "pi3hat_moteus_int_msgs/msg/packet_pass.hpp"
-#include "moteus_pi3hat/pi3hat_moteus_interface.h"
+// #include "rclcpp_lifecycle/lifecycle_publisher.hpp"
+// #include "pi3hat_hw_interface/motor_manager.hpp"
+// #include "pi3hat_moteus_int_msgs/msg/packet_pass.hpp"
+// #include "moteus_pi3hat/pi3hat_moteus_interface.h"
 #define NUM_STOP 30
 #define MAIN_TIMEOUT 3000000
 #define MIN_TX_TIMEOUT 200000
@@ -103,73 +103,73 @@ namespace pi3hat_hw_interface
                 hardware_interface::return_type read(const rclcpp::Time & , const rclcpp::Duration & ) override;
                 hardware_interface::return_type write(const rclcpp::Time & , const rclcpp::Duration & ) override;
 
-                void cycle()
-                {
-                    if(valid_)
-                    {
-                        auto promise = make_shared<std::promise<Output>>();
-                        for(auto &rep : msr_data_)
-                        {
-                            rep.id = 0;
-                            rep.bus = 0;
-                            rep.result.position = std::nan("1");
-                            rep.result.velocity = std::nan("2");
-                            rep.result.torque = std::nan("3");
-                            rep.result.temperature = std::nan("4");
-                            rep.result.sec_enc_pos = std::nan("6");
-                            rep.result.sec_enc_vel = std::nan("2");
-                        }
-                        data_.commands = {cmd_data_.data(),cmd_data_.size()};
-                        //  for(auto cmd : data_.commands)
-                        //     {
-                        //     RCLCPP_INFO(rclcpp::get_logger("LIV10"),"value of data is %d",cmd.query.sec_enc_pos);
-                        //     }
-                        data_.replies  = {msr_data_.data(),msr_data_.size()};
-                        communication_thread_.Cycle(
-                                data_,
-                                [promise](const Output& out)
-                                { 
-                                    promise->set_value(out);
-                                    // if(out.query_result_size <4 || out.query_result_size >4)
-                                    // 
-                                    // RCLCPP_WARN(rclcpp::get_logger("PINO"),"CALL Communication Callback with out %ld",out.query_result_size);
-                                }
-                            );
+                // void cycle()
+                // {
+                //     if(valid_)
+                //     {
+                //         auto promise = make_shared<std::promise<Output>>();
+                //         for(auto &rep : msr_data_)
+                //         {
+                //             rep.id = 0;
+                //             rep.bus = 0;
+                //             rep.result.position = std::nan("1");
+                //             rep.result.velocity = std::nan("2");
+                //             rep.result.torque = std::nan("3");
+                //             rep.result.temperature = std::nan("4");
+                //             rep.result.sec_enc_pos = std::nan("6");
+                //             rep.result.sec_enc_vel = std::nan("2");
+                //         }
+                //         data_.commands = {cmd_data_.data(),cmd_data_.size()};
+                //         //  for(auto cmd : data_.commands)
+                //         //     {
+                //         //     RCLCPP_INFO(rclcpp::get_logger("LIV10"),"value of data is %d",cmd.query.sec_enc_pos);
+                //         //     }
+                //         data_.replies  = {msr_data_.data(),msr_data_.size()};
+                //         communication_thread_.Cycle(
+                //                 data_,
+                //                 [promise](const Output& out)
+                //                 { 
+                //                     promise->set_value(out);
+                //                     // if(out.query_result_size <4 || out.query_result_size >4)
+                //                     // 
+                //                     // RCLCPP_WARN(rclcpp::get_logger("PINO"),"CALL Communication Callback with out %ld",out.query_result_size);
+                //                 }
+                //             );
                             
-                        can_recvd_ = promise->get_future();
-                        //RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call valid %d", can_recvd_.valid());
-                        // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call gets %d", can_recvd_.get().query_result_size);
-                    }
-                };
+                //         can_recvd_ = promise->get_future();
+                //         //RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call valid %d", can_recvd_.valid());
+                //         // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call gets %d", can_recvd_.get().query_result_size);
+                //     }
+                // };
             private:
                 
-                std::vector<Motor_Manager> motors_;
-                std::vector<Command> cmd_data_;
-                std::vector<Reply> msr_data_;
-                Options opt_;
-                MoteusInterface communication_thread_;
-                Get_Function gets_;
-                Policy_Function poly_;
-                Data data_;
-                Output out_;
-                Options opt_thread_;
-                std::future<Output> can_recvd_;
-                int count_ = 0 ;
-                int not_val_cycle_ = 0,epoch_count_=0;
-                std::vector<double> pkt_loss_;
-                double valid_loss_ = 0.0, cycle_dur_=0.0;
-                bool valid_ = true,att_req_;
-                mjbots::pi3hat::Attitude filtered_IMU_;
-                int num_stt_int_;
-                std::vector<double> acc_base_,vel_base_,quaternion_;
-                Eigen::Vector3d acc_imu_,vel_imu_,imu_to_base_pos_;
-                Eigen::Quaternion<double> orientation_, imuw2_nav_;
-                int acc_correction_ = 0;
-                tf2::Quaternion imu_pose_;
-                std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
-                std::chrono::_V2::system_clock::time_point t_e_write_ , t_s_read_;
-                double w2r_dur_;
-                bool first_cycle_ = true;
+                // std::vector<Motor_Manager> motors_;
+                // std::vector<Command> cmd_data_;
+                // std::vector<Reply> msr_data_;
+                // Options opt_;
+                // MoteusInterface communication_thread_;
+                // Get_Function gets_;
+                // Policy_Function poly_;
+                // Data data_;
+                // Output out_;
+                // Options opt_thread_;
+                // std::future<Output> can_recvd_;
+                // int count_ = 0 ;
+                // int not_val_cycle_ = 0,epoch_count_=0;
+                // std::vector<double> pkt_loss_;
+                // double valid_loss_ = 0.0, cycle_dur_=0.0;
+                // bool valid_ = true,att_req_;
+                // mjbots::pi3hat::Attitude filtered_IMU_;
+                // int num_stt_int_;
+                // std::vector<double> acc_base_,vel_base_,quaternion_;
+                // Eigen::Vector3d acc_imu_,vel_imu_,imu_to_base_pos_;
+                // Eigen::Quaternion<double> orientation_, imuw2_nav_;
+                // int acc_correction_ = 0;
+                // tf2::Quaternion imu_pose_;
+                // std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+                // std::chrono::_V2::system_clock::time_point t_e_write_ , t_s_read_;
+                // double w2r_dur_;
+                // bool first_cycle_ = true;
         };
     }
 }
