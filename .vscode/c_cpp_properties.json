@@ -7,7 +7,9 @@
                 "/opt/ros/humble/include/**",
                 "/opt/ros/humble/include/std_msgs",
                 "/opt/ros/humble/include/sensor_msgs",
-                "/opt/ros/humble/include/std_srvs"
+                "/opt/ros/humble/include/std_srvs",
+                "${workspaceFolder}/install/moteus_pi3hat/include/",
+                "/opt/ros/humble/include/rclcpp"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

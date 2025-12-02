@@ -12,8 +12,7 @@ namespace pi3hat_hw_interface
     {
 
          
-        MoteusPi3Hat_Interface::MoteusPi3Hat_Interface():
-        
+        MoteusPi3Hat_Interface::MoteusPi3Hat_Interface()
         {
             
         };
@@ -78,27 +77,6 @@ namespace pi3hat_hw_interface
         std::vector<hardware_interface::CommandInterface> MoteusPi3Hat_Interface::export_command_interfaces()
         {
            std::vector<hardware_interface::CommandInterface> cmd_int;
-            std::vector<std::string> int_type;
-            for(auto &motor : motors_)
-            {
-                int_type = motor.get_command_type();
-                for(auto &type : int_type)
-                {
-                    try
-                    {
-                    cmd_int.emplace_back(
-                        motor.get_name(false),
-                        type,
-                        motor.get_cmd_interface(type)
-                    );
-                    }
-                    catch(std::logic_error &err)
-                    {
-                        RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Raised error %s during the state interface exporting ID:%d bus:%d",err.what(),motor.get_id(),motor.get_bus());
-                        assert(false);
-                    }
-                }
-            }
             return cmd_int;
         };
 
