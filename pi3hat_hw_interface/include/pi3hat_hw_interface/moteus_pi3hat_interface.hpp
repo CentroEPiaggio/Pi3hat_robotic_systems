@@ -75,6 +75,7 @@ namespace hardware_interface
     constexpr char HW_IF_QUATERN_Z[] = "orientation.z";
     constexpr char HW_IF_QUATERN_W[] = "orientation.w";
 
+    
 
 }
 

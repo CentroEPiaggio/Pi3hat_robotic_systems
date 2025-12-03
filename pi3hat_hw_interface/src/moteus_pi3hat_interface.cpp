@@ -24,6 +24,7 @@ namespace pi3hat_hw_interface
 
         CallbackReturn MoteusPi3Hat_Interface::on_init(const hardware_interface::HardwareInfo & info)
         {
+            // call joint resolution var 
             
             return CallbackReturn::SUCCESS;
         };
