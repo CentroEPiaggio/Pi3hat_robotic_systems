@@ -37,17 +37,18 @@ namespace pi3hat_hw_interface
             double iratelimit = 0.0;
             double max_position_slip = 0.0;
             double max_velocity_slip = 0.0;
-            double max_voltage = 0.0;
-            double max_power_W = 0.0;
+            double max_voltage = MAX_VOLT;
+            double max_power_W = MAX_POWER;
             bool enable_motor_temperature = false;
-            double max_current_A = 0.0;
-            double flux_brake_margin_voltage = 0.0;
+            double max_current_A = MAX_CURR;
+            double flux_brake_margin_voltage = FLUX_BRAKE_MARGIN;
             double actuator_transmission = 0.0;
             double second_encoder_trasmission = 0.0;
             double pos_max_limit = 0.0;
             double pos_min_limit = 0.0;
             double max_velocity = 0.0;
             double max_effort = 0.0;
+            double position_offset = 0.0;
         };
     }
     using Resolution = mjbots::moteus::Resolution;
@@ -71,7 +72,7 @@ namespace pi3hat_hw_interface
                         throw std::runtime_error("param " + param_name + " is not unique");
                 }
             }
-            bool check_existance(std::string param_name)
+            void check_existance(std::string param_name)
             {
                 for(std::vector<std::string>::iterator i = available_base_params_.begin(); i != available_base_params_.end(); i++)
                 {
@@ -100,6 +101,7 @@ namespace pi3hat_hw_interface
             // base 
             QueryFormatInfo()
             {
+
                 // init default query format
                 this->configurable_.mode = Resolution::kIgnore;
                 this->configurable_.position = Resolution::kInt32;
@@ -154,6 +156,8 @@ namespace pi3hat_hw_interface
                 try
                 {
                    se_source_ = std::stoi(pars.at("second_encoder_source"));
+                   if(se_source_ < 0 || se_source_ >2)
+                        throw std::runtime_error("second_encoder_source must be 0, 1 or 2");
                 }
                 catch(const std::exception& e)
                 {
@@ -286,6 +290,10 @@ namespace pi3hat_hw_interface
                         RCLCPP_WARN(rclcpp::get_logger("Query Resolution Parser"),"The base query conf %s is set to default", available_base_params_[i].c_str());
                 }
             } 
+            int get_secodn_encoder_source()
+            {
+                return se_source_;
+            };
         private:
             std::array<bool,10> changes_ ;
             int extra_count_ = 0, se_source_;   
@@ -419,7 +427,8 @@ namespace pi3hat_hw_interface
                     "max_pos_limit",
                     "max_velocity",
                     "max_effort",
-                    "actuator_trasmission"
+                    "actuator_trasmission",
+                    "position_offset"
                 };
                 available_extra_params_ =
                 {
@@ -498,6 +507,11 @@ namespace pi3hat_hw_interface
                         configurable_.actuator_transmission = std::stod(i->second);
                         changes_[12] = true;
                     }
+                    else if(i->first.compare(available_base_params_[13]))
+                    {
+                        configurable_.position_offset = std::stod(i->second);
+                        changes_[13] = true;
+                    }
                     else if(i->first.compare(available_extra_params_[0]))
                         configurable_.second_encoder_trasmission = std::stod(i->second);
                     for(size_t i = 0; i<changes_.size(); i++)
@@ -508,7 +522,7 @@ namespace pi3hat_hw_interface
                 }
             };
         private:
-            std::array<bool,13> changes_;
+            std::array<bool,14> changes_;
     };
 
 };

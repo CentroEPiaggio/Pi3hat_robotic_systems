@@ -19,9 +19,11 @@ find_package(rosbag2_cpp REQUIRED)
 find_package(std_msgs REQUIRED)
 
 
+
 add_library(
   ${PROJECT_NAME}
   SHARED
+  src/actuator_manager.cpp
   src/moteus_pi3hat_interface.cpp
 )
 

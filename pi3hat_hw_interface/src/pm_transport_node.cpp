@@ -145,6 +145,43 @@ class MoteusPi3hatNode : public  Node
                 std::bind(&MoteusPi3hatNode::timer_cbk,this)
             );
         }
+        void test_encoder_validity()
+        {
+            std::vector<mjbots::moteus::CanFdFrame> frames,replies;
+            frames.resize(1);
+            mjbots::moteus::Query::Format qf;
+            
+            qf.extra[0].register_number = mjbots::moteus::Register::kEncoderValidity;
+            qf.extra[0].resolution = mjbots::moteus::Resolution::kFloat;
+            frames[0] = c_->MakeQuery(&qf);
+            auto result = c_->SetQuery(&qf);
+            // {
+            //     mjbots::moteus::BlockingCallback b_clb;
+            //     RCLCPP_INFO(this->get_logger(),"");
+            //     t_->Cycle(
+            //         frames.data(),frames.size(), &replies, &att_,nullptr,nullptr,b_clb.callback()
+            //     );
+            //     int result = b_clb.Wait();
+                
+            //     RCLCPP_INFO(this->get_logger(), "pos %d",result);
+            // }
+            
+            if(result.has_value())
+            {
+                
+               
+                
+                u_int32_t test = static_cast<u_int32_t>(result->values.extra[0].value);
+                RCLCPP_INFO(this->get_logger(),"validity %s",((test & (1<<0)) != 0) && ((test & (1<<1)) != 0) ? "true":"false");
+                RCLCPP_INFO(this->get_logger(),"validity %s",((test & (1<<2) != 0)) && ((test & (1<<3)) != 0) != 0 ? "true":"false");
+                RCLCPP_INFO(this->get_logger(),"validity %s",((test & (1<<4) != 0)) && ((test & (1<<5)) != 0) != 0 ? "true":"false");
+                
+            }
+            else
+                RCLCPP_WARN(this->get_logger(),"no reply received");
+
+
+        }
         void stop_control()
         {
             cmd_frames_.clear();
@@ -242,7 +279,8 @@ int main(int argc, char * argv[])
     
     node->conf_set("conf set servo.pid_position.kd 0.2\n");
     RCLCPP_INFO(rclcpp::get_logger("PORCODIO"),"pass here");
-    node->start_control(5.0);
+    node->test_encoder_validity();
+    // node->start_control(5.0);
     // node->send_sync_vel(1000);
     // node->conf_set("conf get servo.pid_position.kp");
 
