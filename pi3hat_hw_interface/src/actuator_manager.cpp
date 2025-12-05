@@ -11,7 +11,7 @@ namespace pi3hat_hw_interface
             
         };
 
-        bool Actuator_Manager::ConfigureActuator(const QueryFormat query_format, std::shared_ptr<mjbots::moteus::Transport> transport, int second_encoder_source)
+        bool Actuator_Manager::ConfigureActuator( std::shared_ptr<mjbots::moteus::Transport> transport)
         {
             ControllerOptions c_opt;
             QueryFormat qf;
@@ -28,10 +28,10 @@ namespace pi3hat_hw_interface
             c_opt.position_format.feedforward_torque = Resolution::kInt32;
             c_opt.position_format.kd_scale = Resolution::kInt16;
             c_opt.position_format.kp_scale = Resolution::kInt16;
-            // save query format as member
-            query_format_ = query_format;
             actuator_transmission_ = act_opt_.actuator_transmission;
             second_encoder_transmission_ = act_opt_.second_encoder_trasmission;
+            if(second_encoder_transmission_ > 0.0)
+                second_encoder_output_ = std::make_unique<SecondEncoderOutput>(second_encoder_transmission_);
             max_torque_ = act_opt_.max_effort;
             position_offset_ = act_opt_.position_offset;
             
@@ -47,7 +47,7 @@ namespace pi3hat_hw_interface
             {
                 int validity = static_cast<int>(result->values.extra[0].value);
                 if(
-                    second_encoder_source == 0 && 
+                    se_source_ == 0 && 
                     (validity & (1<<0)) &&
                     (validity & (1<<1))
                 )
@@ -56,14 +56,14 @@ namespace pi3hat_hw_interface
                     RCLCPP_WARN(rclcpp::get_logger("Actuator_Manager"),"Usually source 0 is used for embedded encoder, pay attention!!");
                 }
                 else if(
-                    second_encoder_source == 1 && 
+                    se_source_ == 1 && 
                     (validity & (1<<2)) &&
                     (validity & (1<<3))
                 )
                     RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Using second source to read the second encoder for actuator id %d on bus %d",id_,bus_);
                 
                 else if(
-                    second_encoder_source == 2 && 
+                    se_source_ == 2 && 
                     (validity & (1<<4)) &&
                     (validity & (1<<5))
                 )
@@ -312,19 +312,23 @@ namespace pi3hat_hw_interface
                         stt_.torque_error = FromMotorToJointEffort(result.extra[i].value);
                     }
                     else if(
-                            query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder0Position || 
+                            (query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder0Position || 
                             query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder1Position || 
-                            query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder2Position 
+                            query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder2Position ) &&
+                            second_encoder_output_ != nullptr
                         )
                     {
+                        RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,result.extra[i].value);
                         stt_.second_encoder_position = second_encoder_output_->FromeEncoderToJointPosition(result.extra[i].value);
                     }
                     else if(
-                            query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder0Velocity || 
+                            (query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder0Velocity || 
                             query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder1Velocity || 
-                            query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder2Velocity
+                            query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder2Velocity) &&
+                            second_encoder_output_ != nullptr
                     )
                     {
+                        
                         stt_.second_encoder_velocity = second_encoder_output_->FromEncoderToJointVelocity(result.extra[i].value);
                     }
                     else

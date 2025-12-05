@@ -119,7 +119,7 @@ namespace pi3hat_hw_interface
                     "q_current_res",
                     "d_current_res",
                     "abs_position_res",
-                    "power",
+                    "power_res",
                     "motor_temperature_res",
                     "voltage_res",
                     "temperature_res"
@@ -169,57 +169,57 @@ namespace pi3hat_hw_interface
                     
                     this->check_unique(i->first);
 
-                    if(i->first.compare(this->available_base_params_[0]))
+                    if(i->first.compare(this->available_base_params_[0]) == 0)
                     {
                         configurable_.position = parse_res(std::stoi(i->second));
                         changes_[0] = true;
                     }
-                    else if(i->first.compare(this->available_base_params_[1]))
+                    else if(i->first.compare(this->available_base_params_[1]) == 0)
                     {
                         configurable_.velocity = parse_res(std::stoi(i->second));
                         changes_[1] = true;
                     }
-                    else if(i->first.compare(this->available_base_params_[2]))
+                    else if(i->first.compare(this->available_base_params_[2]) == 0)
                     {
                         configurable_.torque = parse_res(std::stoi(i->second));
                         changes_[2] = true;
                     }
-                    else if(i->first.compare(this->available_base_params_[3]))
+                    else if(i->first.compare(this->available_base_params_[3]) == 0)
                     {
                         configurable_.q_current = parse_res(std::stoi(i->second));
                         changes_[3] = true;
                     }
-                    else if(i->first.compare(this->available_base_params_[4]))
+                    else if(i->first.compare(this->available_base_params_[4]) == 0)
                     {
                         configurable_.d_current = parse_res(std::stoi(i->second));
                         changes_[4] = true;
                     }
-                    else if(i->first.compare(this->available_base_params_[5]))
+                    else if(i->first.compare(this->available_base_params_[5]) == 0)
                     {
                         configurable_.abs_position = parse_res(std::stoi(i->second));
                         changes_[5] = true;
                     }
-                    else if(i->first.compare(this->available_base_params_[6]))
+                    else if(i->first.compare(this->available_base_params_[6]) == 0)
                     {
                         configurable_.power = parse_res(std::stoi(i->second));
                         changes_[6] = true;
                     }
-                    else if(i->first.compare(this->available_base_params_[7]))
+                    else if(i->first.compare(this->available_base_params_[7]) == 0)
                     {
                         configurable_.motor_temperature = parse_res(std::stoi(i->second));
                         changes_[7] = true;
                     }
-                    else if(i->first.compare(this->available_base_params_[8]))
+                    else if(i->first.compare(this->available_base_params_[8]) == 0)
                     {
                         configurable_.voltage = parse_res(std::stoi(i->second));
                         changes_[8] = true;
                     }
-                    else if(i->first.compare(this->available_base_params_[9]))
+                    else if(i->first.compare(this->available_base_params_[9]) == 0)
                     {
                         configurable_.temperature = parse_res(std::stoi(i->second));
                         changes_[9] = true;
                     }
-                    else if(i->first.compare(this->available_extra_params_[0]))
+                    else if(i->first.compare(this->available_extra_params_[0]) == 0)
                     {
                         if(extra_count_ < MAX_EXTRAS)
                         {
@@ -230,7 +230,7 @@ namespace pi3hat_hw_interface
                         else
                             throw std::runtime_error("Reach maximum extras element");
                     }
-                    else if(i->first.compare(this->available_extra_params_[1]))
+                    else if(i->first.compare(this->available_extra_params_[1]) == 0)
                     {
                         if(extra_count_ < MAX_EXTRAS)
                         {
@@ -241,7 +241,7 @@ namespace pi3hat_hw_interface
                         else
                             throw std::runtime_error("Reach maximum extras element");
                     }
-                    else if(i->first.compare(this->available_extra_params_[2]))
+                    else if(i->first.compare(this->available_extra_params_[2]) == 0)
                     {
                         if(extra_count_ < MAX_EXTRAS)
                         {
@@ -252,43 +252,44 @@ namespace pi3hat_hw_interface
                         else
                             throw std::runtime_error("Reach maximum extras element");
                     }
-                    else if(i->first.compare(this->available_extra_params_[3]))
+                    else if(i->first.compare(this->available_extra_params_[3]) == 0)
                     {
                         if(se_source_ == -1)
                             throw std::runtime_error("Trying to set the second encoder position resolution without identify the source");
                         if(extra_count_ < MAX_EXTRAS)
                         {
                             configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
-                            configurable_.extra[extra_count_].register_number = extra_count_ == 0 ? mjbots::moteus::Register::kEncoder0Position : extra_count_ == 1 ? mjbots::moteus::Register::kEncoder1Position : mjbots::moteus::Register::kEncoder2Position;
+                            configurable_.extra[extra_count_].register_number = se_source_ == 0 ? mjbots::moteus::Register::kEncoder0Position : se_source_ == 1 ? mjbots::moteus::Register::kEncoder1Position : mjbots::moteus::Register::kEncoder2Position;
                             extra_count_ ++;
                         }
                         else
                             throw std::runtime_error("Reach maximum extras element");
                     }
-                    else if(i->first.compare(this->available_extra_params_[4]))
+                    else if(i->first.compare(this->available_extra_params_[4]) == 0)
                     {
                         if(se_source_ == -1)
                             throw std::runtime_error("Trying to set the second encoder velocity resolution without identify the source");
                         if(extra_count_ < MAX_EXTRAS)
                         {
                             configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
-                            configurable_.extra[extra_count_].register_number = extra_count_ == 0 ? mjbots::moteus::Register::kEncoder0Velocity : extra_count_ == 1 ? mjbots::moteus::Register::kEncoder1Velocity : mjbots::moteus::Register::kEncoder2Velocity;
+                            configurable_.extra[extra_count_].register_number = se_source_ == 0 ? mjbots::moteus::Register::kEncoder0Velocity : se_source_ == 1 ? mjbots::moteus::Register::kEncoder1Velocity : mjbots::moteus::Register::kEncoder2Velocity;
                             extra_count_ ++;
                         }
                         else
                             throw std::runtime_error("Reach maximum extras element");
                     }
-                    else
-                    {
-                        RCLCPP_WARN(rclcpp::get_logger("Query Resolution Parser"),"The param %s do not exist", i->first.c_str());
-                        throw std::runtime_error("Unable to parse parameters");
-                    }
+                    // else
+                    // {
+                    //     RCLCPP_WARN(rclcpp::get_logger("Query Resolution Parser"),"The param %s do not exist", i->first.c_str());
+                    //     throw std::runtime_error("Unable to parse parameters");
+                    // }
                 }
                 for(size_t i = 0; i<changes_.size(); i++)
                 {
                     if(!changes_[i])
                         RCLCPP_WARN(rclcpp::get_logger("Query Resolution Parser"),"The base query conf %s is set to default", available_base_params_[i].c_str());
                 }
+                RCLCPP_INFO(rclcpp::get_logger("Query Resolution Parser"),"Query Format parser correctly finished and extra are: %d,%d ",configurable_.extra[0].register_number,configurable_.extra[1].register_number);
             } 
             int get_secodn_encoder_source()
             {
@@ -310,7 +311,7 @@ namespace pi3hat_hw_interface
                     "min_tx_wait_ns",
                     "rx_baseline_wait_ns",
                     "rx_extra_wait_ns",
-                    "CPU_affinity"
+                    "CPU_affinity",
                     "request_attitude"
                 };
                 this->available_extra_params_=
@@ -334,8 +335,8 @@ namespace pi3hat_hw_interface
                     try
                     {
                         auto res = configurable_.servo_map.insert({
-                            std::stoi(jnt.parameters.at("ID")),
-                            std::stoi(jnt.parameters.at("BUS"))
+                            std::stoi(jnt.parameters.at("id")),
+                            std::stoi(jnt.parameters.at("bus"))
                         });
                         if(!res.second)
                             throw std::runtime_error("Error, motors id are not unique");
@@ -354,64 +355,65 @@ namespace pi3hat_hw_interface
                 {
                     this->check_unique(i->first);
                     
-                    if(i->first.compare(available_base_params_[0]))
+                    
+                    if(i->first.compare(available_base_params_[0]) == 0)
                     {
                         configurable_.default_input.timeout_ns = std::stoi(i->second);
                         changes_[0] = true;
                     }
-                    else if(i->first.compare(available_base_params_[1]))
+                    else if(i->first.compare(available_base_params_[1]) == 0)
                     {
                         configurable_.default_input.timeout_ns = std::stoi(i->second);
                         changes_[1] = true;
                     }
-                    else if(i->first.compare(available_base_params_[2]))
+                    else if(i->first.compare(available_base_params_[2]) == 0)
                     {
                         configurable_.default_input.timeout_ns = std::stoi(i->second);
                         changes_[2] = true;
                     }
-                    else if(i->first.compare(available_base_params_[3]))
+                    else if(i->first.compare(available_base_params_[3]) == 0)
                     {
                         configurable_.default_input.timeout_ns = std::stoi(i->second);
                         changes_[3] = true;
                     }
-                    else if(i->first.compare(available_base_params_[4]))
+                    else if(i->first.compare(available_base_params_[4]) == 0)
                     {
                         configurable_.default_input.timeout_ns = std::stoi(i->second);
                         changes_[4] = true;
                     }
-                    else if(i->first.compare(available_base_params_[5]))
+                    else if(i->first.compare(available_base_params_[5]) == 0)
                     {
                         configurable_.default_input.timeout_ns = std::stoi(i->second);
                         changes_[5] = true;
                     }
-                    else if(i->first.compare(available_extra_params_[0]))
+                    else if(i->first.compare(available_extra_params_[0]) == 0)
                         configurable_.mounting_deg.roll = std::stod(i->second);
-                    else if(i->first.compare(available_extra_params_[1]))
+                    else if(i->first.compare(available_extra_params_[1]) == 0)
                         configurable_.mounting_deg.pitch = std::stod(i->second);
-                    else if(i->first.compare(available_extra_params_[2]))
+                    else if(i->first.compare(available_extra_params_[2]) == 0)
                         configurable_.mounting_deg.yaw= std::stod(i->second);
-                    else if(i->first.compare(available_extra_params_[3]))
+                    else if(i->first.compare(available_extra_params_[3]) == 0)
                         configurable_.attitude_rate_hz = std::stoi(i->second);
                     else
                     {
                         RCLCPP_WARN(rclcpp::get_logger("Pi3Hat Transport Parser"),"The param %s do not exist", i->first.c_str());
                         throw std::runtime_error("Unable to parse parameters");
-                    }
-                    for(size_t i = 0; i<changes_.size(); i++)
-                    {
-                        if(!changes_[i])
-                            RCLCPP_WARN(rclcpp::get_logger("Pi3Hat Transport Parser"),"The pi3hat  conf %s is set to default", available_base_params_[i].c_str());
-                    }   
+                    }  
                 }
-            }
+                for(size_t i = 0; i<changes_.size(); i++)
+                {
+                    if(!changes_[i])
+                        RCLCPP_WARN(rclcpp::get_logger("Pi3Hat Transport Parser"),"The pi3hat  conf %s is set to default", this->available_base_params_[i].c_str());
+                } 
+        }
         private: 
             bool servo_map_set_ = false;
             std::array<bool,6> changes_;  
     };
-    class ActuatorOptions : public ElementInfo<actuator_manager::ActuatorOptions>
+    class ActuatorConf : public ElementInfo<actuator_manager::ActuatorOptions>
     {
         public: 
-            ActuatorOptions()
+            ActuatorConf()
             {
                 available_base_params_ =
                 {
@@ -442,84 +444,84 @@ namespace pi3hat_hw_interface
                 for(std::unordered_map<std::string,std::string>::iterator i = pars.begin(); i != pars.end(); i++)
                 {
                     this->check_unique(i->first);
-                    if(i->first.compare(available_base_params_[0]))
+                    if(i->first.compare(available_base_params_[0]) == 0)
                     {
                         configurable_.Kp = std::stod(i->second);
                         changes_[0] = true;
                     }
-                    else if(i->first.compare(available_base_params_[1]))
+                    else if(i->first.compare(available_base_params_[1]) == 0)
                     {
                         configurable_.Kd = std::stod(i->second);
                         changes_[1] = true;
                     }
-                    else if(i->first.compare(available_base_params_[2]))
+                    else if(i->first.compare(available_base_params_[2]) == 0)
                     {
                         configurable_.Ki = std::stod(i->second);
                         changes_[2] = true;
                     }
-                    else if(i->first.compare(available_base_params_[3]))
+                    else if(i->first.compare(available_base_params_[3]) == 0)
                     {
                         configurable_.ilimit = std::stod(i->second);
                         changes_[3] = true;
                     }
-                    else if(i->first.compare(available_base_params_[4]))
+                    else if(i->first.compare(available_base_params_[4]) == 0)
                     {
                         configurable_.iratelimit = std::stod(i->second);
                         changes_[4] = true;
                     }
-                    else if(i->first.compare(available_base_params_[5]))
+                    else if(i->first.compare(available_base_params_[5]) == 0)
                     {
                         configurable_.max_position_slip = std::stod(i->second);
                         changes_[5] = true;
                     }
-                    else if(i->first.compare(available_base_params_[6]))
+                    else if(i->first.compare(available_base_params_[6]) == 0)
                     {
                         configurable_.max_velocity_slip = std::stod(i->second);
                         changes_[6] = true;
                     }
-                    else if(i->first.compare(available_base_params_[7]))
+                    else if(i->first.compare(available_base_params_[7]) == 0)
                     {
                         configurable_.enable_motor_temperature = std::stod(i->second);
                         changes_[7] = true;
                     }
-                    else if(i->first.compare(available_base_params_[8]))
+                    else if(i->first.compare(available_base_params_[8]) == 0)
                     {
                         configurable_.pos_min_limit = std::stod(i->second);
                         changes_[8] = true;
                     }
-                    else if(i->first.compare(available_base_params_[9]))
+                    else if(i->first.compare(available_base_params_[9]) == 0)
                     {
                         configurable_.pos_max_limit = std::stod(i->second);
                         changes_[9] = true;
                     }
-                    else if(i->first.compare(available_base_params_[10]))
+                    else if(i->first.compare(available_base_params_[10]) == 0)
                     {
                         configurable_.max_velocity = std::stod(i->second);
                         changes_[10] = true;
                     }
-                    else if(i->first.compare(available_base_params_[11]))
+                    else if(i->first.compare(available_base_params_[11]) == 0)
                     {
                         configurable_.max_effort = std::stod(i->second);
                         changes_[11] = true;
                     }
-                    else if(i->first.compare(available_base_params_[12]))
+                    else if(i->first.compare(available_base_params_[12]) == 0)
                     {
                         configurable_.actuator_transmission = std::stod(i->second);
                         changes_[12] = true;
                     }
-                    else if(i->first.compare(available_base_params_[13]))
+                    else if(i->first.compare(available_base_params_[13]) == 0)
                     {
                         configurable_.position_offset = std::stod(i->second);
                         changes_[13] = true;
                     }
-                    else if(i->first.compare(available_extra_params_[0]))
-                        configurable_.second_encoder_trasmission = std::stod(i->second);
-                    for(size_t i = 0; i<changes_.size(); i++)
-                    {
-                        if(!changes_[i])
-                            RCLCPP_WARN(rclcpp::get_logger("Moteus Driver Param"),"The moteus conf %s is set to default", available_base_params_[i].c_str());
-                    }   
+                    else if(i->first.compare(available_extra_params_[0]) == 0)
+                        configurable_.second_encoder_trasmission = std::stod(i->second);  
                 }
+                for(size_t i = 0; i<changes_.size(); i++)
+                {
+                    if(!changes_[i])
+                        RCLCPP_WARN(rclcpp::get_logger("Moteus Driver Param"),"The moteus conf %s is set to default", available_base_params_[i].c_str());
+                } 
             };
         private:
             std::array<bool,14> changes_;

@@ -85,7 +85,8 @@ namespace pi3hat_hw_interface
                 SecondEncoderOutput(double second_encoder_transmission):
                 second_encoder_transmission_(second_encoder_transmission)
                 {
-
+                    if(second_encoder_transmission_ < 0.0)
+                        throw std::runtime_error("Second encoder transmission must be greater than zero");
                 };
                 ~SecondEncoderOutput()
                 {
@@ -128,14 +129,10 @@ namespace pi3hat_hw_interface
         class Actuator_Manager
         {
             public:
-                Actuator_Manager(CanFdFrame *command_frame, ActuatorOptions options)
+                Actuator_Manager(CanFdFrame *command_frame)
                 {
                     cmd_frame_ = command_frame;
-                    act_opt_ = options;
-                    if(act_opt_.second_encoder_trasmission > 0.0)
-                    {
-                        second_encoder_output_ = std::make_unique<SecondEncoderOutput>(act_opt_.second_encoder_trasmission);
-                    }
+                    
                 };
                 ~Actuator_Manager();
                 void SetActuatorParam(
@@ -150,7 +147,23 @@ namespace pi3hat_hw_interface
                     jnt_name_ = jnt_name;
                     act_opt_ = opt;
                 }
-                bool ConfigureActuator(const QueryFormat query_format, std::shared_ptr<mjbots::moteus::Transport> transport, int second_encoder_source);
+                void setQueryFormat(const QueryFormat query_format)
+                {
+                    query_format_ = query_format;
+                };
+                void setSecondEncoderSource(unsigned int se_source)
+                {
+                    se_source_ = se_source;
+                };
+                std::string get_joint_name()
+                {
+                    return jnt_name_;
+                };
+                u_int16_t GetActuatorId()
+                {
+                    return id_;
+                };
+                bool ConfigureActuator(std::shared_ptr<mjbots::moteus::Transport> transport);
                 
                 void ExportSttInt(std::vector<hardware_interface::StateInterface> &stt_int);
                 void ExportCmdInt(std::vector<hardware_interface::CommandInterface> &cmd_int);
@@ -205,7 +218,7 @@ namespace pi3hat_hw_interface
                 std::unique_ptr<Controller> c_;
                 ActuatorOptions act_opt_;
                 QueryFormat query_format_;
-
+                unsigned int se_source_;
                 CanFdFrame* cmd_frame_;
                 std::string jnt_name_;
                 u_int16_t id_,bus_;
@@ -213,10 +226,10 @@ namespace pi3hat_hw_interface
                 double position_offset_ = 0.0;
                 double actuator_transmission_ = 1.0;
                 double second_encoder_transmission_ = 0.0;
-               
                 CommandStruct cmd_;
                 StateStruct stt_;
-                std::unique_ptr<SecondEncoderOutput> second_encoder_output_;
+                std::unique_ptr<SecondEncoderOutput> second_encoder_output_ = nullptr;
+
                 
             };
     };

@@ -31,6 +31,8 @@
 #include "rclcpp_lifecycle/state.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
+#include "moteus_pi3hat/pi3hat_moteus_transport.h"
+#include "pi3hat_hw_interface/actuator_manager.hpp"
 // #include "rclcpp_lifecycle/lifecycle_publisher.hpp"
 // #include "pi3hat_hw_interface/motor_manager.hpp"
 // #include "pi3hat_moteus_int_msgs/msg/packet_pass.hpp"
@@ -83,9 +85,44 @@ namespace pi3hat_hw_interface
 {
     namespace moteus_pi3hat_interface
     {
+        class AsyncCallback
+        {
+            public:
+                mjbots::moteus::CompletionCallback callback()
+                {
+                    return [&](int v)
+                    {
+                        std::unique_lock<std::mutex> lock(mutex_);
+                        // RCLCPP_INFO(rclcpp::get_logger("CALLBACK"),"completition callback");
+                        done_.store(true);
+                        result_.store(v,std::memory_order_release);
+                    };
+                };
+                int try_consume()
+                {
+                    //preliminary check to not direct block the mutex
+                    if(!done_.load(std::memory_order_acquire))
+                    {
+                        // RCLCPP_INFO(rclcpp::get_logger("CALLBACK"),"no data yet");
+                        return -1;
+                    }
+                    // lock the mutex in the actual scope
+                    std::lock_guard<std::mutex> lock(mutex_);
+                    done_.store(false);
+                    // RCLCPP_INFO(rclcpp::get_logger("CALLBACK"),"try consume %d", result_.load(std::memory_order_acquire));
+
+                    return result_.load(std::memory_order_acquire);
+                    
+                }
+            private:
+                std::atomic<bool> done_{false};
+                std::atomic<int> result_{0};
+                std::mutex mutex_;
+        };
         
         class MoteusPi3Hat_Interface : public hardware_interface::SystemInterface
         {
+            
             public:
                 MoteusPi3Hat_Interface();
                 ~MoteusPi3Hat_Interface();
@@ -103,46 +140,12 @@ namespace pi3hat_hw_interface
                 hardware_interface::return_type read(const rclcpp::Time & , const rclcpp::Duration & ) override;
                 hardware_interface::return_type write(const rclcpp::Time & , const rclcpp::Duration & ) override;
 
-                // void cycle()
-                // {
-                //     if(valid_)
-                //     {
-                //         auto promise = make_shared<std::promise<Output>>();
-                //         for(auto &rep : msr_data_)
-                //         {
-                //             rep.id = 0;
-                //             rep.bus = 0;
-                //             rep.result.position = std::nan("1");
-                //             rep.result.velocity = std::nan("2");
-                //             rep.result.torque = std::nan("3");
-                //             rep.result.temperature = std::nan("4");
-                //             rep.result.sec_enc_pos = std::nan("6");
-                //             rep.result.sec_enc_vel = std::nan("2");
-                //         }
-                //         data_.commands = {cmd_data_.data(),cmd_data_.size()};
-                //         //  for(auto cmd : data_.commands)
-                //         //     {
-                //         //     RCLCPP_INFO(rclcpp::get_logger("LIV10"),"value of data is %d",cmd.query.sec_enc_pos);
-                //         //     }
-                //         data_.replies  = {msr_data_.data(),msr_data_.size()};
-                //         communication_thread_.Cycle(
-                //                 data_,
-                //                 [promise](const Output& out)
-                //                 { 
-                //                     promise->set_value(out);
-                //                     // if(out.query_result_size <4 || out.query_result_size >4)
-                //                     // 
-                //                     // RCLCPP_WARN(rclcpp::get_logger("PINO"),"CALL Communication Callback with out %ld",out.query_result_size);
-                //                 }
-                //             );
-                            
-                //         can_recvd_ = promise->get_future();
-                //         //RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call valid %d", can_recvd_.valid());
-                //         // RCLCPP_INFO(rclcpp::get_logger("LOGGER_NAME"),"Cycle Call gets %d", can_recvd_.get().query_result_size);
-                //     }
-                // };
+               
             private:
-                
+                std::vector<std::unique_ptr<pi3hat_hw_interface::actuator_manager::Actuator_Manager>> actuators_;
+                std::shared_ptr<mjbots::pi3hat::Pi3HatMoteusTransport> pi3hat_transport_;
+                unsigned int num_actuators_ = 0;
+                std::vector<mjbots::moteus::CanFdFrame> command_framees_,replies_;
                 // std::vector<Motor_Manager> motors_;
                 // std::vector<Command> cmd_data_;
                 // std::vector<Reply> msr_data_;
@@ -159,7 +162,9 @@ namespace pi3hat_hw_interface
                 // std::vector<double> pkt_loss_;
                 // double valid_loss_ = 0.0, cycle_dur_=0.0;
                 // bool valid_ = true,att_req_;
-                // mjbots::pi3hat::Attitude filtered_IMU_;
+                mjbots::pi3hat::Attitude filtered_IMU_;
+                mjbots::pi3hat::Quaternion imu_orientation_;
+                mjbots::pi3hat::Point3D imu_angular_velocity_, imu_linear_acceleration_;
                 // int num_stt_int_;
                 // std::vector<double> acc_base_,vel_base_,quaternion_;
                 // Eigen::Vector3d acc_imu_,vel_imu_,imu_to_base_pos_;
@@ -169,7 +174,11 @@ namespace pi3hat_hw_interface
                 // std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
                 // std::chrono::_V2::system_clock::time_point t_e_write_ , t_s_read_;
                 // double w2r_dur_;
-                // bool first_cycle_ = true;
+                double invalid_cycle_;
+                double cycle_duration_;
+                std::vector<double> package_loss_;
+                bool first_cycle_ = true, attittude_requested_ = false;
+                AsyncCallback clb_as_;
         };
     }
 }
