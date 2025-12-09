@@ -19,7 +19,7 @@
 #include "hardware_interface/hardware_info.hpp"
 
 #pragma once
-#define MAX_EXTRAS 3
+#define MAX_EXTRAS 5
 #define MAX_VOLT 34
 #define MAX_CURR 80
 #define FLUX_BRAKE_MARGIN 27.5
@@ -49,6 +49,25 @@ namespace pi3hat_hw_interface
             double max_velocity = 0.0;
             double max_effort = 0.0;
             double position_offset = 0.0;
+        };
+        struct ActuatorQuery
+        {
+
+           int position = 0;
+           int velocity = 0;
+           int torque = 0;
+           int q_current = 0;
+           int d_current = 0;
+           int abs_position = 0;
+           int power = 0;
+           int motor_temperature = 0;
+           int voltage = 0;
+           int temperature = 0;
+           int position_error = 0;
+           int velocity_error = 0;
+           int torque_error = 0;
+           int second_encoder_position = 0;
+           int second_encoder_velocity = 0;
         };
     }
     using Resolution = mjbots::moteus::Resolution;
@@ -94,7 +113,7 @@ namespace pi3hat_hw_interface
             std::vector<std::string> parsed_params_ = {};  
     };
 
-    class QueryFormatInfo : public ElementInfo<mjbots::moteus::Query::Format>
+    class QueryFormatInfo : public ElementInfo<actuator_manager::ActuatorQuery>
     {
         
         public:
@@ -102,14 +121,19 @@ namespace pi3hat_hw_interface
             QueryFormatInfo()
             {
 
-                // init default query format
-                this->configurable_.mode = Resolution::kIgnore;
-                this->configurable_.position = Resolution::kInt32;
-                this->configurable_.velocity = Resolution::kInt32;
-                this->configurable_.torque = Resolution::kInt32;
-                this->configurable_.voltage = Resolution::kIgnore;
-                this->configurable_.temperature = Resolution::kInt16;
-                this->configurable_.motor_temperature = Resolution::kIgnore;
+                // // init default query format
+                // this->configurable_.mode = Resolution::kIgnore;
+                // this->configurable_.position = Resolution::kInt32;
+                // this->configurable_.velocity = Resolution::kInt32;
+                // this->configurable_.torque = Resolution::kInt32;
+                // this->configurable_.voltage = Resolution::kIgnore;
+                // this->configurable_.temperature = Resolution::kInt16;
+                // this->configurable_.motor_temperature = Resolution::kIgnore;
+                // for(int i = 0; i < MAX_EXTRAS; i++)
+                // {
+                //     this->configurable_.extra[i].register_number = mjbots::moteus::detail::numeric_limits<int16_t>::max();
+                //     this->configurable_.extra[i].resolution = Resolution::kIgnore;
+                // }
                 //init available params
                 this->available_base_params_ = 
                 {
@@ -135,18 +159,18 @@ namespace pi3hat_hw_interface
                 };
                 changes_.fill(false);
             }
-            Resolution parse_res(int res)
+            int parse_res(int res)
             {
                 if(res == 0)
-                    return Resolution::kIgnore;
+                    return 0;
                 else if(res == 8)
-                    return Resolution::kInt8;
+                    return 1;
                 else if(res == 16)
-                    return Resolution::kInt16;
+                    return 2;
                 else if(res == 32)
-                    return Resolution::kInt32;
+                    return 3;
                 else if(res == 64)
-                    return Resolution::kFloat;
+                    return 4;
                 else
                     throw std::runtime_error("Wrong resolution format are available just [0,8,16,32,64]");
             }
@@ -156,13 +180,14 @@ namespace pi3hat_hw_interface
                 try
                 {
                    se_source_ = std::stoi(pars.at("second_encoder_source"));
-                   if(se_source_ < 0 || se_source_ >2)
+                   if(se_source_ < 0 || se_source_ >2 )
                         throw std::runtime_error("second_encoder_source must be 0, 1 or 2");
                 }
                 catch(const std::exception& e)
                 {
                     se_source_ = -1;
                 }
+                extra_count_ = 0;
                 
                 for(std::unordered_map<std::string,std::string>::iterator i = pars.begin(); i != pars.end(); i++)
                 {
@@ -219,64 +244,96 @@ namespace pi3hat_hw_interface
                         configurable_.temperature = parse_res(std::stoi(i->second));
                         changes_[9] = true;
                     }
-                    else if(i->first.compare(this->available_extra_params_[0]) == 0)
+                    else if(i->first.compare(this->available_extra_params_[0]) == 0 && std::stoi(i->second) != 0 )
                     {
-                        if(extra_count_ < MAX_EXTRAS)
-                        {
-                            configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
-                            configurable_.extra[extra_count_].register_number = mjbots::moteus::Register::kControlPositionError;
-                            extra_count_ ++;
-                        }
-                        else
-                            throw std::runtime_error("Reach maximum extras element");
+                        configurable_.position_error = std::stoi(i->second);
+                        // if(extra_count_ < MAX_EXTRAS)
+                        // {
+                        //     configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
+                        //     RCLCPP_INFO(rclcpp::get_logger("Query Resolution Parser DEBUG"),"Parsing extra param %s with res %s, %d",i->first.c_str(),i->second.c_str(),parse_res(std::stoi(i->second)));
+                        //     configurable_.extra[extra_count_].register_number = mjbots::moteus::Register::kControlPositionError;
+                        //     RCLCPP_INFO(rclcpp::get_logger("Query Resolution Parser DEBUG"),"Extra %d : register number %d with res %d",extra_count_,configurable_.extra[extra_count_].register_number,static_cast<int>(configurable_.extra[extra_count_].resolution));
+                        //     extra_count_ ++;
+                        // }
+                        // else
+                        //     throw std::runtime_error("Reach maximum extras element");
                     }
-                    else if(i->first.compare(this->available_extra_params_[1]) == 0)
+                    else if(i->first.compare(this->available_extra_params_[1]) == 0 && std::stoi(i->second) != 0 ) 
                     {
-                        if(extra_count_ < MAX_EXTRAS)
-                        {
-                            configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
-                            configurable_.extra[extra_count_].register_number = mjbots::moteus::Register::kControlVelocityError;
-                            extra_count_ ++;
-                        }
-                        else
-                            throw std::runtime_error("Reach maximum extras element");
+                        configurable_.velocity_error = std::stoi(i->second);
+                        // if(extra_count_ < MAX_EXTRAS)
+                        // {
+                        //     configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
+                        //     configurable_.extra[extra_count_].register_number = mjbots::moteus::Register::kControlVelocityError;
+                        //     RCLCPP_INFO(rclcpp::get_logger("Query Resolution Parser DEBUG"),"Extra %d : register number %d with res %d",extra_count_,configurable_.extra[extra_count_].register_number,static_cast<int>(configurable_.extra[extra_count_].resolution));
+                        //     extra_count_ ++;
+                        // }
+                        // else
+                        //     throw std::runtime_error("Reach maximum extras element");
                     }
-                    else if(i->first.compare(this->available_extra_params_[2]) == 0)
+                    else if(i->first.compare(this->available_extra_params_[2]) == 0 && std::stoi(i->second) != 0 )
                     {
-                        if(extra_count_ < MAX_EXTRAS)
-                        {
-                            configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
-                            configurable_.extra[extra_count_].register_number = mjbots::moteus::Register::kControlTorqueError;
-                            extra_count_ ++;
-                        }
-                        else
-                            throw std::runtime_error("Reach maximum extras element");
+                        configurable_.torque_error = std::stoi(i->second);
+                        // if(extra_count_ < MAX_EXTRAS)
+                        // {
+                        //     configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
+                        //     configurable_.extra[extra_count_].register_number = mjbots::moteus::Register::kControlTorqueError;
+                        //     RCLCPP_INFO(rclcpp::get_logger("Query Resolution Parser DEBUG"),"Extra %d : register number %d with res %d",extra_count_,configurable_.extra[extra_count_].register_number,static_cast<int>(configurable_.extra[extra_count_].resolution));
+                        //     extra_count_ ++;
+                        // }
+                        // else
+                        //     throw std::runtime_error("Reach maximum extras element");
                     }
-                    else if(i->first.compare(this->available_extra_params_[3]) == 0)
+                    else if(i->first.compare(this->available_extra_params_[3]) == 0 && std::stoi(i->second) != 0 )
                     {
                         if(se_source_ == -1)
-                            throw std::runtime_error("Trying to set the second encoder position resolution without identify the source");
-                        if(extra_count_ < MAX_EXTRAS)
                         {
-                            configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
-                            configurable_.extra[extra_count_].register_number = se_source_ == 0 ? mjbots::moteus::Register::kEncoder0Position : se_source_ == 1 ? mjbots::moteus::Register::kEncoder1Position : mjbots::moteus::Register::kEncoder2Position;
-                            extra_count_ ++;
+                            RCLCPP_WARN(rclcpp::get_logger("Query Resolution Parser"),"No second encoder will be used");
                         }
                         else
-                            throw std::runtime_error("Reach maximum extras element");
+                            configurable_.second_encoder_position = std::stoi(i->second);
+                        // if(extra_count_ < MAX_EXTRAS)
+                        // {
+                        //     configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
+                        //     if(se_source_ == 0)
+                        //         configurable_.extra[extra_count_].register_number = mjbots::moteus::Register::kEncoder0Position;
+                        //     else if(se_source_ == 1)
+                        //         configurable_.extra[extra_count_].register_number = mjbots::moteus::Register::kEncoder1Position;
+                        //     else if(se_source_ == 2)
+                        //         configurable_.extra[extra_count_].register_number = mjbots::moteus::Register::kEncoder2Position;
+                        //     else
+                        //         throw std::runtime_error("second_encoder_source must be 0, 1 or 2");
+                        //     // RCLCPP_INFO(rclcpp::get_logger("Query Resolution Parser"),"Extra %d : register number %d with res %d",extra_count_,configurable_.extra[extra_count_].register_number,static_cast<int>(configurable_.extra[extra_count_].resolution));
+                        //     extra_count_ ++;
+
+                        // }
+                        // else
+                        //     throw std::runtime_error("Reach maximum extras element");
                     }
-                    else if(i->first.compare(this->available_extra_params_[4]) == 0)
+                    else if(i->first.compare(this->available_extra_params_[4]) == 0 && std::stoi(i->second) != 0 )
                     {
                         if(se_source_ == -1)
-                            throw std::runtime_error("Trying to set the second encoder velocity resolution without identify the source");
-                        if(extra_count_ < MAX_EXTRAS)
                         {
-                            configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
-                            configurable_.extra[extra_count_].register_number = se_source_ == 0 ? mjbots::moteus::Register::kEncoder0Velocity : se_source_ == 1 ? mjbots::moteus::Register::kEncoder1Velocity : mjbots::moteus::Register::kEncoder2Velocity;
-                            extra_count_ ++;
+                            RCLCPP_WARN(rclcpp::get_logger("Query Resolution Parser"),"No second encoder will be used");
                         }
                         else
-                            throw std::runtime_error("Reach maximum extras element");
+                            configurable_.second_encoder_velocity = std::stoi(i->second);
+                        // if(extra_count_ < MAX_EXTRAS)
+                        // {
+                        //     configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
+                        //     if(se_source_ == 0)
+                        //         configurable_.extra[extra_count_].register_number = mjbots::moteus::Register::kEncoder0Velocity;
+                        //     else if(se_source_ == 1)
+                        //         configurable_.extra[extra_count_].register_number = mjbots::moteus::Register::kEncoder1Velocity;
+                        //     else if(se_source_ == 2)
+                        //         configurable_.extra[extra_count_].register_number = mjbots::moteus::Register::kEncoder2Velocity;
+                        //     else
+                        //         throw std::runtime_error("second_encoder_source must be 0, 1 or 2");
+                        //     // RCLCPP_INFO(rclcpp::get_logger("Query Resolution Parser"),"Extra %d : register number %d with res %d",extra_count_,configurable_.extra[extra_count_].register_number,static_cast<int>(configurable_.extra[extra_count_].resolution));
+                        //     extra_count_ ++;
+                        // }
+                        // else
+                        //     throw std::runtime_error("Reach maximum extras element");
                     }
                     // else
                     // {
@@ -284,12 +341,12 @@ namespace pi3hat_hw_interface
                     //     throw std::runtime_error("Unable to parse parameters");
                     // }
                 }
+               
                 for(size_t i = 0; i<changes_.size(); i++)
                 {
                     if(!changes_[i])
                         RCLCPP_WARN(rclcpp::get_logger("Query Resolution Parser"),"The base query conf %s is set to default", available_base_params_[i].c_str());
                 }
-                RCLCPP_INFO(rclcpp::get_logger("Query Resolution Parser"),"Query Format parser correctly finished and extra are: %d,%d ",configurable_.extra[0].register_number,configurable_.extra[1].register_number);
             } 
             int get_secodn_encoder_source()
             {

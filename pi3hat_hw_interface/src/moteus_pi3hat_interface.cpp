@@ -44,7 +44,7 @@ namespace pi3hat_hw_interface
             }
             catch(const std::exception& e)
             {
-                RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Pi3hat Transport Parsing throw: %s",e.what());
+                RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Pi3hat Transport parsing extra throw: %s",e.what());
                 return CallbackReturn::FAILURE;
             }
 
@@ -106,8 +106,9 @@ namespace pi3hat_hw_interface
                     RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Query Format Parsing throw: %s",e.what());
                     return CallbackReturn::FAILURE;
                 }
-                actuators_[i]->setQueryFormat(query_parser->get_cofigurable());
                 actuators_[i]->setSecondEncoderSource(se_source);
+                actuators_[i]->setQueryFormat(query_parser->get_cofigurable());
+                
 
             }
 
@@ -354,7 +355,12 @@ namespace pi3hat_hw_interface
             {
                 // RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "send_data");
                 for(unsigned int i = 0; i < num_actuators_; i++)
+                {
                     actuators_[i]->MakeCommand();
+                    // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Command for actuator %d %d",
+                    //     command_framees_[i].expected_reply_size ,command_framees_[i].reply_required
+                    // );
+                }
                 pi3hat_transport_->Cycle(
                     command_framees_.data(),
                     command_framees_.size(),

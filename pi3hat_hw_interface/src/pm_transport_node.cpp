@@ -63,6 +63,10 @@ class MoteusPi3hatNode : public  Node
             Controller_Option opt_c;
             opt_c.id = motor_id;
             opt_c.transport = t_;
+            opt_c.query_format.extra[0].register_number = mjbots::moteus::Register::kControlPositionError;
+            opt_c.query_format.extra[0].resolution = mjbots::moteus::Resolution::kFloat;
+            opt_c.query_format.extra[1].register_number = mjbots::moteus::Register::kControlVelocityError;
+            opt_c.query_format.extra[1].resolution = mjbots::moteus::Resolution::kFloat;
             c_ = std::make_shared<Controller>(opt_c);
             publisher_ = this->create_publisher<std_msgs::msg::Int16>("logging",200);
             pub_count_ = this->create_publisher<std_msgs::msg::Int16>("logging_count",200);
@@ -138,6 +142,7 @@ class MoteusPi3hatNode : public  Node
         {
             this->cmd_struct_.position = std::numeric_limits<float>::quiet_NaN();
             this->cmd_struct_.velocity = 1.0;
+            
             auto cmd_frame = c_->MakePosition(cmd_struct_);
             cmd_frames_.push_back(cmd_frame);
             timer_ = this->create_wall_timer(
@@ -151,7 +156,9 @@ class MoteusPi3hatNode : public  Node
             frames.resize(1);
             mjbots::moteus::Query::Format qf;
             
-            qf.extra[0].register_number = mjbots::moteus::Register::kEncoderValidity;
+            qf.extra[0].register_number = mjbots::moteus::Register::kEncoder1Position;
+            qf.extra[0].resolution = mjbots::moteus::Resolution::kFloat;
+            qf.extra[0].register_number = mjbots::moteus::Register::kEncoder1Velocity;
             qf.extra[0].resolution = mjbots::moteus::Resolution::kFloat;
             frames[0] = c_->MakeQuery(&qf);
             auto result = c_->SetQuery(&qf);
@@ -217,7 +224,7 @@ class MoteusPi3hatNode : public  Node
                         {
                             auto res = mjbots::moteus::Query::Parse(rep.data,rep.size);
 
-                            // RCLCPP_INFO(this->get_logger(), "pos %f::::vel %f, %d",res.position,res.velocity,count);
+                            RCLCPP_INFO(this->get_logger(), "pos %f::::vel %f, %d",res.extra[0].value,res.extra[1].value,count);
                         }
                     }
                     t_->Cycle(cmd_frames_.data(),cmd_frames_.size(),&replies_,&att_,nullptr,nullptr,clb_as_.callback());
@@ -227,7 +234,7 @@ class MoteusPi3hatNode : public  Node
                     msg.data = count;
                     pub_count_->publish(msg);
                     count++;
-                    if(count > 10)
+                    if(count > 1000)
                         this->stop_control();
                 }
             }
@@ -275,12 +282,12 @@ int main(int argc, char * argv[])
     auto node = std::make_shared<MoteusPi3hatNode>(opt_t,motor_id);
     RCLCPP_INFO(rclcpp::get_logger("pp"),"try to send diagnostic command");
     node->conf_set("d exact 0.0\n");
-    node->conf_set("conf set servo.pid_position.kp 0.1\n");
+    node->conf_set("conf set servo.pid_position.kp 0.0\n");
     
-    node->conf_set("conf set servo.pid_position.kd 0.2\n");
+    node->conf_set("conf set servo.pid_position.kd 0.0\n");
     RCLCPP_INFO(rclcpp::get_logger("PORCODIO"),"pass here");
-    node->test_encoder_validity();
-    // node->start_control(5.0);
+    // node->test_encoder_validity();
+    node->start_control(5.0);
     // node->send_sync_vel(1000);
     // node->conf_set("conf get servo.pid_position.kp");
 

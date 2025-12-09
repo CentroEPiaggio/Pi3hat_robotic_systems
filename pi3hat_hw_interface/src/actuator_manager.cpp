@@ -34,10 +34,15 @@ namespace pi3hat_hw_interface
                 second_encoder_output_ = std::make_unique<SecondEncoderOutput>(second_encoder_transmission_);
             max_torque_ = act_opt_.max_effort;
             position_offset_ = act_opt_.position_offset;
-            
+            c_opt.query_format = query_format_;
+            // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Configuring actuator extra %d %d ",c_opt.query_format.extra[0].register_number,c_opt.query_format.extra[1].register_number);
             //create controller 
             c_ = std::make_unique<Controller>(c_opt);
-
+            for(int i = 0; i < MAX_EXTRAS; i++)
+            {
+                RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"), "Configuring actuator extra %d %d ", c_->options().query_format.extra[i].register_number, c_->options().query_format.extra[i].resolution);
+            }
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Configuring actuator id %d on bus %d",id_,bus_);
             // start configuration procedure flushing all stored information
             c_->DiagnosticWrite("d stop \n");
             c_->DiagnosticFlush();
@@ -68,6 +73,10 @@ namespace pi3hat_hw_interface
                     (validity & (1<<5))
                 )
                     RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Using third source to read the second encoder for actuator id %d on bus %d",id_,bus_);
+                else if(se_source_ == -1)
+                {
+                    RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"No second encoder source are used for actuator id %d on bus %d",id_,bus_);
+                }
                 else
                 {
                     RCLCPP_ERROR(rclcpp::get_logger("Actuator_Manager"), "Second encoder source and driver configuration are not coupled");
@@ -98,6 +107,7 @@ namespace pi3hat_hw_interface
 
             c_->DiagnosticWrite("d exact 0.0\n");
             c_->DiagnosticFlush();
+            // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"), "Extra register number: %d", c_->options().query_format.extra[0].register_number);
             
             
             return true;
@@ -297,18 +307,22 @@ namespace pi3hat_hw_interface
             for(int i =0; i< MAX_EXTRAS; i++)
             {
 
+                // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing extra register count is %d the reg is %d and value is %f and res %d",i,query_format_.extra[i].register_number,result.extra[i].value,query_format_.extra[i].resolution);
                 if(query_format_.extra[i].resolution != Resolution::kIgnore)
                 {
                     if(query_format_.extra[i].register_number == mjbots::moteus::Register::kControlPositionError)
                     {
+                        // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing position error for actuator id %d on bus %d has value %f",id_,bus_,result.extra[i].value);
                         stt_.position_error = FromMotorToJointPosition(result.extra[i].value);
                     }
                     else if(query_format_.extra[i].register_number == mjbots::moteus::Register::kControlVelocityError)
                     {
+                        // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,result.extra[i].value);
                         stt_.velocity_error = FromMotorToJointPosition(result.extra[i].value);
                     }
                     else if(query_format_.extra[i].register_number == mjbots::moteus::Register::kControlTorqueError)
                     {
+                        // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,result.extra[i].value);
                         stt_.torque_error = FromMotorToJointEffort(result.extra[i].value);
                     }
                     else if(
@@ -318,7 +332,7 @@ namespace pi3hat_hw_interface
                             second_encoder_output_ != nullptr
                         )
                     {
-                        RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,result.extra[i].value);
+                        // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,result.extra[i].value);
                         stt_.second_encoder_position = second_encoder_output_->FromeEncoderToJointPosition(result.extra[i].value);
                     }
                     else if(
@@ -328,7 +342,7 @@ namespace pi3hat_hw_interface
                             second_encoder_output_ != nullptr
                     )
                     {
-                        
+                        // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,result.extra[i].value);
                         stt_.second_encoder_velocity = second_encoder_output_->FromEncoderToJointVelocity(result.extra[i].value);
                     }
                     else
@@ -342,12 +356,20 @@ namespace pi3hat_hw_interface
         void Actuator_Manager::MakeCommand()
         {
             mjbots::moteus::PositionMode::Command cmd;
+            // QueryFormat qf;
+            // qf.extra[0].register_number = mjbots::moteus::Register::kControlPositionError;
+            // qf.extra[0].resolution = mjbots::moteus::Resolution::kFloat;
+            // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"command qf extra 0 is %d,%d",query_format_.extra[0].register_number,query_format_.extra[0].resolution);
+            // this->query_format_.extra[0].register_number = mjbots::moteus::Register::kControlPositionError;
+            // this->query_format_.extra[0].resolution = mjbots::moteus::Resolution::kFloat;
+            // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"command qf extra 0 is %d,%d",query_format_.extra[0].register_number,query_format_.extra[0].resolution);
+
             cmd.position = FromJointToMotorPosition(cmd_.position) + position_offset_;
             cmd.velocity = FromJointToMotorPosition(cmd_.velocity);
             cmd.feedforward_torque = FromJointToMotorEffort(Saturation(cmd_.effort,max_torque_));
             cmd.kp_scale = FromJointToMotorGain(cmd_.kp_scale);
             cmd.kd_scale = FromJointToMotorGain(cmd_.kd_scale);
-            *cmd_frame_ = c_->MakePosition(cmd);
+            *cmd_frame_ = c_->MakePosition(cmd,nullptr,&this->query_format_);
 
         };
         void Actuator_Manager::MakeStop()

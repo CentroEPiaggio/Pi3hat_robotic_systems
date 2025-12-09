@@ -147,10 +147,72 @@ namespace pi3hat_hw_interface
                     jnt_name_ = jnt_name;
                     act_opt_ = opt;
                 }
-                void setQueryFormat(const QueryFormat query_format)
+                
+                void setQueryFormat(const ActuatorQuery query_format)
                 {
-                    query_format_ = query_format;
+                    int extra_count = 0;
+                    query_format_.position = parse_res(query_format.position);
+                    query_format_.velocity = parse_res(query_format.velocity);
+                    query_format_.torque = parse_res(query_format.torque);
+                    query_format_.d_current = parse_res(query_format.d_current);
+                    query_format_.q_current = parse_res(query_format.q_current);
+                    query_format_.power = parse_res(query_format.power);
+                    query_format_.abs_position = parse_res(query_format.abs_position);
+                    query_format_.motor_temperature = parse_res(query_format.motor_temperature);
+                    query_format_.temperature = parse_res(query_format.temperature);
+                    query_format_.voltage = parse_res(query_format.voltage);
+                    if(query_format.position_error != 0)
+                    {
+                        query_format_.extra[extra_count].resolution = parse_res(query_format.position_error);
+                        query_format_.extra[extra_count].register_number = mjbots::moteus::kControlPositionError;
+                        extra_count ++;
+                    }
+                    if(query_format.velocity_error != 0)
+                    {
+                        query_format_.extra[extra_count].resolution = parse_res(query_format.velocity_error);
+                        query_format_.extra[extra_count].register_number = mjbots::moteus::kControlVelocityError;
+                        extra_count ++;
+                    }
+                    if(query_format.torque_error != 0)
+                    {
+                        query_format_.extra[extra_count].resolution = parse_res(query_format.torque_error);
+                        query_format_.extra[extra_count].register_number = mjbots::moteus::kControlTorqueError;
+                        extra_count ++;
+                    }
+                    if(query_format.second_encoder_position != 0 && se_source_ != -1)
+                    {
+                        query_format_.extra[extra_count].resolution = parse_res(query_format.second_encoder_position);
+                        if(se_source_ == 0)
+                            query_format_.extra[extra_count].register_number = mjbots::moteus::kEncoder0Position;
+                        else if(se_source_ == 1)
+                            query_format_.extra[extra_count].register_number = mjbots::moteus::kEncoder1Position;
+                        else if(se_source_ == 2)
+                            query_format_.extra[extra_count].register_number = mjbots::moteus::kEncoder2Position;
+                        else
+                            throw std::runtime_error("se source is set wrongly");
+                        extra_count ++;
+                    }
+                     if(query_format.second_encoder_velocity != 0 && se_source_ != -1)
+                    {
+                        query_format_.extra[extra_count].resolution = parse_res(query_format.second_encoder_velocity);
+                        if(se_source_ == 0)
+                            query_format_.extra[extra_count].register_number = mjbots::moteus::kEncoder0Velocity;
+                        else if(se_source_ == 1)
+                            query_format_.extra[extra_count].register_number = mjbots::moteus::kEncoder1Velocity;
+                        else if(se_source_ == 2)
+                            query_format_.extra[extra_count].register_number = mjbots::moteus::kEncoder2Velocity;
+                        else
+                            throw std::runtime_error("se source is set wrongly");
+                        extra_count ++;
+                    }
+                    
+
+                    // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Set Query Format extra 0 %d %d",query_format_.extra[0].register_number,query_format_.extra[0].resolution);
+                    // query_format_.extra[0].register_number = mjbots::moteus::Register::kControlPositionError;
+                    // query_format_.extra[0].resolution = mjbots::moteus::Resolution::kFloat;
+                    // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Set Query Format extra 0 %d %d",query_format_.extra[0].register_number,query_format_.extra[0].resolution);
                 };
+
                 void setSecondEncoderSource(unsigned int se_source)
                 {
                     se_source_ = se_source;
@@ -169,9 +231,27 @@ namespace pi3hat_hw_interface
                 void ExportCmdInt(std::vector<hardware_interface::CommandInterface> &cmd_int);
                 void ParseSttFromReply(CanFdFrame frame);
                 void MakeCommand();
+                void MakeQuery()
+                {
+                    *cmd_frame_ = c_->MakeQuery(&query_format_);
+                }
                 void MakeStop();
             private:
-                
+                mjbots::moteus::Resolution parse_res(int res)
+                {
+                    if(res == 0)
+                        return mjbots::moteus::Resolution::kIgnore;
+                    else if(res == 8)
+                        return mjbots::moteus::Resolution::kInt8;
+                    else if(res == 16)
+                        return mjbots::moteus::Resolution::kInt16;
+                    else if(res == 32)
+                        return mjbots::moteus::Resolution::kInt32;
+                    else if(res == 64)
+                        return mjbots::moteus::Resolution::kFloat;
+                    else
+                        throw std::runtime_error("Wrong resolution format are available just [0,8,16,32,64]");
+                }
                 double Saturation(double val, double limit)
                 {
                     if(val > limit)
@@ -218,7 +298,7 @@ namespace pi3hat_hw_interface
                 std::unique_ptr<Controller> c_;
                 ActuatorOptions act_opt_;
                 QueryFormat query_format_;
-                unsigned int se_source_;
+                int se_source_;
                 CanFdFrame* cmd_frame_;
                 std::string jnt_name_;
                 u_int16_t id_,bus_;
