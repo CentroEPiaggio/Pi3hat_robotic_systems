@@ -444,6 +444,7 @@ namespace pi3hat_hw_interface
                     bool exit = false;
                     for(auto rep: replies_)
                     {
+                        exit = false;
                         for(auto i : actuator_index_)
                         {
                             if(rep.source == actuators_[i]->GetActuatorId())
@@ -464,7 +465,6 @@ namespace pi3hat_hw_interface
                                 if(! distributors_[i]->ParseSttFromReply(rep))
                                     return hardware_interface::return_type::ERROR;
                                 packet_loss_[i] = 0.0;
-                                exit = true;
                                 break;
                             }
                         }
