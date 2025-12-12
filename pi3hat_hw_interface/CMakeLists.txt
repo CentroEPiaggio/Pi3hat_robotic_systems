@@ -12,23 +12,26 @@ find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(moteus_pi3hat REQUIRED)
-find_package(pi3hat_moteus_int_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(rosbag2_cpp REQUIRED)
+find_package(std_msgs REQUIRED)
+
 
 
 add_library(
   ${PROJECT_NAME}
   SHARED
-  src/motor_manager.cpp
+  src/actuator_manager.cpp
   src/moteus_pi3hat_interface.cpp
 )
+
 add_executable(
-  ${PROJECT_NAME}_record 
-  src/bench_record.cpp
+  ${PROJECT_NAME}_node 
+  src/pm_transport_node.cpp
 )
+
 target_include_directories(${PROJECT_NAME} PUBLIC
 
 $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -43,25 +46,31 @@ ament_target_dependencies(
   rclcpp
   rclcpp_lifecycle
   moteus_pi3hat
-  pi3hat_moteus_int_msgs
   Eigen3
   tf2_ros
   tf2
+  std_msgs
 )
 
 ament_target_dependencies(
-  ${PROJECT_NAME}_record
-  hardware_interface
-  pluginlib
+  ${PROJECT_NAME}_node
   rclcpp
-  rclcpp_lifecycle
   moteus_pi3hat
-  pi3hat_moteus_int_msgs
-  Eigen3
-  tf2_ros
-  tf2
-  rosbag2_cpp
+  std_msgs
 )
+
+# ament_target_dependencies(
+#   ${PROJECT_NAME}_record
+#   hardware_interface
+#   pluginlib
+#   rclcpp
+#   rclcpp_lifecycle
+#   moteus_pi3hat
+#   Eigen3
+#   tf2_ros
+#   tf2
+#   rosbag2_cpp
+# )
 
 pluginlib_export_plugin_description_file(hardware_interface moteus_pi3hat_interface.xml)
 
@@ -104,9 +113,13 @@ install(
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
 )
+
 install(TARGETS
-TARGETS ${PROJECT_NAME}_record
+TARGETS ${PROJECT_NAME}_node
   DESTINATION lib/${PROJECT_NAME})
+# install(TARGETS
+# TARGETS ${PROJECT_NAME}_record
+#   DESTINATION lib/${PROJECT_NAME})
 
 ament_export_include_directories(
   include
@@ -121,10 +134,10 @@ ament_export_dependencies(
   rclcpp
   rclcpp_lifecycle
   moteus_pi3hat
-  pi3hat_moteus_int_msgs
   Eigen3
   tf2_ros
   tf2
+  std_msgs
   
 )
 

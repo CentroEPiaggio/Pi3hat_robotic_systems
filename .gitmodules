@@ -1,0 +1,3 @@
+[submodule "Moteus_Pi3Hat_Distributor"]
+	path = Moteus_Pi3Hat_Distributor
+	url = https://github.com/Cionix90/Moteus_Pi3Hat_Distributor.git
