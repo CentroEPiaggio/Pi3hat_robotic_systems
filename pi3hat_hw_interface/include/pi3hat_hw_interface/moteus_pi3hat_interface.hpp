@@ -16,6 +16,7 @@
 #include <future>
 #include <functional>
 #include <stdio.h>
+#include <map>
 
 #include "eigen3/Eigen/Dense"
 #include "eigen3/Eigen/Core"
@@ -98,7 +99,7 @@ namespace pi3hat_hw_interface
                         result_.store(v,std::memory_order_release);
                     };
                 };
-                int try_consume()
+                int try_consume(std::chrono::_V2::system_clock::time_point* now)
                 {
                     //preliminary check to not direct block the mutex
                     if(!done_.load(std::memory_order_acquire))
@@ -109,6 +110,7 @@ namespace pi3hat_hw_interface
                     // lock the mutex in the actual scope
                     std::lock_guard<std::mutex> lock(mutex_);
                     done_.store(false);
+                    *now = std::chrono::high_resolution_clock::now();
                     // RCLCPP_INFO(rclcpp::get_logger("CALLBACK"),"try consume %d", result_.load(std::memory_order_acquire));
 
                     return result_.load(std::memory_order_acquire);
@@ -142,10 +144,14 @@ namespace pi3hat_hw_interface
 
                
             private:
-                std::vector<std::unique_ptr<pi3hat_hw_interface::actuator_manager::Actuator_Manager>> actuators_;
+                //std::vector<std::unique_ptr<pi3hat_hw_interface::actuator_manager::Actuator_Manager>> actuators_;
                 std::shared_ptr<mjbots::pi3hat::Pi3HatMoteusTransport> pi3hat_transport_;
-                unsigned int num_actuators_ = 0;
+                unsigned int num_actuators_ = 0, num_distributor_ = 0;
                 std::vector<mjbots::moteus::CanFdFrame> command_framees_,replies_;
+                std::vector<int> actuator_index_ = {}, distributor_index_ ={};
+                std::map<int,std::unique_ptr<pi3hat_hw_interface::actuator_manager::Actuator_Manager>> actuators_;
+                std::map<int,std::unique_ptr<pi3hat_hw_interface::power_dist_manager::Distributor_Manager>> distributors_;
+
                 // std::vector<Motor_Manager> motors_;
                 // std::vector<Command> cmd_data_;
                 // std::vector<Reply> msr_data_;
@@ -172,11 +178,11 @@ namespace pi3hat_hw_interface
                 // int acc_correction_ = 0;
                 // tf2::Quaternion imu_pose_;
                 // std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
-                // std::chrono::_V2::system_clock::time_point t_e_write_ , t_s_read_;
-                // double w2r_dur_;
+                std::chrono::_V2::system_clock::time_point t_e_write_ , t_s_read_;
+                double w2r_dur_;
                 double invalid_cycle_;
                 double cycle_duration_;
-                std::vector<double> package_loss_;
+                std::vector<double> packet_loss_;
                 bool first_cycle_ = true, attittude_requested_ = false;
                 AsyncCallback clb_as_;
         };

@@ -104,8 +104,9 @@ namespace pi3hat_hw_interface
             c_->DiagnosticWrite("conf set servo.max_power " + std::to_string(act_opt_.max_power_W) + "\n");
             c_->DiagnosticWrite("conf set servo.max_current " + std::to_string(act_opt_.max_current_A) + "\n");
             c_->DiagnosticWrite("conf set servo.flux_brake_margin " + std::to_string(act_opt_.flux_brake_margin_voltage) + "\n");
+            c_->DiagnosticWrite("conf set servo.default_timeout_s 1.0\n");
 
-            c_->DiagnosticWrite("d exact 0.0\n");
+            
             c_->DiagnosticFlush();
             // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"), "Extra register number: %d", c_->options().query_format.extra[0].register_number);
             
@@ -237,9 +238,9 @@ namespace pi3hat_hw_interface
                         );
                     }
                     else if(
-                            query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder0Position || 
-                            query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder1Position || 
-                            query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder2Position
+                            query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder0Velocity || 
+                            query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder1Velocity || 
+                            query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder2Velocity
                     )
                     {
                         stt_int.emplace_back(
@@ -281,9 +282,15 @@ namespace pi3hat_hw_interface
                 &cmd_.kd_scale
             );
         };
-        void Actuator_Manager::ParseSttFromReply(CanFdFrame frame)
+        bool Actuator_Manager::ParseSttFromReply(CanFdFrame frame)
         {
             mjbots::moteus::Query::Result result = mjbots::moteus::Query::Parse(frame.data, frame.size);
+            int fault = result.fault;
+            if(fault != 0)
+            {
+                RCLCPP_ERROR(rclcpp::get_logger("Actuator_Manager"), "motor with id %d has return fault %d",id_,fault);
+                return false;
+            }
             if(query_format_.position != Resolution::kIgnore)
                 stt_.position = FromMotorToJointPosition(result.position) - position_offset_;
             if(query_format_.velocity != Resolution::kIgnore)
@@ -334,6 +341,7 @@ namespace pi3hat_hw_interface
                     {
                         // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,result.extra[i].value);
                         stt_.second_encoder_position = second_encoder_output_->FromeEncoderToJointPosition(result.extra[i].value);
+                        // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,stt_.second_encoder_position);
                     }
                     else if(
                             (query_format_.extra[i].register_number == mjbots::moteus::Register::kEncoder0Velocity || 
@@ -349,9 +357,10 @@ namespace pi3hat_hw_interface
                     {
                         RCLCPP_WARN(rclcpp::get_logger("Actuator_Manager"),"Extra register number %d not handled for actuator id %d on bus %d",query_format_.extra[i].register_number,id_,bus_);
                     }
-
                 }
+
             }
+            return true;
         };
         void Actuator_Manager::MakeCommand()
         {
@@ -369,7 +378,7 @@ namespace pi3hat_hw_interface
             cmd.feedforward_torque = FromJointToMotorEffort(Saturation(cmd_.effort,max_torque_));
             cmd.kp_scale = FromJointToMotorGain(cmd_.kp_scale);
             cmd.kd_scale = FromJointToMotorGain(cmd_.kd_scale);
-            *cmd_frame_ = c_->MakePosition(cmd,nullptr,&this->query_format_);
+            *cmd_frame_ = c_->MakePosition(cmd);
 
         };
         void Actuator_Manager::MakeStop()
@@ -378,5 +387,109 @@ namespace pi3hat_hw_interface
         };
         
 
+    }
+    namespace power_dist_manager
+    {
+        using ControllerOptions = mjbots::moteus::Controller::Options;
+        bool Distributor_Manager::ConfigureDistributor( std::shared_ptr<mjbots::moteus::Transport> transport)
+        {
+            ControllerOptions c_opt;
+            c_opt.id = id_;
+            c_opt.bus = bus_;
+            c_opt.transport = transport;
+        }
+        void Distributor_Manager::ExportSttInt(std::vector<hardware_interface::StateInterface> &stt_int)
+        {
+            std::cerr<<"PROCODIO"<<std::endl;
+            if(qf_.state !=  mjbots::moteus::Resolution::kIgnore)
+            {
+                 stt_int.emplace_back(
+                        dist_name_,
+                        hardware_interface::HW_IF_STATE,
+                        &stt_.state
+                    );
+            }
+            if(qf_.lock_time !=  mjbots::moteus::Resolution::kIgnore)
+            {
+                 stt_int.emplace_back(
+                        dist_name_,
+                        hardware_interface::HW_IF_LOCK_TIME,
+                        &stt_.lock_time
+                    );
+            }
+            if(qf_.boot_time !=  mjbots::moteus::Resolution::kIgnore)
+            {
+                 stt_int.emplace_back(
+                        dist_name_,
+                        hardware_interface::HW_IF_BOOT_TIME,
+                        &stt_.boot_time
+                    );
+            }
+            if(qf_.output_voltage !=  mjbots::moteus::Resolution::kIgnore)
+            {
+                 stt_int.emplace_back(
+                        dist_name_,
+                       hardware_interface::HW_IF_VOLTAGE,
+                        &stt_.voltage
+                    );
+            }
+            if(qf_.output_current !=  mjbots::moteus::Resolution::kIgnore)
+            {
+                 stt_int.emplace_back(
+                        dist_name_,
+                        hardware_interface::HW_IF_CURRENT,
+                        &stt_.current
+                    );
+            }
+            if(qf_.temperature !=  mjbots::moteus::Resolution::kIgnore)
+            {
+                std::cerr<<"PROCODIO"<<std::endl;
+                 stt_int.emplace_back(
+                        dist_name_,
+                        hardware_interface::HW_IF_TEMPERATURE,
+                        &stt_.temperature
+                    );
+            }
+            if(qf_.energy !=  mjbots::moteus::Resolution::kIgnore)
+            {
+                 stt_int.emplace_back(
+                        dist_name_,
+                        hardware_interface::HW_IF_ENERGY,
+                        &stt_.energy
+                    );
+            }
+        }
+        void Distributor_Manager::ExportCmdInt(std::vector<hardware_interface::CommandInterface> &cmd_int)
+        {
+        }
+
+        bool Distributor_Manager::ParseSttFromReply(CanFdFrame frame)
+        {
+            mjbots::power_distributor::Query::Result result = mjbots::power_distributor::Query::Parse(frame.data, frame.size);
+            int fault = result.fault;
+            if(fault != 0)
+            {
+                RCLCPP_ERROR(rclcpp::get_logger("Actuator_Manager"), "motor with id %d has return fault %d",id_,fault);
+                return false;
+            }
+            if(qf_.state != Resolution::kIgnore)
+                stt_.state = result.state;
+            if(qf_.lock_time != Resolution::kIgnore)
+                stt_.lock_time = result.lock_time;
+            if(qf_.boot_time= Resolution::kIgnore)
+                stt_.boot_time = result.boot_time;
+            if(qf_.switch_status != Resolution::kIgnore)
+                stt_.switch_status = result.switch_status;
+            if(qf_.output_voltage != Resolution::kIgnore)
+                stt_.voltage = result.output_voltage;
+            if(qf_.output_current= Resolution::kIgnore)
+                stt_.current = result.output_current;
+            if(qf_.temperature= Resolution::kIgnore)
+                stt_.temperature = result.temperature;
+            if(qf_.energy != Resolution::kIgnore)
+                stt_.energy = result.energy;
+                
+            return true;
+        }
     }
 }

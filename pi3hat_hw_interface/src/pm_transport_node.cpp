@@ -89,11 +89,11 @@ class MoteusPi3hatNode : public  Node
             RCLCPP_INFO(this->get_logger(),"tel stop");
             c_->DiagnosticFlush();
             RCLCPP_INFO(this->get_logger(),"tel stop");
-            c_->DiagnosticCommand(message);
-
-            res = c_->DiagnosticCommand("conf get servo.pid_position.kp",mjbots::moteus::Controller::kExpectSingleLine);
+            
+            res = c_->DiagnosticCommand(message,mjbots::moteus::Controller::kExpectSingleLine);
             RCLCPP_INFO(this->get_logger(),"the result is %s", res.c_str());
         }
+            
         void send_sync_vel(const int count=100)
         {
             mjbots::moteus::PositionMode::Command cmd;
@@ -101,39 +101,40 @@ class MoteusPi3hatNode : public  Node
             cmd.velocity = 2.0;
             std::vector<mjbots::moteus::CanFdFrame> frames,replies;
             
-            frames.push_back(c_->MakePosition(cmd));
+            frames.push_back(c_->MakePDQuery());
             for(int i =0; i< count; i++)
             {
                 {
                 mjbots::moteus::BlockingCallback b_clb;
-                RCLCPP_INFO(this->get_logger(),"");
+                RCLCPP_INFO(this->get_logger(),"start cycle");
                 t_->Cycle(
                     frames.data(),frames.size(), &replies, &att_,nullptr,nullptr,b_clb.callback()
                 );
+                RCLCPP_INFO(this->get_logger(), "end cycle start wait");
                 int result = b_clb.Wait();
                 RCLCPP_INFO(this->get_logger(), "pos %d",result);
                 }
                 // t_->BlockingCycle(frames.data(),frames.size(),replies);
                 for(auto rep : replies)
                 {
-                    if(rep.source==4)
+                    if(rep.source==32)
                     {
-                        auto res = mjbots::moteus::Query::Parse(rep.data,rep.size);
+                        auto res = mjbots::power_distributor::Query::Parse(rep.data,rep.size);
 
-                        RCLCPP_INFO(this->get_logger(), "pos %f::::vel %f, %d",res.position,res.velocity,i);
+                        RCLCPP_INFO(this->get_logger(), "pos %f::::vel %f, %d",res.output_voltage,res.output_current,res.state);
                     }
                 }
                 // sleep_for(5ms);
                  RCLCPP_INFO(this->get_logger(),"");
             }
             frames.clear();
-            frames.push_back(c_->MakeStop());
-            t_->Cycle(
-                    frames.data(),frames.size(), &replies, &att_,nullptr,nullptr,[&](int )
-                    {
-                        RCLCPP_INFO(this->get_logger(),"end cycle");
-                    }
-                );
+            // frames.push_back(c_->MakeStop());
+            // t_->Cycle(
+            //         frames.data(),frames.size(), &replies, &att_,nullptr,nullptr,[&](int )
+            //         {
+            //             RCLCPP_INFO(this->get_logger(),"end cycle");
+            //         }
+            //     );
             RCLCPP_INFO(this->get_logger(), "end cycle");
 
 
@@ -142,11 +143,14 @@ class MoteusPi3hatNode : public  Node
         {
             this->cmd_struct_.position = std::numeric_limits<float>::quiet_NaN();
             this->cmd_struct_.velocity = 1.0;
-            
-            auto cmd_frame = c_->MakePosition(cmd_struct_);
+             RCLCPP_INFO(this->get_logger(), "make query");
+            mjbots::power_distributor::Query::Format format;
+             auto cmd_frame = c_->MakePDQuery(&format);
+            RCLCPP_INFO(this->get_logger(),"the source is %d, id is %d, the bus is %d",cmd_frame.source,cmd_frame.arbitration_id,cmd_frame.bus);
+             RCLCPP_INFO(this->get_logger(), "query has been made");
             cmd_frames_.push_back(cmd_frame);
             timer_ = this->create_wall_timer(
-                2ms,
+                100ms,
                 std::bind(&MoteusPi3hatNode::timer_cbk,this)
             );
         }
@@ -205,7 +209,7 @@ class MoteusPi3hatNode : public  Node
             {
                 int res = clb_as_.try_consume();
                 if(res == -1)
-                {
+                {   
                     msg.data = 3 ;
                     publisher_->publish(msg);
                     msg.data = count;
@@ -218,13 +222,15 @@ class MoteusPi3hatNode : public  Node
                 {
                     msg.data = 1;
                     publisher_->publish(msg);
+                    RCLCPP_INFO(this->get_logger(),"%d",replies_.size());
                     for(auto &rep : replies_)
                     {
-                        if(rep.source==4)
+                        if(rep.source==32)
                         {
-                            auto res = mjbots::moteus::Query::Parse(rep.data,rep.size);
 
-                            RCLCPP_INFO(this->get_logger(), "pos %f::::vel %f, %d",res.extra[0].value,res.extra[1].value,count);
+                            auto res = mjbots::power_distributor::Query::Parse(rep.data,rep.size);
+
+                            RCLCPP_INFO(this->get_logger(), "volt %f::::cur %f, %d",res.output_voltage,res.output_current);
                         }
                     }
                     t_->Cycle(cmd_frames_.data(),cmd_frames_.size(),&replies_,&att_,nullptr,nullptr,clb_as_.callback());
@@ -245,10 +251,49 @@ class MoteusPi3hatNode : public  Node
                 msg.data = 2;
                 publisher_->publish(msg);
                 msg.data = count;
-                pub_count_->publish(msg);
+                // pub_count_->publish(msg);
                 count++;
             }
             
+        }
+        void send_sd(bool cmd = false)
+        {
+            std::vector<mjbots::moteus::CanFdFrame> frames,replies;
+            mjbots::power_distributor::StateCommand::Command cmd_msg;
+            mjbots::power_distributor::StateCommand::Format format;
+            mjbots::power_distributor::Query::Format qf;
+            qf.state = mjbots::moteus::Resolution::kInt8;
+            qf.fault = mjbots::moteus::Resolution::kInt8;
+            qf.switch_status = mjbots::moteus::Resolution::kIgnore;
+            qf.boot_time= mjbots::moteus::Resolution::kIgnore;
+            qf.lock_time = mjbots::moteus::Resolution::kIgnore;
+            qf.output_voltage= mjbots::moteus::Resolution::kIgnore;
+            qf.output_current= mjbots::moteus::Resolution::kIgnore;
+            qf.energy = mjbots::moteus::Resolution::kIgnore;
+            if(cmd)
+                cmd_msg.state = 0;
+            else
+                cmd_msg.state = 2;
+            
+            frames.push_back(c_->MakePDCommand(cmd_msg,format));
+            mjbots::moteus::BlockingCallback b_clb;
+            RCLCPP_INFO(this->get_logger(),"start cycle");
+            t_->Cycle(
+                frames.data(),frames.size(), &replies, &att_,nullptr,nullptr,b_clb.callback()
+            );
+            RCLCPP_INFO(this->get_logger(), "end cycle start wait");
+            int result = b_clb.Wait();
+            RCLCPP_INFO(this->get_logger(), "end cycle end wait");
+            for(auto &rep : replies_)
+            {
+                if(rep.source==32)
+                {
+
+                    auto res = mjbots::power_distributor::Query::Parse(rep.data,rep.size);
+
+                    RCLCPP_INFO(this->get_logger(), "volt %f::::cur %f, %d",res.output_voltage,res.output_current,res.state);
+                }
+            }
         }
     private:
         std::shared_ptr<Transport> t_;
@@ -271,8 +316,8 @@ int main(int argc, char * argv[])
 {
     Transport_Options opt_t;
    
-    int motor_id = 4;
-    int motor_bus = 1;
+    int motor_id = 32;
+    int motor_bus = 5;
     opt_t.servo_map[motor_id] = motor_bus;
     opt_t.attitude_rate_hz = 100;
     opt_t.mounting_deg.pitch = 0;
@@ -281,14 +326,14 @@ int main(int argc, char * argv[])
     init(argc, argv);
     auto node = std::make_shared<MoteusPi3hatNode>(opt_t,motor_id);
     RCLCPP_INFO(rclcpp::get_logger("pp"),"try to send diagnostic command");
-    node->conf_set("d exact 0.0\n");
-    node->conf_set("conf set servo.pid_position.kp 0.0\n");
+    // node->conf_set("d exact 0.0\n");
+    node->conf_set("conf get id.id\n");
     
-    node->conf_set("conf set servo.pid_position.kd 0.0\n");
+    // node->conf_set("conf set servo.pid_position.kd 0.0\n");
     RCLCPP_INFO(rclcpp::get_logger("PORCODIO"),"pass here");
     // node->test_encoder_validity();
-    node->start_control(5.0);
-    // node->send_sync_vel(1000);
+    // node->send_sd(true);
+    node->send_sync_vel(1000);
     // node->conf_set("conf get servo.pid_position.kp");
 
     spin(node);

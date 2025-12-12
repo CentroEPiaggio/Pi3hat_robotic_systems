@@ -26,6 +26,21 @@
 #define MAX_POWER 450
 namespace pi3hat_hw_interface
 {
+    namespace power_dist_manager
+    {
+        struct DistributorQuery
+        {
+            int state = 0;
+            int switch_status = 0;
+            int torque = 0;
+            int lock_time = 0;
+            int boot_time = 0;
+            int voltage = 0;
+            int current = 0;
+            int temperature = 0;
+            int energy = 0;
+        };
+    }
     namespace actuator_manager
     {
         struct ActuatorOptions
@@ -172,7 +187,7 @@ namespace pi3hat_hw_interface
                 else if(res == 64)
                     return 4;
                 else
-                    throw std::runtime_error("Wrong resolution format are available just [0,8,16,32,64]");
+                    throw std::runtime_error("Wrong resolution format are available just [0,8,16,32,64] parsed " + std::to_string(res));
             }
             void parse_map(std::unordered_map<std::string,std::string> pars) override
             {
@@ -196,57 +211,57 @@ namespace pi3hat_hw_interface
 
                     if(i->first.compare(this->available_base_params_[0]) == 0)
                     {
-                        configurable_.position = parse_res(std::stoi(i->second));
+                        configurable_.position = this->parse_res(std::stoi(i->second));
                         changes_[0] = true;
                     }
                     else if(i->first.compare(this->available_base_params_[1]) == 0)
                     {
-                        configurable_.velocity = parse_res(std::stoi(i->second));
+                        configurable_.velocity = this->parse_res(std::stoi(i->second));
                         changes_[1] = true;
                     }
                     else if(i->first.compare(this->available_base_params_[2]) == 0)
                     {
-                        configurable_.torque = parse_res(std::stoi(i->second));
+                        configurable_.torque = this->parse_res(std::stoi(i->second));
                         changes_[2] = true;
                     }
                     else if(i->first.compare(this->available_base_params_[3]) == 0)
                     {
-                        configurable_.q_current = parse_res(std::stoi(i->second));
+                        configurable_.q_current = this->parse_res(std::stoi(i->second));
                         changes_[3] = true;
                     }
                     else if(i->first.compare(this->available_base_params_[4]) == 0)
                     {
-                        configurable_.d_current = parse_res(std::stoi(i->second));
+                        configurable_.d_current = this->parse_res(std::stoi(i->second));
                         changes_[4] = true;
                     }
                     else if(i->first.compare(this->available_base_params_[5]) == 0)
                     {
-                        configurable_.abs_position = parse_res(std::stoi(i->second));
+                        configurable_.abs_position = this->parse_res(std::stoi(i->second));
                         changes_[5] = true;
                     }
                     else if(i->first.compare(this->available_base_params_[6]) == 0)
                     {
-                        configurable_.power = parse_res(std::stoi(i->second));
+                        configurable_.power = this->parse_res(std::stoi(i->second));
                         changes_[6] = true;
                     }
                     else if(i->first.compare(this->available_base_params_[7]) == 0)
                     {
-                        configurable_.motor_temperature = parse_res(std::stoi(i->second));
+                        configurable_.motor_temperature = this->parse_res(std::stoi(i->second));
                         changes_[7] = true;
                     }
                     else if(i->first.compare(this->available_base_params_[8]) == 0)
                     {
-                        configurable_.voltage = parse_res(std::stoi(i->second));
+                        configurable_.voltage = this->parse_res(std::stoi(i->second));
                         changes_[8] = true;
                     }
                     else if(i->first.compare(this->available_base_params_[9]) == 0)
                     {
-                        configurable_.temperature = parse_res(std::stoi(i->second));
+                        configurable_.temperature = this->parse_res(std::stoi(i->second));
                         changes_[9] = true;
                     }
                     else if(i->first.compare(this->available_extra_params_[0]) == 0 && std::stoi(i->second) != 0 )
                     {
-                        configurable_.position_error = std::stoi(i->second);
+                        configurable_.position_error = this->parse_res(std::stoi(i->second));
                         // if(extra_count_ < MAX_EXTRAS)
                         // {
                         //     configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
@@ -260,7 +275,7 @@ namespace pi3hat_hw_interface
                     }
                     else if(i->first.compare(this->available_extra_params_[1]) == 0 && std::stoi(i->second) != 0 ) 
                     {
-                        configurable_.velocity_error = std::stoi(i->second);
+                        configurable_.velocity_error = this->parse_res(std::stoi(i->second));
                         // if(extra_count_ < MAX_EXTRAS)
                         // {
                         //     configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
@@ -273,7 +288,7 @@ namespace pi3hat_hw_interface
                     }
                     else if(i->first.compare(this->available_extra_params_[2]) == 0 && std::stoi(i->second) != 0 )
                     {
-                        configurable_.torque_error = std::stoi(i->second);
+                        configurable_.torque_error = this->parse_res(std::stoi(i->second));
                         // if(extra_count_ < MAX_EXTRAS)
                         // {
                         //     configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
@@ -291,7 +306,7 @@ namespace pi3hat_hw_interface
                             RCLCPP_WARN(rclcpp::get_logger("Query Resolution Parser"),"No second encoder will be used");
                         }
                         else
-                            configurable_.second_encoder_position = std::stoi(i->second);
+                            configurable_.second_encoder_position = this->parse_res(std::stoi(i->second));
                         // if(extra_count_ < MAX_EXTRAS)
                         // {
                         //     configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
@@ -317,7 +332,7 @@ namespace pi3hat_hw_interface
                             RCLCPP_WARN(rclcpp::get_logger("Query Resolution Parser"),"No second encoder will be used");
                         }
                         else
-                            configurable_.second_encoder_velocity = std::stoi(i->second);
+                            configurable_.second_encoder_velocity = this->parse_res(std::stoi(i->second));
                         // if(extra_count_ < MAX_EXTRAS)
                         // {
                         //     configurable_.extra[extra_count_].resolution = parse_res(std::stoi(i->second));
@@ -584,5 +599,80 @@ namespace pi3hat_hw_interface
             std::array<bool,14> changes_;
     };
 
+    class PDQueryFormatInfo :  public ElementInfo<power_dist_manager::DistributorQuery>
+    {
+        public:
+            PDQueryFormatInfo()
+            {
+                available_base_params_ =
+                    {
+                        "voltage",
+                        "current",
+                        "temperature",
+                        "energy",
+                        
+                    };
+                    available_extra_params_ =
+                    {
+                        "state",
+                        "switch_state",
+                        "lock_time",
+                        "boot_time"
+                    };
+                    changes_.fill(false);
+            }
+            void parse_map(std::unordered_map<std::string,std::string> pars) override
+            {
+                for(std::unordered_map<std::string,std::string>::iterator i = pars.begin(); i != pars.end(); i++)
+                {
+                    this->check_unique(i->first);
+                    if(i->first.compare(available_base_params_[0]) == 0)
+                    {
+                        configurable_.voltage =  this->parse_res(std::stod(i->second));
+                        changes_[0] = true;
+                    }
+                    else if(i->first.compare(available_base_params_[1]) == 0)
+                    {
+                        configurable_.current =  this->parse_res(std::stod(i->second));
+                        changes_[1] = true;
+                    }
+                    else if(i->first.compare(available_base_params_[2]) == 0)
+                    {
+                        configurable_.temperature =  this->parse_res(std::stod(i->second));
+                        changes_[2] = true;
+                    }
+                    else if(i->first.compare(available_base_params_[3]) == 0)
+                    {
+                        configurable_.energy =  this->parse_res(std::stod(i->second));
+                        changes_[3] = true;
+                    }
+                    else if(i->first.compare(available_extra_params_[0]) == 0)
+                        configurable_.state = this->parse_res(std::stod(i->second));  
+                    else if(i->first.compare(available_extra_params_[1]) == 0)
+                        configurable_.state = this->parse_res(std::stod(i->second));
+                    else if(i->first.compare(available_extra_params_[2]) == 0)
+                        configurable_.state = this->parse_res(std::stod(i->second));
+                    else if(i->first.compare(available_extra_params_[3]) == 0)
+                        configurable_.state = this->parse_res(std::stod(i->second));
+                }
+            }
+        private:
+            int parse_res(int res)
+            {
+                if(res == 0)
+                    return 0;
+                else if(res == 8)
+                    return 1;
+                else if(res == 16)
+                    return 2;
+                else if(res == 32)
+                    return 3;
+                else if(res == 64)
+                    return 4;
+                else
+                    throw std::runtime_error("Wrong resolution format are available just [0,8,16,32,64] parsed " + std::to_string(res));
+            };
+            std::array<bool,4> changes_;
+    };
 };
 #endif

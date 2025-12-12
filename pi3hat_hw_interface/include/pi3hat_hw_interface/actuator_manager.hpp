@@ -42,7 +42,15 @@ namespace hardware_interface
     constexpr char HW_IF_PACKAGE_LOSS[] = "package_loss";
     constexpr char HW_IF_CYCLE_DUR[] = "cycle_duration";
 
-}
+    constexpr char HW_IF_CURRENT[] = "current";
+    constexpr char HW_IF_ENERGY[] = "energy";
+    constexpr char HW_IF_STATE[] = "state";
+    constexpr char HW_IF_SWITCH_STATUS[] = "switch_status";
+    constexpr char HW_IF_LOCK_TIME[] = "lock_time";
+    constexpr char HW_IF_BOOT_TIME[] = "boot_time";
+};
+
+
 namespace pi3hat_hw_interface
 {
     namespace actuator_manager
@@ -113,11 +121,11 @@ namespace pi3hat_hw_interface
                         counter_++;
                     }
                     old_encoder_pos = pos;
-                    return (pos + counter_ * 2 * M_PI) / second_encoder_transmission_;
+                    return ((pos + counter_) * 2 * M_PI) / second_encoder_transmission_;
                 };
                 double FromEncoderToJointVelocity(double val)
                 {
-                    return (val) / second_encoder_transmission_;
+                    return (val* 2 * M_PI) / second_encoder_transmission_;
                 };
             private:
                 double second_encoder_transmission_;
@@ -151,6 +159,7 @@ namespace pi3hat_hw_interface
                 void setQueryFormat(const ActuatorQuery query_format)
                 {
                     int extra_count = 0;
+                    query_format_.fault = mjbots::moteus::Resolution::kInt8;
                     query_format_.position = parse_res(query_format.position);
                     query_format_.velocity = parse_res(query_format.velocity);
                     query_format_.torque = parse_res(query_format.torque);
@@ -229,28 +238,32 @@ namespace pi3hat_hw_interface
                 
                 void ExportSttInt(std::vector<hardware_interface::StateInterface> &stt_int);
                 void ExportCmdInt(std::vector<hardware_interface::CommandInterface> &cmd_int);
-                void ParseSttFromReply(CanFdFrame frame);
+                bool ParseSttFromReply(CanFdFrame frame);
                 void MakeCommand();
                 void MakeQuery()
                 {
                     *cmd_frame_ = c_->MakeQuery(&query_format_);
                 }
                 void MakeStop();
+                void SendExact()
+                {
+                    c_->DiagnosticWrite("d exact 0.0\n");
+                }
             private:
                 mjbots::moteus::Resolution parse_res(int res)
                 {
                     if(res == 0)
                         return mjbots::moteus::Resolution::kIgnore;
-                    else if(res == 8)
+                    else if(res == 1)
                         return mjbots::moteus::Resolution::kInt8;
-                    else if(res == 16)
+                    else if(res == 2)
                         return mjbots::moteus::Resolution::kInt16;
-                    else if(res == 32)
+                    else if(res == 3)
                         return mjbots::moteus::Resolution::kInt32;
-                    else if(res == 64)
+                    else if(res == 4)
                         return mjbots::moteus::Resolution::kFloat;
                     else
-                        throw std::runtime_error("Wrong resolution format are available just [0,8,16,32,64]");
+                        throw std::runtime_error("Wrong resolution format are available just [0,1,2,3,4] not " + std::to_string(res));
                 }
                 double Saturation(double val, double limit)
                 {
@@ -292,9 +305,9 @@ namespace pi3hat_hw_interface
                 };
                 double FromMotorToJointEffort(double val)
                 {
-                    return val * actuator_transmission_;
+                    return (val * 2 * M_PI) * actuator_transmission_;
                 };
-
+                
                 std::unique_ptr<Controller> c_;
                 ActuatorOptions act_opt_;
                 QueryFormat query_format_;
@@ -313,6 +326,100 @@ namespace pi3hat_hw_interface
                 
             };
     };
+    namespace power_dist_manager
+    {
+        using Controller = mjbots::moteus::Controller;
+        using QueryFormat = mjbots::power_distributor::Query::Format;
+        using CanFdFrame = mjbots::moteus::CanFdFrame;
+        struct StateStruct
+        {
+            double state = 0;
+            double fault = 0;
+            double switch_status = 0;
+            double lock_time = 0;
+            double boot_time = 0;
+            double voltage = 0;
+            double current = 0;
+            double temperature = 0;
+            double energy = 0;
+        };
+        class Distributor_Manager
+        {
+            public:
+                Distributor_Manager(CanFdFrame *command_frame)
+                {
+                    cmd_frame_ = command_frame;
+                    
+                };
+                void SetDistributorParam(
+                    uint16_t id,
+                    uint16_t bus,
+                    std::string dist_name
+                )
+                {
+                    if(bus!= 5)
+                    {
+                        throw std::runtime_error("The distributor have to stay on bus 5");
+                    }
+                    id_ = id;
+                    bus_ = bus;
+                    dist_name_ = dist_name;
+                }
+                void setQueryFormat(const pi3hat_hw_interface::power_dist_manager::DistributorQuery query_format)
+                {
+                    qf_.fault = mjbots::moteus::Resolution::kInt8;
+                    qf_.state = this->parse_res(query_format.state);
+                    qf_.boot_time = this->parse_res(query_format.boot_time);
+                    qf_.lock_time = this->parse_res(query_format.lock_time);
+                    qf_.output_voltage = this->parse_res(query_format.voltage);
+                    qf_.output_current = this->parse_res(query_format.current);
+                    std::cerr<<query_format.temperature<<std::endl;
+                    qf_.temperature = this->parse_res(query_format.temperature);
+                    qf_.energy = this->parse_res(query_format.energy);
+
+                }
+                bool ConfigureDistributor(std::shared_ptr<mjbots::moteus::Transport> transport);
+                
+                void ExportSttInt(std::vector<hardware_interface::StateInterface> &stt_int);
+                void ExportCmdInt(std::vector<hardware_interface::CommandInterface> &cmd_int);
+                bool ParseSttFromReply(CanFdFrame frame);
+                void MakeQuery()
+                {
+                    *cmd_frame_ = c_->MakePDQuery(&qf_);
+                }
+                std::string get_joint_name()
+                {
+                    return dist_name_;
+                };
+                u_int16_t GetDistributorId()
+                {
+                    return id_;
+                };
+            private:
+                mjbots::moteus::Resolution parse_res(int res)
+                {
+                    if(res == 0)
+                        return mjbots::moteus::Resolution::kIgnore;
+                    else if(res == 1)
+                        return mjbots::moteus::Resolution::kInt8;
+                    else if(res == 2)
+                        return mjbots::moteus::Resolution::kInt16;
+                    else if(res == 3)
+                        return mjbots::moteus::Resolution::kInt32;
+                    else if(res == 4)
+                        return mjbots::moteus::Resolution::kFloat;
+                    else
+                        throw std::runtime_error("Wrong resolution format are available just [0,1,2,3,4] not " + std::to_string(res));
+                }
+                StateStruct stt_;
+                CanFdFrame* cmd_frame_;
+                u_int16_t id_,bus_;
+                std::string dist_name_;
+                std::unique_ptr<Controller> c_;
+                mjbots::power_distributor::Query::Format qf_;
+
+        };
+    }
 };
 
 #endif

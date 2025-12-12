@@ -28,14 +28,16 @@ namespace pi3hat_hw_interface
 
         CallbackReturn MoteusPi3Hat_Interface::on_init(const hardware_interface::HardwareInfo & info)
         {
+ 
             //create the parser objects
             std::unique_ptr<Pi3hatConfInfo> pi3hat_parser = std::make_unique<Pi3hatConfInfo>();
             std::unique_ptr<QueryFormatInfo> query_parser = std::make_unique<QueryFormatInfo>();
             std::unique_ptr<ActuatorConf> actuator_parser = std::make_unique<ActuatorConf>();
+            std::unique_ptr<PDQueryFormatInfo> distributor_parser = std::make_unique<PDQueryFormatInfo>();
             std::string jnt_name;
             unsigned int bus,id, se_source;
             pi3hat_hw_interface::actuator_manager::ActuatorOptions act_opt;
-
+            pi3hat_hw_interface::power_dist_manager::DistributorQuery dis_opt;
             // parse  the option from the info
             try
             {
@@ -55,15 +57,47 @@ namespace pi3hat_hw_interface
                 attittude_requested_ = true;
             }
             // get joints num and allocate the structures
-            num_actuators_ = info.joints.size();
-            actuators_.resize(num_actuators_);
-            package_loss_.resize(num_actuators_);
-            command_framees_.resize(num_actuators_);
-            replies_.resize(num_actuators_*2);
-            for(unsigned int i = 0; i < num_actuators_; i++)
+            // num_actuators_ = info.joints.size();
+            num_actuators_ = 0;
+            num_distributor_ = 0;
+            for(int i = 0; i< info.joints.size(); i++)
+            {
+                std::string jnt_type;
+                try
+                {
+                    jnt_type = info.joints[i].parameters.at("type");
+                }
+                catch(const std::exception& e)
+                {
+                    RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME), "joint %s has not set the parma type",info.joints[i].name.c_str());
+                    return CallbackReturn::FAILURE;
+                }
+                if(jnt_type.compare("motor") == 0)
+                {
+                    num_actuators_ ++;
+                    actuator_index_.push_back(i);
+                }
+                else if(jnt_type.compare("power_dist") == 0)
+                {
+                    num_distributor_ ++;
+                    distributor_index_.push_back(i);
+                }
+                else
+                {
+                    RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME), "joint %s type is not valid",info.joints[i].name.c_str());
+                    return CallbackReturn::FAILURE;
+                }
+                
+            }
+            // actuators_.resize(num_actuators_);
+            packet_loss_.resize(num_actuators_ + num_distributor_);
+            //distributors.resize
+            command_framees_.resize(num_actuators_ + num_distributor_);
+            replies_.resize((num_actuators_ + num_distributor_)*2);
+            for(auto i: actuator_index_)
             {
                 // allocate actuator manager
-                actuators_[i] = std::make_unique<pi3hat_hw_interface::actuator_manager::Actuator_Manager>(&command_framees_[i]);
+                actuators_.emplace(std::make_pair(i,std::make_unique<pi3hat_hw_interface::actuator_manager::Actuator_Manager>(&command_framees_[i])));
                 jnt_name = info.joints[i].name;
                 try
                 {
@@ -112,13 +146,61 @@ namespace pi3hat_hw_interface
 
             }
 
+            for(auto i: distributor_index_)
+            {
+                // allocate actuator manager
+                distributors_.emplace(std::make_pair(i,std::make_unique<pi3hat_hw_interface::power_dist_manager::Distributor_Manager>(&command_framees_[i])));
+                jnt_name = info.joints[i].name;
+                try
+                {
+                    bus = std::stoi(info.joints[i].parameters.at("bus"));
+                    id = std::stoi(info.joints[i].parameters.at("id"));
+                }
+                catch(const std::exception& e)
+                {
+                    RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Parsing jnt %s BUS&ID throw: %s",jnt_name.c_str(),e.what());
+                    return CallbackReturn::FAILURE;
+                }
+               
+                // parse actuator parameters
+                try
+                {
+                   distributor_parser->parse_map(info.joints[i].parameters);
+                }
+                catch(const std::exception& e)
+                {
+                    RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Actuator Configuration Parsing throw: %s",e.what());
+                    return CallbackReturn::FAILURE;
+                }
+                
+                
+                
+                distributors_[i]->SetDistributorParam(
+                    id,
+                    bus,
+                    jnt_name
+                );
+                // parse query format
+                try
+                {
+                    distributor_parser->parse_map(info.joints[i].parameters);
+                }
+                catch(const std::exception& e)
+                {
+                    RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Query Format Parsing throw: %s",e.what());
+                    return CallbackReturn::FAILURE;
+                }
+                distributors_[i]->setQueryFormat(distributor_parser->get_cofigurable());
+                
+
+            }
             return CallbackReturn::SUCCESS;
         };
         
         CallbackReturn MoteusPi3Hat_Interface::on_configure(const rclcpp_lifecycle::State& )
         {
             RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Configuration Procedure");
-            for(unsigned int i = 0; i < num_actuators_; i++)
+            for(auto i : actuator_index_)
             {
                 try
                 {
@@ -127,6 +209,18 @@ namespace pi3hat_hw_interface
                 catch(const std::exception& e)
                 {
                     RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Actuator %s Configuration throw: %s",actuators_[i]->get_joint_name().c_str(),e.what());
+                    return CallbackReturn::FAILURE;
+                }
+            }
+            for(auto i : distributor_index_)
+            {
+                try
+                {
+                    distributors_[i]->ConfigureDistributor(pi3hat_transport_);
+                }
+                catch(const std::exception& e)
+                {
+                    RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME),"Actuator %s Configuration throw: %s",distributors_[i]->get_joint_name().c_str(),e.what());
                     return CallbackReturn::FAILURE;
                 }
             }
@@ -141,8 +235,9 @@ namespace pi3hat_hw_interface
         CallbackReturn MoteusPi3Hat_Interface::on_activate(const rclcpp_lifecycle::State&)
         {
             RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Activation Procedure");
-            for(unsigned int i = 0; i < num_actuators_; i++)
+            for(auto i : actuator_index_)
             {
+                actuators_[i]->SendExact();
                 actuators_[i]->MakeStop();
             }
             
@@ -159,7 +254,7 @@ namespace pi3hat_hw_interface
         CallbackReturn MoteusPi3Hat_Interface::on_deactivate(const rclcpp_lifecycle::State&)
         {
             RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Deactivation Procedure");
-            for(unsigned int i = 0; i < num_actuators_; i++)
+            for(auto i : actuator_index_)
             {
                 actuators_[i]->MakeStop();
             }
@@ -175,7 +270,7 @@ namespace pi3hat_hw_interface
         CallbackReturn MoteusPi3Hat_Interface::on_shutdown(const rclcpp_lifecycle::State&)
         {
             RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Shuthdown Procedure");
-            for(unsigned int i = 0; i < num_actuators_; i++)
+            for(auto i : actuator_index_)
             {
                 actuators_[i]->MakeStop();
             }
@@ -202,78 +297,95 @@ namespace pi3hat_hw_interface
             {
                 stt_int.emplace_back(
                     hardware_interface::StateInterface(
-                        "pi3hat_hw_interface::imu","linear_acceleration.x",
+                        "Pi3Hat", hardware_interface::HW_IF_LIN_ACC_X,
                         &imu_linear_acceleration_.x
                     )
                 );
                 stt_int.emplace_back(
                     hardware_interface::StateInterface(
-                        "pi3hat_hw_interface::imu","linear_acceleration.y",
+                        "Pi3Hat",hardware_interface::HW_IF_LIN_ACC_Y,
                         &imu_linear_acceleration_.y
                     )
                 );
                 stt_int.emplace_back(
                     hardware_interface::StateInterface(
-                        "pi3hat_hw_interface::imu","linear_acceleration.z",
+                        "Pi3Hat",hardware_interface::HW_IF_LIN_ACC_Z,
                         &imu_linear_acceleration_.z
                     )
                 );
                 stt_int.emplace_back(
                     hardware_interface::StateInterface(
-                        "pi3hat_hw_interface::imu","angular_velocity.x",
+                        "Pi3Hat",hardware_interface::HW_IF_ANG_SPD_X,
                         &imu_angular_velocity_.x
                     )
                 );
                 stt_int.emplace_back(
                     hardware_interface::StateInterface(
-                        "pi3hat_hw_interface::imu","angular_velocity.y",
+                        "Pi3Hat",hardware_interface::HW_IF_ANG_SPD_Y,
                         &imu_angular_velocity_.y
                     )
                 );
                 stt_int.emplace_back(
                     hardware_interface::StateInterface(
-                        "pi3hat_hw_interface::imu","angular_velocity.z",
+                        "Pi3Hat",hardware_interface::HW_IF_ANG_SPD_Z,
                         &imu_angular_velocity_.z
                     )
                 );
                 stt_int.emplace_back(
                     hardware_interface::StateInterface(
-                        "pi3hat_hw_interface::imu","orientation.w",
+                        "Pi3Hat",hardware_interface::HW_IF_QUATERN_W,
                         &imu_orientation_.w
                     )
                 );
                 stt_int.emplace_back(
                     hardware_interface::StateInterface(
-                        "pi3hat_hw_interface::imu","orientation.x",
+                        "Pi3Hat",hardware_interface::HW_IF_QUATERN_X,
                         &imu_orientation_.x
                     )
                 );
                 stt_int.emplace_back(
                     hardware_interface::StateInterface(
-                        "pi3hat_hw_interface::imu","orientation.y",
+                        "Pi3Hat",hardware_interface::HW_IF_QUATERN_Y,
                         &imu_orientation_.y
                     )
                 );
                 stt_int.emplace_back(   
                     hardware_interface::StateInterface(
-                        "pi3hat_hw_interface::imu","orientation.z",
+                        "Pi3Hat",hardware_interface::HW_IF_QUATERN_Z,
                         &imu_orientation_.z
                     )
                 );
             }
             stt_int.emplace_back(
                 hardware_interface::StateInterface(
-                    "pi3hat_hw_interface::pi3hat","invalid_cycle",
+                    "Pi3Hat",hardware_interface::HW_IF_VALIDITY_LOSS,
                     &invalid_cycle_
                 )
             );
-            for(unsigned int i = 0; i < num_actuators_; i++)
+            stt_int.emplace_back(
+                hardware_interface::StateInterface(
+                    "Pi3Hat",hardware_interface::HW_IF_CYCLE_DUR,
+                    &cycle_duration_
+                )
+            );
+            for(auto i: actuator_index_)
             {
                 actuators_[i]->ExportSttInt(stt_int);
                 stt_int.emplace_back(
                     hardware_interface::StateInterface(
                         actuators_[i]->get_joint_name(),"package_loss",
-                        &package_loss_[i]
+                        &packet_loss_[i]
+                    )
+                );
+            }
+            for(auto i: distributor_index_)
+            {
+                
+                distributors_[i]->ExportSttInt(stt_int);
+                stt_int.emplace_back(
+                    hardware_interface::StateInterface(
+                        distributors_[i]->get_joint_name(),"package_loss",
+                        &packet_loss_[i]
                     )
                 );
             }
@@ -283,9 +395,13 @@ namespace pi3hat_hw_interface
         std::vector<hardware_interface::CommandInterface> MoteusPi3Hat_Interface::export_command_interfaces()
         {
            std::vector<hardware_interface::CommandInterface> cmd_int;
-           for(unsigned int i = 0; i < num_actuators_; i++)
+           for(auto i: actuator_index_)
            {
                actuators_[i]->ExportCmdInt(cmd_int);
+           }
+           for(auto i: distributor_index_)
+           {
+               distributors_[i]->ExportCmdInt(cmd_int);
            }
             return cmd_int;
         };
@@ -295,21 +411,22 @@ namespace pi3hat_hw_interface
             int p;
             if(!first_cycle_)
             {   
-                if(clb_as_.try_consume() == -1)
+                if(clb_as_.try_consume(&t_s_read_) == -1)
                 {
                     // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME), "read callback result obtained");
                     // RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME),"Read Cycle Timeout");
                     invalid_cycle_ = 1.0;
-                    for(unsigned int i = 0; i < num_actuators_; i++)
-                    {
-                        package_loss_[i] = 1.0;
-                    }
+                    for(auto i : actuator_index_)
+                        packet_loss_[i] = 1.0;
+                    for(auto i : distributor_index_)
+                        packet_loss_[i] = 1.0;
                     return hardware_interface::return_type::OK;
                 }
                 else
                 {
                     
                     invalid_cycle_ = 0.0;
+                    cycle_duration_ = std::chrono::duration<double>(t_s_read_-t_e_write_).count();
                     //parse Imu information
                     if(attittude_requested_)
                     {
@@ -320,19 +437,34 @@ namespace pi3hat_hw_interface
                         imu_angular_velocity_.z *= (M_PI/180.0);
                         imu_linear_acceleration_ = filtered_IMU_.accel_mps2;
                     }
-                    for(unsigned int i = 0; i < num_actuators_; i++)
-                    {
-                        package_loss_[i] = 1.0;
-                    }
-                    
+                    for(auto i : actuator_index_)
+                        packet_loss_[i] = 1.0;
+                    for(auto i : distributor_index_)
+                        packet_loss_[i] = 1.0;
+                    bool exit = false;
                     for(auto rep: replies_)
                     {
-                        for(unsigned int i = 0; i < num_actuators_; i++)
+                        for(auto i : actuator_index_)
                         {
                             if(rep.source == actuators_[i]->GetActuatorId())
                             {
-                                actuators_[i]->ParseSttFromReply(rep);
-                                package_loss_[i] = 0.0;
+                                if(! actuators_[i]->ParseSttFromReply(rep))
+                                    return hardware_interface::return_type::ERROR;
+                                packet_loss_[i] = 0.0;
+                                exit = true;
+                                break;
+                            }
+                        }
+                        if(exit)
+                            continue;
+                         for(auto i : distributor_index_)
+                        {
+                            if(rep.source == distributors_[i]->GetDistributorId())
+                            {
+                                if(! distributors_[i]->ParseSttFromReply(rep))
+                                    return hardware_interface::return_type::ERROR;
+                                packet_loss_[i] = 0.0;
+                                exit = true;
                                 break;
                             }
                         }
@@ -370,6 +502,7 @@ namespace pi3hat_hw_interface
                     nullptr,
                     clb_as_.callback()
                 );
+                t_e_write_ = std::chrono::high_resolution_clock::now();
             }
             return hardware_interface::return_type::OK;
         };
