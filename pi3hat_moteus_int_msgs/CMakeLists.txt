@@ -16,7 +16,7 @@ set(msg_files
   "msg/JointsStates.msg"
   "msg/JointsCommand.msg"
   "msg/OmniMulinexCommand.msg"
-  "msg/PowerDistributor.msg"
+  "msg/DistributorsState.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

@@ -21,6 +21,7 @@ add_library(
   SHARED
   src/pi3hat_joint_group_controller.cpp
   src/pi3hat_state_broadcaster.cpp
+  src/distributor_state_broadcaster.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC

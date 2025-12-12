@@ -1,6 +1,6 @@
 #include "pluginlib/class_list_macros.hpp"
 #include "pi3hat_base_controller/pi3hat_joint_group_controller.hpp"
-#include "pi3hat_hw_interface/motor_manager.hpp"    
+#include "pi3hat_hw_interface/actuator_manager.hpp"    
 #include <cstdint>
 
 namespace pi3hat_joint_group_controller
@@ -183,7 +183,7 @@ namespace pi3hat_joint_group_controller
         // if(!get_reference())
         //     return controller_interface::return_type::ERROR;
         get_reference();
-
+        
         // set the commanded reference iterating over the exported commanded interface
         for(auto &cmd_int : command_interfaces_)
         {

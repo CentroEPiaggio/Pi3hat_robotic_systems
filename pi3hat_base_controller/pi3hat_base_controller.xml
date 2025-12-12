@@ -13,4 +13,11 @@
       Pi3Hat state and performance broadcaster
       </description>
   </class>
+  <class name="distributor_state_broadcaster/Distributor_State_Broadcaster" 
+    type="distributor_state_broadcaster::Distributor_State_Broadcaster"
+    base_class_type="controller_interface::ControllerInterface">
+      <description>
+      Pi3Hat distributors state broadcaster
+      </description>
+  </class>
 </library>
