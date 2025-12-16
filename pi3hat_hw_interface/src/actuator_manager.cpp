@@ -51,6 +51,15 @@ namespace pi3hat_hw_interface
             if(result.has_value())
             {
                 int validity = static_cast<int>(result->values.extra[0].value);
+                RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),
+                "the validity are %d",
+                 (validity & (1<<0)) && (validity & (1<<1)) ? 0 : (validity & (1<<2)) && (validity & (1<<3)) ? 1 : 2 );
+                RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),
+                "the validity are %d",
+                (validity & (1<<2)) && (validity & (1<<3)) ? 1 : -1 );
+                RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),
+                "the validity are %d",
+                (validity & (1<<4)) && (validity & (1<<5)) ? 1 : -1 );
                 if(
                     se_source_ == 0 && 
                     (validity & (1<<0)) &&
@@ -340,7 +349,7 @@ namespace pi3hat_hw_interface
                         )
                     {
                         // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,result.extra[i].value);
-                        stt_.second_encoder_position = second_encoder_output_->FromeEncoderToJointPosition(result.extra[i].value);
+                        stt_.second_encoder_position = second_encoder_output_->FromeEncoderToJointPosition(result.extra[i].value) - position_offset_;
                         // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,stt_.second_encoder_position);
                     }
                     else if(
@@ -391,16 +400,19 @@ namespace pi3hat_hw_interface
     namespace power_dist_manager
     {
         using ControllerOptions = mjbots::moteus::Controller::Options;
+        using Controller = mjbots::moteus::Controller;
         bool Distributor_Manager::ConfigureDistributor( std::shared_ptr<mjbots::moteus::Transport> transport)
         {
             ControllerOptions c_opt;
             c_opt.id = id_;
             c_opt.bus = bus_;
             c_opt.transport = transport;
+            c_= std::make_unique<Controller>(c_opt);
+            c_->DiagnosticFlush();
+
         }
         void Distributor_Manager::ExportSttInt(std::vector<hardware_interface::StateInterface> &stt_int)
         {
-            std::cerr<<"PROCODIO"<<std::endl;
             if(qf_.state !=  mjbots::moteus::Resolution::kIgnore)
             {
                  stt_int.emplace_back(
@@ -443,7 +455,6 @@ namespace pi3hat_hw_interface
             }
             if(qf_.temperature !=  mjbots::moteus::Resolution::kIgnore)
             {
-                std::cerr<<"PROCODIO"<<std::endl;
                  stt_int.emplace_back(
                         dist_name_,
                         hardware_interface::HW_IF_TEMPERATURE,
@@ -476,15 +487,15 @@ namespace pi3hat_hw_interface
                 stt_.state = result.state;
             if(qf_.lock_time != Resolution::kIgnore)
                 stt_.lock_time = result.lock_time;
-            if(qf_.boot_time= Resolution::kIgnore)
+            if(qf_.boot_time!= Resolution::kIgnore)
                 stt_.boot_time = result.boot_time;
             if(qf_.switch_status != Resolution::kIgnore)
                 stt_.switch_status = result.switch_status;
             if(qf_.output_voltage != Resolution::kIgnore)
                 stt_.voltage = result.output_voltage;
-            if(qf_.output_current= Resolution::kIgnore)
+            if(qf_.output_current != Resolution::kIgnore)
                 stt_.current = result.output_current;
-            if(qf_.temperature= Resolution::kIgnore)
+            if(qf_.temperature!= Resolution::kIgnore)
                 stt_.temperature = result.temperature;
             if(qf_.energy != Resolution::kIgnore)
                 stt_.energy = result.energy;

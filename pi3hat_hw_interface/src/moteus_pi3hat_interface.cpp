@@ -486,13 +486,13 @@ namespace pi3hat_hw_interface
             if(invalid_cycle_ == 0.0)
             {
                 // RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "send_data");
-                for(unsigned int i = 0; i < num_actuators_; i++)
-                {
+                for(auto i : actuator_index_)
                     actuators_[i]->MakeCommand();
                     // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Command for actuator %d %d",
                     //     command_framees_[i].expected_reply_size ,command_framees_[i].reply_required
                     // );
-                }
+                for(auto i : distributor_index_)
+                    distributors_[i]->MakeQuery();
                 pi3hat_transport_->Cycle(
                     command_framees_.data(),
                     command_framees_.size(),
