@@ -449,7 +449,7 @@ namespace pi3hat_hw_interface
                         {
                             if(rep.source == actuators_[i]->GetActuatorId())
                             {
-                                if(! actuators_[i]->ParseSttFromReply(rep))
+                                if(! actuators_[i]->ParseSttFromReply(rep))   
                                     return hardware_interface::return_type::ERROR;
                                 packet_loss_[i] = 0.0;
                                 exit = true;

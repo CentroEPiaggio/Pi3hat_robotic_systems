@@ -34,6 +34,7 @@ namespace pi3hat_hw_interface
                 second_encoder_output_ = std::make_unique<SecondEncoderOutput>(second_encoder_transmission_);
             max_torque_ = act_opt_.max_effort;
             position_offset_ = act_opt_.position_offset;
+            cmd_.position = position_offset_;
             c_opt.query_format = query_format_;
             // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Configuring actuator extra %d %d ",c_opt.query_format.extra[0].register_number,c_opt.query_format.extra[1].register_number);
             //create controller 
@@ -99,11 +100,13 @@ namespace pi3hat_hw_interface
             }
             // start motor configuration
             c_->DiagnosticWrite("conf set servo.pid_position.kp " + std::to_string(FromJointToMotorGain(act_opt_.Kp,true)) + "\n");
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"KP is %f",FromJointToMotorGain(act_opt_.Kp,true));
             c_->DiagnosticWrite("conf set servo.pid_position.kd " + std::to_string(FromJointToMotorGain(act_opt_.Kd,true)) + "\n");
             c_->DiagnosticWrite("conf set servo.pid_position.ki " + std::to_string(FromJointToMotorGain(act_opt_.Ki,true)) + "\n");
             c_->DiagnosticWrite("conf set servo.pid_position.ilimit " + std::to_string(FromJointToMotorEffort(act_opt_.ilimit,true)) + "\n");
             c_->DiagnosticWrite("conf set servo.pid_position.iratelimit " + std::to_string(FromJointToMotorEffort(act_opt_.iratelimit,true)) + "\n");
             c_->DiagnosticWrite("conf set servo.max_position_slip " + std::to_string(FromJointToMotorPosition(act_opt_.max_position_slip,true)) + "\n");
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"pos slip is %f",FromJointToMotorPosition(act_opt_.max_position_slip,true));
             c_->DiagnosticWrite("conf set servo.max_velocity_slip " + std::to_string(FromJointToMotorPosition(act_opt_.max_velocity_slip,true)) + "\n");
             c_->DiagnosticWrite("conf set servo.enable_motor_temperature " + std::to_string(act_opt_.enable_motor_temperature) + "\n");
             c_->DiagnosticWrite("conf set servo.position_min " + std::to_string(FromJointToMotorPosition(act_opt_.pos_min_limit,true) + position_offset_) + "\n");
@@ -113,7 +116,7 @@ namespace pi3hat_hw_interface
             c_->DiagnosticWrite("conf set servo.max_power " + std::to_string(act_opt_.max_power_W) + "\n");
             c_->DiagnosticWrite("conf set servo.max_current " + std::to_string(act_opt_.max_current_A) + "\n");
             c_->DiagnosticWrite("conf set servo.flux_brake_margin " + std::to_string(act_opt_.flux_brake_margin_voltage) + "\n");
-            c_->DiagnosticWrite("conf set servo.default_timeout_s 1.0\n");
+            c_->DiagnosticWrite("conf set servo.default_timeout_s 0.1\n");
 
             
             c_->DiagnosticFlush();
@@ -301,7 +304,7 @@ namespace pi3hat_hw_interface
                 return false;
             }
             if(query_format_.position != Resolution::kIgnore)
-                stt_.position = FromMotorToJointPosition(result.position) - position_offset_;
+                stt_.position = FromMotorToJointPosition(result.position) + position_offset_;
             if(query_format_.velocity != Resolution::kIgnore)
                 stt_.velocity = FromMotorToJointPosition(result.velocity);
             if(query_format_.torque != Resolution::kIgnore)
@@ -349,7 +352,7 @@ namespace pi3hat_hw_interface
                         )
                     {
                         // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,result.extra[i].value);
-                        stt_.second_encoder_position = second_encoder_output_->FromeEncoderToJointPosition(result.extra[i].value) - position_offset_;
+                        stt_.second_encoder_position = second_encoder_output_->FromeEncoderToJointPosition(result.extra[i].value) + position_offset_;
                         // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,stt_.second_encoder_position);
                     }
                     else if(
@@ -382,7 +385,7 @@ namespace pi3hat_hw_interface
             // this->query_format_.extra[0].resolution = mjbots::moteus::Resolution::kFloat;
             // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"command qf extra 0 is %d,%d",query_format_.extra[0].register_number,query_format_.extra[0].resolution);
 
-            cmd.position = FromJointToMotorPosition(cmd_.position) + position_offset_;
+            cmd.position = FromJointToMotorPosition(cmd_.position) - position_offset_;
             cmd.velocity = FromJointToMotorPosition(cmd_.velocity);
             cmd.feedforward_torque = FromJointToMotorEffort(Saturation(cmd_.effort,max_torque_));
             cmd.kp_scale = FromJointToMotorGain(cmd_.kp_scale);
