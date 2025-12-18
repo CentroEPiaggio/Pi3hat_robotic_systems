@@ -186,6 +186,7 @@ namespace pi3hat_hw_interface
                 std::vector<double> packet_loss_;
                 bool first_cycle_ = true, attittude_requested_ = false;
                 AsyncCallback clb_as_;
+                mjbots::pi3hat::Pi3HatMoteusTransport::Options p_opt_;
         };
     }
 }

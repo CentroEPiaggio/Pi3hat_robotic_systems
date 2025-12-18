@@ -435,27 +435,27 @@ namespace pi3hat_hw_interface
                     }
                     else if(i->first.compare(available_base_params_[1]) == 0)
                     {
-                        configurable_.default_input.timeout_ns = std::stoi(i->second);
+                        configurable_.default_input.min_tx_wait_ns = std::stoi(i->second);
                         changes_[1] = true;
                     }
                     else if(i->first.compare(available_base_params_[2]) == 0)
                     {
-                        configurable_.default_input.timeout_ns = std::stoi(i->second);
+                        configurable_.default_input.rx_baseline_wait_ns = std::stoi(i->second);
                         changes_[2] = true;
                     }
                     else if(i->first.compare(available_base_params_[3]) == 0)
                     {
-                        configurable_.default_input.timeout_ns = std::stoi(i->second);
+                        configurable_.default_input.rx_extra_wait_ns = std::stoi(i->second);
                         changes_[3] = true;
                     }
                     else if(i->first.compare(available_base_params_[4]) == 0)
                     {
-                        configurable_.default_input.timeout_ns = std::stoi(i->second);
+                        configurable_.cpu = std::stoi(i->second);
                         changes_[4] = true;
                     }
                     else if(i->first.compare(available_base_params_[5]) == 0)
                     {
-                        configurable_.default_input.timeout_ns = std::stoi(i->second);
+                        configurable_.default_input.request_attitude = std::stoi(i->second);
                         changes_[5] = true;
                     }
                     else if(i->first.compare(available_extra_params_[0]) == 0)

@@ -374,7 +374,7 @@ namespace pi3hat_hw_interface
                     qf_.lock_time = this->parse_res(query_format.lock_time);
                     qf_.output_voltage = this->parse_res(query_format.voltage);
                     qf_.output_current = this->parse_res(query_format.current);
-                    std::cerr<<query_format.temperature<<std::endl;
+                    // std::cerr<<query_format.temperature<<std::endl;
                     qf_.temperature = this->parse_res(query_format.temperature);
                     qf_.energy = this->parse_res(query_format.energy);
 

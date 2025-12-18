@@ -50,12 +50,18 @@ namespace pi3hat_hw_interface
                 return CallbackReturn::FAILURE;
             }
 
-            pi3hat_transport_ = std::make_shared<mjbots::pi3hat::Pi3HatMoteusTransport>(pi3hat_parser->get_cofigurable());
-            if(pi3hat_parser->get_cofigurable().default_input.request_attitude)
+            
+            p_opt_ = pi3hat_parser->get_cofigurable();
+            
+            p_opt_.default_input.attitude = nullptr;
+            
+            if(p_opt_.default_input.request_attitude)
             {
                 RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Pi3hat IMU Attitude Data Requested");
                 attittude_requested_ = true;
+                p_opt_.default_input.request_attitude = false;
             }
+            pi3hat_transport_ = std::make_shared<mjbots::pi3hat::Pi3HatMoteusTransport>(p_opt_);
             // get joints num and allocate the structures
             // num_actuators_ = info.joints.size();
             num_actuators_ = 0;
@@ -199,7 +205,7 @@ namespace pi3hat_hw_interface
         
         CallbackReturn MoteusPi3Hat_Interface::on_configure(const rclcpp_lifecycle::State& )
         {
-            RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Configuration Procedure");
+            RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Configuration Procedure ");
             for(auto i : actuator_index_)
             {
                 try
@@ -234,6 +240,13 @@ namespace pi3hat_hw_interface
         
         CallbackReturn MoteusPi3Hat_Interface::on_activate(const rclcpp_lifecycle::State&)
         {
+            pi3hat_transport_.reset();
+            if(attittude_requested_)
+            {
+                p_opt_.default_input.request_attitude = true;
+                p_opt_.default_input.attitude = & filtered_IMU_;
+            }
+            pi3hat_transport_ = std::make_shared<mjbots::pi3hat::Pi3HatMoteusTransport>(p_opt_);
             RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Activation Procedure");
             for(auto i : actuator_index_)
             {
@@ -241,11 +254,21 @@ namespace pi3hat_hw_interface
                 actuators_[i]->MakeStop();
             }
             
-            pi3hat_transport_->BlockingCycle(
-                command_framees_.data(),
-                command_framees_.size(),
-                &replies_
-            );
+            {
+                mjbots::moteus::BlockingCallback cbk;
+
+                pi3hat_transport_->Cycle(
+                        command_framees_.data(),
+                        command_framees_.size(),
+                        &replies_,
+                        &filtered_IMU_,
+                        nullptr,
+                        nullptr,
+                        cbk.callback()
+                    );
+
+                cbk.Wait();
+            }
             
             
             return CallbackReturn::SUCCESS;
@@ -276,11 +299,21 @@ namespace pi3hat_hw_interface
                 actuators_[i]->MakeStop();
             }
             
-            pi3hat_transport_->BlockingCycle(
-                command_framees_.data(),
-                command_framees_.size(),
-                &replies_
-            );
+            {
+                mjbots::moteus::BlockingCallback cbk;
+
+                pi3hat_transport_->Cycle(
+                        command_framees_.data(),
+                        command_framees_.size(),
+                        &replies_,
+                        &filtered_IMU_,
+                        nullptr,
+                        nullptr,
+                        cbk.callback()
+                    );
+
+                cbk.Wait();
+            }
 
             return CallbackReturn::SUCCESS;
         };
