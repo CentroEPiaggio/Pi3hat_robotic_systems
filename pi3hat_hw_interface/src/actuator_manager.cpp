@@ -52,6 +52,15 @@ namespace pi3hat_hw_interface
             if(result.has_value())
             {
                 int validity = static_cast<int>(result->values.extra[0].value);
+                RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),
+                "the validity are %d",
+                 (validity & (1<<0)) && (validity & (1<<1)) ? 0 : (validity & (1<<2)) && (validity & (1<<3)) ? 1 : 2 );
+                RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),
+                "the validity are %d",
+                (validity & (1<<2)) && (validity & (1<<3)) ? 1 : -1 );
+                RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),
+                "the validity are %d",
+                (validity & (1<<4)) && (validity & (1<<5)) ? 1 : -1 );
                 if(
                     se_source_ == 0 && 
                     (validity & (1<<0)) &&
@@ -91,6 +100,7 @@ namespace pi3hat_hw_interface
             }
             std::string cmd_diagn;
             // start motor configuration
+
             cmd_diagn = "conf set servo.pid_position.kp " + std::to_string(FromJointToMotorGain(act_opt_.Kp,true)) + "\n";
             RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
             c_->DiagnosticWrite(cmd_diagn);
@@ -121,6 +131,7 @@ namespace pi3hat_hw_interface
                 cmd_str =std::to_string(FromJointToMotorPosition(act_opt_.max_velocity_slip,true));
             else
                 cmd_str = "nan";
+
 
             cmd_diagn = "conf set servo.max_velocity_slip " + cmd_str  + "\n";
             RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
