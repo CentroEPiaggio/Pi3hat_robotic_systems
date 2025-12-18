@@ -254,22 +254,23 @@ namespace pi3hat_hw_interface
         CallbackReturn MoteusPi3Hat_Interface::on_deactivate(const rclcpp_lifecycle::State&)
         {
             RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Deactivation Procedure");
-            for(auto i : actuator_index_)
-            {
-                actuators_[i]->MakeStop();
-            }
+            // for(auto i : actuator_index_)
+            // {
+            //     actuators_[i]->MakeStop();
+            // }
             
-            pi3hat_transport_->BlockingCycle(
-                command_framees_.data(),
-                command_framees_.size(),
-                &replies_
-            );
+            // pi3hat_transport_->BlockingCycle(
+            //     command_framees_.data(),
+            //     command_framees_.size(),
+            //     &replies_
+            // );
             return CallbackReturn::SUCCESS;
         };
         
         CallbackReturn MoteusPi3Hat_Interface::on_shutdown(const rclcpp_lifecycle::State&)
         {
             RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Shuthdown Procedure");
+            while(clb_as_.try_consume(&t_s_read_) == -1);
             for(auto i : actuator_index_)
             {
                 actuators_[i]->MakeStop();
@@ -449,7 +450,7 @@ namespace pi3hat_hw_interface
                         {
                             if(rep.source == actuators_[i]->GetActuatorId())
                             {
-                                if(! actuators_[i]->ParseSttFromReply(rep))
+                                if(! actuators_[i]->ParseSttFromReply(rep))   
                                     return hardware_interface::return_type::ERROR;
                                 packet_loss_[i] = 0.0;
                                 exit = true;
@@ -486,13 +487,13 @@ namespace pi3hat_hw_interface
             if(invalid_cycle_ == 0.0)
             {
                 // RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "send_data");
-                for(unsigned int i = 0; i < num_actuators_; i++)
-                {
+                for(auto i : actuator_index_)
                     actuators_[i]->MakeCommand();
                     // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Command for actuator %d %d",
                     //     command_framees_[i].expected_reply_size ,command_framees_[i].reply_required
                     // );
-                }
+                for(auto i : distributor_index_)
+                    distributors_[i]->MakeQuery();
                 pi3hat_transport_->Cycle(
                     command_framees_.data(),
                     command_framees_.size(),

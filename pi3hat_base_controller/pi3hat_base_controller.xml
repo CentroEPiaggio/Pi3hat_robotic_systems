@@ -20,4 +20,11 @@
       Pi3Hat distributors state broadcaster
       </description>
   </class>
+  <class name="debug_broadcaster/Debug_Broadcaster" 
+    type="debug_broadcaster::Debug_Broadcaster"
+    base_class_type="controller_interface::ControllerInterface">
+      <description>
+      Pi3Hat DEBUG broadcaster
+      </description>
+  </class>
 </library>

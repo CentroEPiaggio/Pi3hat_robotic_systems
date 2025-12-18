@@ -120,6 +120,7 @@ namespace pi3hat_hw_interface
                         //underflow
                         counter_++;
                     }
+
                     old_encoder_pos = pos;
                     return ((pos + counter_) * 2 * M_PI) / second_encoder_transmission_;
                 };

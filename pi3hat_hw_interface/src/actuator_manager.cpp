@@ -34,6 +34,7 @@ namespace pi3hat_hw_interface
                 second_encoder_output_ = std::make_unique<SecondEncoderOutput>(second_encoder_transmission_);
             max_torque_ = act_opt_.max_effort;
             position_offset_ = act_opt_.position_offset;
+            cmd_.position = position_offset_;
             c_opt.query_format = query_format_;
             // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Configuring actuator extra %d %d ",c_opt.query_format.extra[0].register_number,c_opt.query_format.extra[1].register_number);
             //create controller 
@@ -88,25 +89,78 @@ namespace pi3hat_hw_interface
                 RCLCPP_ERROR(rclcpp::get_logger("Actuator_Manager"),"Failed to get encoder validity information for actuator id %d on bus %d",id_,bus_);
                 throw std::runtime_error("Failed to get encoder validity information");
             }
+            std::string cmd_diagn;
             // start motor configuration
-            c_->DiagnosticWrite("conf set servo.pid_position.kp " + std::to_string(FromJointToMotorGain(act_opt_.Kp,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.pid_position.kd " + std::to_string(FromJointToMotorGain(act_opt_.Kd,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.pid_position.ki " + std::to_string(FromJointToMotorGain(act_opt_.Ki,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.pid_position.ilimit " + std::to_string(FromJointToMotorEffort(act_opt_.ilimit,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.pid_position.iratelimit " + std::to_string(FromJointToMotorEffort(act_opt_.iratelimit,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.max_position_slip " + std::to_string(FromJointToMotorPosition(act_opt_.max_position_slip,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.max_velocity_slip " + std::to_string(FromJointToMotorPosition(act_opt_.max_velocity_slip,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.enable_motor_temperature " + std::to_string(act_opt_.enable_motor_temperature) + "\n");
-            c_->DiagnosticWrite("conf set servo.position_min " + std::to_string(FromJointToMotorPosition(act_opt_.pos_min_limit,true) + position_offset_) + "\n");
-            c_->DiagnosticWrite("conf set servo.position_max " + std::to_string(FromJointToMotorPosition(act_opt_.pos_max_limit,true) + position_offset_) + "\n");
-            c_->DiagnosticWrite("conf set servo.max_velocity " + std::to_string(FromJointToMotorPosition(act_opt_.max_velocity,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.max_voltage " + std::to_string(act_opt_.max_voltage) + "\n");
-            c_->DiagnosticWrite("conf set servo.max_power " + std::to_string(act_opt_.max_power_W) + "\n");
-            c_->DiagnosticWrite("conf set servo.max_current " + std::to_string(act_opt_.max_current_A) + "\n");
-            c_->DiagnosticWrite("conf set servo.flux_brake_margin " + std::to_string(act_opt_.flux_brake_margin_voltage) + "\n");
-            c_->DiagnosticWrite("conf set servo.default_timeout_s 1.0\n");
+            cmd_diagn = "conf set servo.pid_position.kp " + std::to_string(FromJointToMotorGain(act_opt_.Kp,true)) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.pid_position.kd " + std::to_string(FromJointToMotorGain(act_opt_.Kd,true)) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.pid_position.ki " + std::to_string(FromJointToMotorGain(act_opt_.Ki,true)) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.pid_position.ki " + std::to_string(FromJointToMotorGain(act_opt_.Ki,true)) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.pid_position.ilimit " + std::to_string(FromJointToMotorEffort(act_opt_.ilimit,true)) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.pid_position.iratelimit " + std::to_string(FromJointToMotorEffort(act_opt_.iratelimit,true)) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            std::string cmd_str;
+            if(act_opt_.max_position_slip != 0.0 )
+                cmd_str =std::to_string(FromJointToMotorPosition(act_opt_.max_position_slip,true));
+            else
+                cmd_str = "nan";
+            cmd_diagn = "conf set servo.max_position_slip " + cmd_str + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            if(act_opt_.max_velocity_slip != 0.0 )
+                cmd_str =std::to_string(FromJointToMotorPosition(act_opt_.max_velocity_slip,true));
+            else
+                cmd_str = "nan";
 
-            
+            cmd_diagn = "conf set servo.max_velocity_slip " + cmd_str  + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.enable_motor_temperature " + std::to_string(act_opt_.enable_motor_temperature) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+
+            if(act_opt_.pos_min_limit != 0.0 )
+                cmd_str =std::to_string(FromJointToMotorPosition(act_opt_.pos_min_limit,true) + position_offset_);
+            else
+                cmd_str = "nan";
+            cmd_diagn = "conf set servo.position_min " + cmd_str  + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            if(act_opt_.pos_max_limit != 0.0 )
+                cmd_str =std::to_string(FromJointToMotorPosition(act_opt_.pos_max_limit,true) + position_offset_);
+            else
+                cmd_str = "nan";
+            cmd_diagn = "conf set servo.position_max " + cmd_str + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+
+            if(act_opt_.max_velocity != 0.0 )
+                cmd_str = std::to_string(FromJointToMotorPosition(act_opt_.max_velocity,true));
+            else
+                cmd_str = "nan";
+            cmd_diagn = "conf set servo.max_velocity " + cmd_str + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+
+            cmd_diagn = "conf set servo.max_power " + std::to_string(act_opt_.max_power_W) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.max_current " + std::to_string(act_opt_.max_current_A) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.default_timeout_s 0.1\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
             c_->DiagnosticFlush();
             // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"), "Extra register number: %d", c_->options().query_format.extra[0].register_number);
             
@@ -292,7 +346,7 @@ namespace pi3hat_hw_interface
                 return false;
             }
             if(query_format_.position != Resolution::kIgnore)
-                stt_.position = FromMotorToJointPosition(result.position) - position_offset_;
+                stt_.position = FromMotorToJointPosition(result.position) + position_offset_;
             if(query_format_.velocity != Resolution::kIgnore)
                 stt_.velocity = FromMotorToJointPosition(result.velocity);
             if(query_format_.torque != Resolution::kIgnore)
@@ -340,7 +394,7 @@ namespace pi3hat_hw_interface
                         )
                     {
                         // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,result.extra[i].value);
-                        stt_.second_encoder_position = second_encoder_output_->FromeEncoderToJointPosition(result.extra[i].value);
+                        stt_.second_encoder_position = second_encoder_output_->FromeEncoderToJointPosition(result.extra[i].value) + position_offset_;
                         // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"Parsing second encoder position for actuator id %d on bus %d has value %f",id_,bus_,stt_.second_encoder_position);
                     }
                     else if(
@@ -373,11 +427,11 @@ namespace pi3hat_hw_interface
             // this->query_format_.extra[0].resolution = mjbots::moteus::Resolution::kFloat;
             // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"command qf extra 0 is %d,%d",query_format_.extra[0].register_number,query_format_.extra[0].resolution);
 
-            cmd.position = FromJointToMotorPosition(cmd_.position) + position_offset_;
+            cmd.position = FromJointToMotorPosition(cmd_.position) - position_offset_;
             cmd.velocity = FromJointToMotorPosition(cmd_.velocity);
             cmd.feedforward_torque = FromJointToMotorEffort(Saturation(cmd_.effort,max_torque_));
-            cmd.kp_scale = FromJointToMotorGain(cmd_.kp_scale);
-            cmd.kd_scale = FromJointToMotorGain(cmd_.kd_scale);
+            cmd.kp_scale = cmd_.kp_scale;
+            cmd.kd_scale = cmd_.kd_scale;
             *cmd_frame_ = c_->MakePosition(cmd);
 
         };
@@ -391,16 +445,19 @@ namespace pi3hat_hw_interface
     namespace power_dist_manager
     {
         using ControllerOptions = mjbots::moteus::Controller::Options;
+        using Controller = mjbots::moteus::Controller;
         bool Distributor_Manager::ConfigureDistributor( std::shared_ptr<mjbots::moteus::Transport> transport)
         {
             ControllerOptions c_opt;
             c_opt.id = id_;
             c_opt.bus = bus_;
             c_opt.transport = transport;
+            c_= std::make_unique<Controller>(c_opt);
+            c_->DiagnosticFlush();
+
         }
         void Distributor_Manager::ExportSttInt(std::vector<hardware_interface::StateInterface> &stt_int)
         {
-            std::cerr<<"PROCODIO"<<std::endl;
             if(qf_.state !=  mjbots::moteus::Resolution::kIgnore)
             {
                  stt_int.emplace_back(
@@ -443,7 +500,6 @@ namespace pi3hat_hw_interface
             }
             if(qf_.temperature !=  mjbots::moteus::Resolution::kIgnore)
             {
-                std::cerr<<"PROCODIO"<<std::endl;
                  stt_int.emplace_back(
                         dist_name_,
                         hardware_interface::HW_IF_TEMPERATURE,
@@ -476,15 +532,15 @@ namespace pi3hat_hw_interface
                 stt_.state = result.state;
             if(qf_.lock_time != Resolution::kIgnore)
                 stt_.lock_time = result.lock_time;
-            if(qf_.boot_time= Resolution::kIgnore)
+            if(qf_.boot_time!= Resolution::kIgnore)
                 stt_.boot_time = result.boot_time;
             if(qf_.switch_status != Resolution::kIgnore)
                 stt_.switch_status = result.switch_status;
             if(qf_.output_voltage != Resolution::kIgnore)
                 stt_.voltage = result.output_voltage;
-            if(qf_.output_current= Resolution::kIgnore)
+            if(qf_.output_current != Resolution::kIgnore)
                 stt_.current = result.output_current;
-            if(qf_.temperature= Resolution::kIgnore)
+            if(qf_.temperature!= Resolution::kIgnore)
                 stt_.temperature = result.temperature;
             if(qf_.energy != Resolution::kIgnore)
                 stt_.energy = result.energy;
