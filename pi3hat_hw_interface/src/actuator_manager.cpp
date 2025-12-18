@@ -98,27 +98,80 @@ namespace pi3hat_hw_interface
                 RCLCPP_ERROR(rclcpp::get_logger("Actuator_Manager"),"Failed to get encoder validity information for actuator id %d on bus %d",id_,bus_);
                 throw std::runtime_error("Failed to get encoder validity information");
             }
+            std::string cmd_diagn;
             // start motor configuration
-            c_->DiagnosticWrite("conf set servo.pid_position.kp " + std::to_string(FromJointToMotorGain(act_opt_.Kp,true)) + "\n");
-            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"KP is %f",FromJointToMotorGain(act_opt_.Kp,true));
-            c_->DiagnosticWrite("conf set servo.pid_position.kd " + std::to_string(FromJointToMotorGain(act_opt_.Kd,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.pid_position.ki " + std::to_string(FromJointToMotorGain(act_opt_.Ki,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.pid_position.ilimit " + std::to_string(FromJointToMotorEffort(act_opt_.ilimit,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.pid_position.iratelimit " + std::to_string(FromJointToMotorEffort(act_opt_.iratelimit,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.max_position_slip " + std::to_string(FromJointToMotorPosition(act_opt_.max_position_slip,true)) + "\n");
-            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"pos slip is %f",FromJointToMotorPosition(act_opt_.max_position_slip,true));
-            c_->DiagnosticWrite("conf set servo.max_velocity_slip " + std::to_string(FromJointToMotorPosition(act_opt_.max_velocity_slip,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.enable_motor_temperature " + std::to_string(act_opt_.enable_motor_temperature) + "\n");
-            c_->DiagnosticWrite("conf set servo.position_min " + std::to_string(FromJointToMotorPosition(act_opt_.pos_min_limit,true) + position_offset_) + "\n");
-            c_->DiagnosticWrite("conf set servo.position_max " + std::to_string(FromJointToMotorPosition(act_opt_.pos_max_limit,true) + position_offset_) + "\n");
-            c_->DiagnosticWrite("conf set servo.max_velocity " + std::to_string(FromJointToMotorPosition(act_opt_.max_velocity,true)) + "\n");
-            c_->DiagnosticWrite("conf set servo.max_voltage " + std::to_string(act_opt_.max_voltage) + "\n");
-            c_->DiagnosticWrite("conf set servo.max_power " + std::to_string(act_opt_.max_power_W) + "\n");
-            c_->DiagnosticWrite("conf set servo.max_current " + std::to_string(act_opt_.max_current_A) + "\n");
-            c_->DiagnosticWrite("conf set servo.flux_brake_margin " + std::to_string(act_opt_.flux_brake_margin_voltage) + "\n");
-            c_->DiagnosticWrite("conf set servo.default_timeout_s 0.1\n");
 
-            
+            cmd_diagn = "conf set servo.pid_position.kp " + std::to_string(FromJointToMotorGain(act_opt_.Kp,true)) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.pid_position.kd " + std::to_string(FromJointToMotorGain(act_opt_.Kd,true)) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.pid_position.ki " + std::to_string(FromJointToMotorGain(act_opt_.Ki,true)) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.pid_position.ki " + std::to_string(FromJointToMotorGain(act_opt_.Ki,true)) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.pid_position.ilimit " + std::to_string(FromJointToMotorEffort(act_opt_.ilimit,true)) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.pid_position.iratelimit " + std::to_string(FromJointToMotorEffort(act_opt_.iratelimit,true)) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            std::string cmd_str;
+            if(act_opt_.max_position_slip != 0.0 )
+                cmd_str =std::to_string(FromJointToMotorPosition(act_opt_.max_position_slip,true));
+            else
+                cmd_str = "nan";
+            cmd_diagn = "conf set servo.max_position_slip " + cmd_str + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            if(act_opt_.max_velocity_slip != 0.0 )
+                cmd_str =std::to_string(FromJointToMotorPosition(act_opt_.max_velocity_slip,true));
+            else
+                cmd_str = "nan";
+
+
+            cmd_diagn = "conf set servo.max_velocity_slip " + cmd_str  + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.enable_motor_temperature " + std::to_string(act_opt_.enable_motor_temperature) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+
+            if(act_opt_.pos_min_limit != 0.0 )
+                cmd_str =std::to_string(FromJointToMotorPosition(act_opt_.pos_min_limit,true) + position_offset_);
+            else
+                cmd_str = "nan";
+            cmd_diagn = "conf set servo.position_min " + cmd_str  + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            if(act_opt_.pos_max_limit != 0.0 )
+                cmd_str =std::to_string(FromJointToMotorPosition(act_opt_.pos_max_limit,true) + position_offset_);
+            else
+                cmd_str = "nan";
+            cmd_diagn = "conf set servo.position_max " + cmd_str + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+
+            if(act_opt_.max_velocity != 0.0 )
+                cmd_str = std::to_string(FromJointToMotorPosition(act_opt_.max_velocity,true));
+            else
+                cmd_str = "nan";
+            cmd_diagn = "conf set servo.max_velocity " + cmd_str + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+
+            cmd_diagn = "conf set servo.max_power " + std::to_string(act_opt_.max_power_W) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.max_current " + std::to_string(act_opt_.max_current_A) + "\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
+            cmd_diagn = "conf set servo.default_timeout_s 0.1\n";
+            RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"),"%s",cmd_diagn.c_str());
+            c_->DiagnosticWrite(cmd_diagn);
             c_->DiagnosticFlush();
             // RCLCPP_INFO(rclcpp::get_logger("Actuator_Manager"), "Extra register number: %d", c_->options().query_format.extra[0].register_number);
             
@@ -388,8 +441,8 @@ namespace pi3hat_hw_interface
             cmd.position = FromJointToMotorPosition(cmd_.position) - position_offset_;
             cmd.velocity = FromJointToMotorPosition(cmd_.velocity);
             cmd.feedforward_torque = FromJointToMotorEffort(Saturation(cmd_.effort,max_torque_));
-            cmd.kp_scale = FromJointToMotorGain(cmd_.kp_scale);
-            cmd.kd_scale = FromJointToMotorGain(cmd_.kd_scale);
+            cmd.kp_scale = cmd_.kp_scale;
+            cmd.kd_scale = cmd_.kd_scale;
             *cmd_frame_ = c_->MakePosition(cmd);
 
         };

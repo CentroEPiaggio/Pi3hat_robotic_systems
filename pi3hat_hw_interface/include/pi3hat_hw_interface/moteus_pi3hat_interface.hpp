@@ -116,6 +116,7 @@ namespace pi3hat_hw_interface
                     return result_.load(std::memory_order_acquire);
                     
                 }
+                
             private:
                 std::atomic<bool> done_{false};
                 std::atomic<int> result_{0};

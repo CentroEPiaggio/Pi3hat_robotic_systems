@@ -254,22 +254,23 @@ namespace pi3hat_hw_interface
         CallbackReturn MoteusPi3Hat_Interface::on_deactivate(const rclcpp_lifecycle::State&)
         {
             RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Deactivation Procedure");
-            for(auto i : actuator_index_)
-            {
-                actuators_[i]->MakeStop();
-            }
+            // for(auto i : actuator_index_)
+            // {
+            //     actuators_[i]->MakeStop();
+            // }
             
-            pi3hat_transport_->BlockingCycle(
-                command_framees_.data(),
-                command_framees_.size(),
-                &replies_
-            );
+            // pi3hat_transport_->BlockingCycle(
+            //     command_framees_.data(),
+            //     command_framees_.size(),
+            //     &replies_
+            // );
             return CallbackReturn::SUCCESS;
         };
         
         CallbackReturn MoteusPi3Hat_Interface::on_shutdown(const rclcpp_lifecycle::State&)
         {
             RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Shuthdown Procedure");
+            while(clb_as_.try_consume(&t_s_read_) == -1);
             for(auto i : actuator_index_)
             {
                 actuators_[i]->MakeStop();
