@@ -116,60 +116,106 @@ install ros2 control framework and xacro
 
 ## Interface configuration file
 The [ROS2 Control](https://control.ros.org/master/index.html) framework must be known to understand this part.
+The interface allows the user to manage the moteus r-series, the distributors and the integrated inertia unit on the pi3hat.
 
-The Interfaces parameters can be divided into two groups:
+The Interfaces parameters can be divided into four groups:
 <ul>
 <li>
     pi3hat parameters, used to regulate the low level communication and to use the integrated IMU sensor.
 </li>
 <li>
-    joints parameters, used to set up the low level PID and the communication three.
+    control actuator parameters, used to set up the low level PID and the communication daisy chain.
+</li>
+<li>
+    measure resolution actuator parameters, used to define the actuator state interface that the interface open.
+</li>
+<li>
+    measure resolution distributor parameters, uused to define the distributor state interface that the interface open.
 </li>
 </ul>
-
+The Resolution can be set to 64, 32,16 and 8 bit to get the data with a certain representation or 0 to disable the measure getting, for more information about the moteus and distributor available measure check [Moteus Dirver](https://github.com/mjbots/moteus/blob/main/docs/reference.md) and [Power Distributor](https://github.com/mjbots/power_dist/blob/main/docs/reference.md)
 These parameter must be set into the xacro contain into pi3hat_ha_interface's config folder.
 An example of the URDF file is:
 
 
 ``` <?xml version="1.0" ?>
-<robot name="mulinex"  xmlns:xacro="http://ros.org/wiki/xacro">
+<robot name="softleg_cart"  xmlns:xacro="http://ros.org/wiki/xacro">
     <ros2_control name="MoteusPi3Hat_Interface" type="system">
         <hardware>
             <plugin>pi3hat_hw_interface/MoteusPi3Hat_Interface</plugin>
-            <param name="main_timeout">400000</param>
-            <param name="can_timeout">20000</param>
-            <param name="rcv_timeout">20000</param>
-            
-            <param name="attitude">1</param> 
+            <param name="timeout_ns">0</param>
+            <param name="min_tx_wait_ns">20000</param>
+            <param name="rx_baseline_wait_ns">200000</param>
+            <param name="rx_extra_wait_ns">20000</param>
+            <param name="CPU_affinity">1</param>
 
-            <param name="b2imu_pos_x">0</param> 
-            <param name="b2imu_pos_y">0</param> 
-            <param name="b2imu_pos_z">0</param> 
+            <param name="request_attitude">1</param> 
 
-            <param name="b2imu_roll">0</param> 
-            <param name="b2imu_pitch">0</param> 
-            <param name="b2imu_yaw">PI/2</param>
-            <param name="acc_correction">0</param> 
+            <param name="mounting_deg_roll">0</param> 
+            <param name="mounting_deg_pitch">0</param> 
+            <param name="mounting_deg_yaw">0</param> 
+
+            <param name="attitude_hz">400</param> 
         </hardware>
 
-        <joint name="RF_HFE"> 
-            <param name="id">3</param>
-            <param name="bus">4</param>
-            <param name="motor_transmission">9.0</param>
-            <param name="sec_enc_transmission">0.0</param> 
-            <param name="KP">0.0</param> 
-            <param name="KD">0.0</param> 
+        <joint name="HIP"> 
+            <param name="id">4</param>
+            <param name="bus">1</param>
+            <param name="second_encoder_source">1</param>
+            <param name="type">motor</param>
+            
+            <param name="KP">100.0</param> 
+            <param name="KD">1.0</param> 
             <param name="KI">0.0</param> 
-            <param name="i_limit">0.0</param>
-            <param name="p_lim_max">0.0</param> 
-            <param name="p_lim_min">0.0</param> 
-            <param name="p_offset">0.0</param>
-            <param name="max_vel">10.0</param>
-            <param name="max_torque">5.0</param>
+            <param name="ilimit">0.0</param>
+            <param name="iratelimit">0.0</param>
+            <param name="max_position_slip">0.0</param>
+            <param name="max_velocity_slip">0.0</param>
+            <param name="enable_motor_temperature">0</param>
+            <param name="max_pos_limit">0.0</param> 
+            <param name="min_pos_limit">0.0</param>
+            <param name="max_velocity">0.0</param>
+            <param name="max_effort">20000.0</param>
+            <param name="actuator_trasmission">9.0</param>
+            <param name="position_offset">-0.1059179</param>
+            <param name="second_encoder_trasmission">3.23076923</param> 
+
+            <param name="position_res">64</param> 
+            <param name="velocity_res">64</param> 
+            <param name="torque_res">64</param> 
+            <param name="q_current_res">8</param>
+            <param name="d_current_res">0</param>
+            <param name="abs_position_res">0</param>
+            <param name="power_res">0</param>
+            <param name="motor_temperature_res">0</param>
+            <param name="voltage_res">0</param> 
+            <param name="temperature_res">8</param>
+            <param name="position_error_res">64</param>
+            <param name="velocity_error_res">64</param>
+            <param name="torque_error_res">64</param>
+            <param name="second_encoder_position_res">64</param>
+            <param name="second_encoder_velocity_res">64</param> 
+        </joint>
+
+        <joint name="Leg_Distributor"> 
+            <param name="id">32</param>
+            <param name="bus">5</param>
+            <param name="type">power_dist</param>
+            <param name="voltage">64</param> 
+            <param name="current">64</param> 
+            <param name="temperature">64</param> 
+            <param name="energy">0</param>
+            <param name="state">0</param>
+            <param name="switch_state">0</param>
+            <param name="lock_time">0</param>
+            <param name="boot_time">0</param>
+
+
         </joint>
 
     </ros2_control>
-</robot> 
+</robot>
+ 
 
 ```
 
@@ -178,13 +224,19 @@ An example of the URDF file is:
     Communication parameter:
     <ul>
         <li>
-            main_timeout: is the base time waited by the pi3hat recive the joint response        
+            timeout_ns: at least the amount of time use by to complete the communication cycle     
         </li>
         <li>
-            can_timeout: is an extra timeout, it is add to the base one if a can message has been recieved.
+            min_tx_wait_ns:  at least the amount of time use by to complete the communication cycle after the pi3hat transmission is end.
         </li>
         <li>
-            rcv_timeout: is an extra timeout, it is add to the base one if a verified(CRC) message has beed received.
+            rx_baseline_wait_ns: at least the amount of time wait to recive all the packet.
+        </li>
+        <li>
+            rx_extra_wait_ns: is an extra timeout, it is add to the base one if a verified(CRC) message has beed received.
+        </li>
+        <li>
+            CPU_affinity: if greater than zero associate the communication to a ARM micro Core. PS the raspberry core are four.
         </li>
     </ul>
     </li>
@@ -192,16 +244,13 @@ An example of the URDF file is:
     IMU parameter:
     <ul>
         <li>
-            attitude: if set to zero the pi3hat do not collect the IMU data.     
+            request_attitude: if set to zero the pi3hat do not collect the IMU data, is available just the AHRS filter embedded with the pi3hat.     
         </li>
         <li>
-            acc_correction: if set to zero it collect the raw data from IMU, else it collect the data corrected by a VHS, removing the gravity acceleration and providing the pi3hat orientation.
+            mounting_deg_[roll/pitch/yaw]: orientation offset of the pi3hat frame respect the a desired floating base frame
         </li>
-        <li>
-            b2imu_[roll/pitch/yaw]: orientation offset of the pi3hat frame respect the a desired floating base frame
-        </li>
-          <li>
-            b2imu_pos_[x/y/z]: position offset of the pi3hat frame respect the a desired floating base frame
+         <li>
+            attitude_hz: publish frequency of the embedded AHRS fiter.
         </li>
     </ul>
     </li>
@@ -231,6 +280,12 @@ An example of the URDF file is:
         </li>
         <li>
             max_torque: joint level torque saturation.
+        </li>
+        <li>
+            max_position_slip: When finite, this enforces a limit on the difference between the control position and the current measured position measured in revolutions. It can be used to prevent "catching up" when the controller is used in velocity mode. if set to 0.0 is disabled.
+        </li>
+        <li>
+            max_velocity_slip: When finite, this enforces a limit on the difference between the control velocity and the current measured velocity, measured i Hz. It can be used to ensure that acceleration limits are obeyed in velocity mode when external torques exceed the maximum. If used, typically servo.max_position_slip must be relatively small to avoid instability. if set to 0.0 is disabled.
         </li>
     </ul>
     </li>
