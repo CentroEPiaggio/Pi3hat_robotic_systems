@@ -116,6 +116,7 @@ namespace pi3hat_hw_interface
                     return result_.load(std::memory_order_acquire);
                     
                 }
+                
             private:
                 std::atomic<bool> done_{false};
                 std::atomic<int> result_{0};
@@ -185,6 +186,7 @@ namespace pi3hat_hw_interface
                 std::vector<double> packet_loss_;
                 bool first_cycle_ = true, attittude_requested_ = false;
                 AsyncCallback clb_as_;
+                mjbots::pi3hat::Pi3HatMoteusTransport::Options p_opt_;
         };
     }
 }

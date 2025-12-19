@@ -50,12 +50,18 @@ namespace pi3hat_hw_interface
                 return CallbackReturn::FAILURE;
             }
 
-            pi3hat_transport_ = std::make_shared<mjbots::pi3hat::Pi3HatMoteusTransport>(pi3hat_parser->get_cofigurable());
-            if(pi3hat_parser->get_cofigurable().default_input.request_attitude)
+            
+            p_opt_ = pi3hat_parser->get_cofigurable();
+            
+            p_opt_.default_input.attitude = nullptr;
+            
+            if(p_opt_.default_input.request_attitude)
             {
                 RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Pi3hat IMU Attitude Data Requested");
                 attittude_requested_ = true;
+                p_opt_.default_input.request_attitude = false;
             }
+            pi3hat_transport_ = std::make_shared<mjbots::pi3hat::Pi3HatMoteusTransport>(p_opt_);
             // get joints num and allocate the structures
             // num_actuators_ = info.joints.size();
             num_actuators_ = 0;
@@ -199,7 +205,7 @@ namespace pi3hat_hw_interface
         
         CallbackReturn MoteusPi3Hat_Interface::on_configure(const rclcpp_lifecycle::State& )
         {
-            RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Configuration Procedure");
+            RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Configuration Procedure ");
             for(auto i : actuator_index_)
             {
                 try
@@ -234,6 +240,13 @@ namespace pi3hat_hw_interface
         
         CallbackReturn MoteusPi3Hat_Interface::on_activate(const rclcpp_lifecycle::State&)
         {
+            pi3hat_transport_.reset();
+            if(attittude_requested_)
+            {
+                p_opt_.default_input.request_attitude = true;
+                p_opt_.default_input.attitude = & filtered_IMU_;
+            }
+            pi3hat_transport_ = std::make_shared<mjbots::pi3hat::Pi3HatMoteusTransport>(p_opt_);
             RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Activation Procedure");
             for(auto i : actuator_index_)
             {
@@ -241,11 +254,21 @@ namespace pi3hat_hw_interface
                 actuators_[i]->MakeStop();
             }
             
-            pi3hat_transport_->BlockingCycle(
-                command_framees_.data(),
-                command_framees_.size(),
-                &replies_
-            );
+            {
+                mjbots::moteus::BlockingCallback cbk;
+
+                pi3hat_transport_->Cycle(
+                        command_framees_.data(),
+                        command_framees_.size(),
+                        &replies_,
+                        &filtered_IMU_,
+                        nullptr,
+                        nullptr,
+                        cbk.callback()
+                    );
+
+                cbk.Wait();
+            }
             
             
             return CallbackReturn::SUCCESS;
@@ -254,32 +277,43 @@ namespace pi3hat_hw_interface
         CallbackReturn MoteusPi3Hat_Interface::on_deactivate(const rclcpp_lifecycle::State&)
         {
             RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Deactivation Procedure");
-            for(auto i : actuator_index_)
-            {
-                actuators_[i]->MakeStop();
-            }
+            // for(auto i : actuator_index_)
+            // {
+            //     actuators_[i]->MakeStop();
+            // }
             
-            pi3hat_transport_->BlockingCycle(
-                command_framees_.data(),
-                command_framees_.size(),
-                &replies_
-            );
+            // pi3hat_transport_->BlockingCycle(
+            //     command_framees_.data(),
+            //     command_framees_.size(),
+            //     &replies_
+            // );
             return CallbackReturn::SUCCESS;
         };
         
         CallbackReturn MoteusPi3Hat_Interface::on_shutdown(const rclcpp_lifecycle::State&)
         {
             RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Start Actuator Shuthdown Procedure");
+            while(clb_as_.try_consume(&t_s_read_) == -1);
             for(auto i : actuator_index_)
             {
                 actuators_[i]->MakeStop();
             }
             
-            pi3hat_transport_->BlockingCycle(
-                command_framees_.data(),
-                command_framees_.size(),
-                &replies_
-            );
+            {
+                mjbots::moteus::BlockingCallback cbk;
+
+                pi3hat_transport_->Cycle(
+                        command_framees_.data(),
+                        command_framees_.size(),
+                        &replies_,
+                        &filtered_IMU_,
+                        nullptr,
+                        nullptr,
+                        cbk.callback()
+                    );
+
+                cbk.Wait();
+            }
 
             return CallbackReturn::SUCCESS;
         };
@@ -449,7 +483,7 @@ namespace pi3hat_hw_interface
                         {
                             if(rep.source == actuators_[i]->GetActuatorId())
                             {
-                                if(! actuators_[i]->ParseSttFromReply(rep))
+                                if(! actuators_[i]->ParseSttFromReply(rep))   
                                     return hardware_interface::return_type::ERROR;
                                 packet_loss_[i] = 0.0;
                                 exit = true;
@@ -486,13 +520,13 @@ namespace pi3hat_hw_interface
             if(invalid_cycle_ == 0.0)
             {
                 // RCLCPP_WARN(rclcpp::get_logger(LOGGER_NAME), "send_data");
-                for(unsigned int i = 0; i < num_actuators_; i++)
-                {
+                for(auto i : actuator_index_)
                     actuators_[i]->MakeCommand();
                     // RCLCPP_INFO(rclcpp::get_logger(LOGGER_NAME),"Command for actuator %d %d",
                     //     command_framees_[i].expected_reply_size ,command_framees_[i].reply_required
                     // );
-                }
+                for(auto i : distributor_index_)
+                    distributors_[i]->MakeQuery();
                 pi3hat_transport_->Cycle(
                     command_framees_.data(),
                     command_framees_.size(),

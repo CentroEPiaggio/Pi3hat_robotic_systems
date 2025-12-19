@@ -14,13 +14,13 @@ import subprocess
 from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     ld = LaunchDescription()
-    LaunchConfiguration("urdf_file",default="SingleJoint.urdf.xacro")
+    LaunchConfiguration("urdf_file",default="SingleJointSE.urdf.xacro")
     LaunchConfiguration("conf_file",default="single_joint.yaml")
 
 
-    urdf_name_arg = DeclareLaunchArgument("urdf_file",default_value="SingleJoint.urdf.xacro")
+    urdf_name_arg = DeclareLaunchArgument("urdf_file",default_value="JumpingLeg2d.urdf.xacro")
     ld.add_action(urdf_name_arg)
-    conf_name_arg = DeclareLaunchArgument("conf_file",default_value="single_joint.yaml")
+    conf_name_arg = DeclareLaunchArgument("conf_file",default_value="jump_leg.yaml")
     ld.add_action(conf_name_arg)
 
     robot_model_path = PathJoinSubstitution([
